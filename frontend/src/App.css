@@ -1,0 +1,135 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap');
+
+:root {
+  --primary-color: #2A9D8F;
+  --secondary-color: #264653;
+  --accent-color: #E9C46A;
+  --text-dark: #264653;
+  --text-light: #F4F1DE;
+  --background-gradient: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.5);
+  --shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Outfit', sans-serif;
+  background: var(--background-gradient);
+  color: var(--text-dark);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+}
+
+.coming-soon-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  position: relative;
+  overflow: hidden;
+}
+
+.navbar {
+  padding: 1rem 2rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.system-status {
+  font-size: 0.85rem;
+  color: var(--primary-color);
+  background: rgba(42, 157, 143, 0.1);
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  backdrop-filter: blur(4px);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  text-align: center;
+  max-width: 800px;
+  margin: 0 auto;
+  z-index: 10;
+}
+
+.logo-container {
+  margin-bottom: 2rem;
+}
+
+.brand-logo {
+  height: 80px;
+  width: auto;
+  object-fit: contain;
+}
+
+.headline {
+  font-family: 'Playfair Display', serif;
+  font-size: 3.5rem;
+  font-weight: 600;
+  color: var(--secondary-color);
+  margin: 0 0 1rem 0;
+  letter-spacing: -1px;
+}
+
+.sub-headline {
+  font-size: 1.5rem;
+  font-weight: 300;
+  color: var(--primary-color);
+  margin: 0 0 3rem 0;
+}
+
+.body-text {
+  font-size: 1.1rem;
+  line-height: 1.8;
+  color: #555;
+  max-width: 600px;
+}
+
+.body-text p {
+  margin-bottom: 1.5rem;
+}
+
+.highlight-text {
+  margin-top: 3rem;
+  font-family: 'Playfair Display', serif;
+  font-weight: 600;
+  font-style: italic;
+  font-size: 1.25rem;
+  color: var(--secondary-color);
+}
+
+.footer {
+  padding: 2rem;
+  text-align: center;
+  font-size: 0.9rem;
+  color: #888;
+  margin-top: auto;
+}
+
+@media (max-width: 768px) {
+  .headline {
+    font-size: 2.5rem;
+  }
+  
+  .sub-headline {
+    font-size: 1.2rem;
+  }
+  
+  .main-content {
+    padding: 1rem;
+  }
+}
