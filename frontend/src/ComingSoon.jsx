@@ -1,29 +1,25 @@
 import { useEffect, useState } from 'react';
-import axios from 'axios';
-import logo from './assets/logo.png';
+import { getStatus } from './api/status.api';
+import logo from './assets/patient-logo.png';
 import './App.css';
 
 const ComingSoon = () => {
     const [status, setStatus] = useState('Checking connection...');
 
     useEffect(() => {
-        const checkStatus = async () => {
-            try {
-                const response = await axios.get('http://127.0.0.1:8000/api/status/');
-                if (response.status === 200) {
-                    setStatus('System Status: Online');
-                    console.log('Backend connected:', response.data);
-                }
-            } catch (error) {
-                setStatus('Status: Offline (Retrying...)');
-                console.error('Backend connection error:', error);
-            }
-        };
+    const checkStatus = async () => {
+        try {
+            await getStatus();
+            setStatus("System Status: Online");
+        } catch (error) {
+            setStatus("Status: Offline (Retrying...)");
+        }
+    };
 
-        checkStatus();
-        const interval = setInterval(checkStatus, 10000);
-        return () => clearInterval(interval);
-    }, []);
+    checkStatus();
+    const interval = setInterval(checkStatus, 10000);
+    return () => clearInterval(interval);
+}, []);
 
     return (
         <div className="coming-soon-container">
