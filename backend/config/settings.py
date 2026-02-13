@@ -10,93 +10,98 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 from pathlib import Path
+from datetime import timedelta
 import os
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-
 load_dotenv(BASE_DIR / ".env")
 
-# # Build paths inside the project like this: BASE_DIR / 'subdir'.
-# # Quick-start development settings - unsuitable for production
-# # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
-# # SECURITY WARNING: keep the secret key used in production secret!
-# # SECURITY WARNING: don't run with debug turned on in production!
-
-
+# -------------------------------------------------
+# CORE
+# -------------------------------------------------
 SECRET_KEY = os.getenv("SECRET_KEY")
+
 DEBUG = os.getenv("DEBUG", "False") == "True"
-ALLOWED_HOSTS = ["127.0.0.1", "localhost"]
 
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split(",")
 
-# Application definition
-
+# -------------------------------------------------
+# APPLICATIONS
+# -------------------------------------------------
 INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'rest_framework',
-    'corsheaders',
-    'django_celery_results',
-    'home',
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+
+    "rest_framework",
+    "corsheaders",
+    "rest_framework_simplejwt.token_blacklist",
+
+    "home",
+    "accounts",
+    "admin_panel",
 ]
 
+# -------------------------------------------------
+# MIDDLEWARE
+# -------------------------------------------------
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "corsheaders.middleware.CorsMiddleware",
+    "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-ROOT_URLCONF = 'config.urls'
+# --------------------
+# ROOT URL
+# --------------------
+ROOT_URLCONF = "config.urls"
 
+# -------------------------------------------------
+# INTERNATIONALIZATION
+# -------------------------------------------------
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
             ],
         },
     },
 ]
 
-WSGI_APPLICATION = 'config.wsgi.application'
+# -------------------------------------------------
+# WSGI/ASGI
+# -------------------------------------------------
+WSGI_APPLICATION = "config.wsgi.application"
+ASGI_APPLICATION = "config.asgi.application"
 
-
-# Database
-# https://docs.djangoproject.com/en/6.0/ref/settings/#databases
-
+# --------------------
+# DATABASE
+# --------------------
 DATABASES = {
     "default": {
         "ENGINE": os.getenv("DB_ENGINE"),
         "NAME": BASE_DIR / os.getenv("DB_NAME"),
-        "USER": os.getenv("DB_USER"),
-        "PASSWORD": os.getenv("DB_PASSWORD"),
-        "HOST": os.getenv("DB_HOST"),
-        "PORT": os.getenv("DB_PORT"),
     }
 }
 
-# Redis config
-REDIS_URL = os.getenv("REDIS_URL")
-
-
-
-# Password validation
-# https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
-
+# -------------------------------------------------
+# PASSWORD VALIDATION
+# -------------------------------------------------
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -112,10 +117,9 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
-# Internationalization
-# https://docs.djangoproject.com/en/6.0/topics/i18n/
-
+# -------------------------------------------------
+# INTERNATIONALIZATION
+# -------------------------------------------------
 LANGUAGE_CODE = 'en-us'
 
 TIME_ZONE = 'UTC'
@@ -124,23 +128,58 @@ USE_I18N = True
 
 USE_TZ = True
 
-
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/6.0/howto/static-files/
-
+# -------------------------------------------------
+# STATIC FILES
+# -------------------------------------------------
 STATIC_URL = 'static/'
 
-# Celery Configuration Options
-CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL")
-CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND")
-
-CELERY_ACCEPT_CONTENT = ['application/json']
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
-CELERY_TIMEZONE = TIME_ZONE
-
-# CORS 
-CORS_ALLOW_ALL_ORIGINS = True 
+# -------------------------------------------------
+# CUSTOM USER MODEL
+# -------------------------------------------------
+AUTH_USER_MODEL = "accounts.User"
 
 
+# -------------------------------------------------
+# REST FRAMEWORK
+# -------------------------------------------------
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ),
+}
 
+# -------------------------------------------------
+# SIMPLE JWT
+# -------------------------------------------------
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(
+        minutes=int(os.getenv("ACCESS_TOKEN_LIFETIME_MINUTES", 30))
+    ),
+    "REFRESH_TOKEN_LIFETIME": timedelta(
+        days=int(os.getenv("REFRESH_TOKEN_LIFETIME_DAYS", 1))
+    ),
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
+}
+
+# -------------------------------------------------
+# AUTHENTICATION BACKENDS
+# -------------------------------------------------
+AUTHENTICATION_BACKENDS = [
+    "django.contrib.auth.backends.ModelBackend",
+]
+
+# -------------------------------------------------
+# CORS
+# -------------------------------------------------
+CORS_ALLOW_CREDENTIALS = True
+
+CORS_ALLOWED_ORIGINS = os.getenv(
+    "CORS_ALLOWED_ORIGINS", ""
+).split(",")
+
+# -------------------------------------------------
+# COOKIE SECURITY
+# -------------------------------------------------
+COOKIE_SECURE = os.getenv("COOKIE_SECURE", "False") == "True"
+COOKIE_SAMESITE = os.getenv("COOKIE_SAMESITE", "Lax")
