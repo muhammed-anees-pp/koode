@@ -8,10 +8,20 @@ import { Link } from "react-router-dom";
 import logo from "../../../assets/admin-logo.png";
 import "../../../styles/admin/AuthShared.css";
 
+
+
 const schema = z.object({
-  email: z.string().email("Invalid email format"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
+  email: z
+    .string()
+    .min(1, "Email is required")
+    .email("Invalid email format"),
+
+  password: z
+    .string()
+    .min(1, "Password is required")
+    .min(8, "Password must be at least 8 characters"),
 });
+
 
 const AdminLogin = () => {
   const navigate = useNavigate();
@@ -122,8 +132,12 @@ const AdminLogin = () => {
     if (!result.success) {
       const errors = {};
       result.error.issues.forEach((issue) => {
-        errors[issue.path[0]] = issue.message;
+        const field = issue.path[0];
+        if (!errors[field]) {
+          errors[field] = issue.message;
+        }
       });
+
       setValidationErrors(errors);
       return;
     }
@@ -141,7 +155,7 @@ const AdminLogin = () => {
           <p className="auth-subtitle">Super Admin Secure Access</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="auth-form">
+        <form onSubmit={handleSubmit} className="auth-form" noValidate>
           <div className="form-group">
             <label>Email Address</label>
             <div className="input-wrapper">
@@ -168,7 +182,6 @@ const AdminLogin = () => {
                 value={formData.email}
                 onChange={handleChange}
                 className={validationErrors.email ? "error" : ""}
-                required
               />
             </div>
             {validationErrors.email && (
@@ -204,7 +217,6 @@ const AdminLogin = () => {
                 value={formData.password}
                 onChange={handleChange}
                 className={validationErrors.password ? "error" : ""}
-                required
               />
               <button
                 type="button"
