@@ -24,7 +24,9 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 
 DEBUG = os.getenv("DEBUG", "False") == "True"
 
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split(",")
+ALLOWED_HOSTS = [
+    host for host in os.getenv("ALLOWED_HOSTS", "").split(",") if host
+]
 
 # -------------------------------------------------
 # APPLICATIONS
@@ -146,18 +148,28 @@ REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "5/minute",
+        "forgot_password": "3/minute",
+    },
 }
+
+
 
 # -------------------------------------------------
 # SIMPLE JWT
 # -------------------------------------------------
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(
-        minutes=int(os.getenv("ACCESS_TOKEN_LIFETIME_MINUTES", 30))
+    minutes=int(os.getenv("ACCESS_TOKEN_LIFETIME_MINUTES", 30))
     ),
     "REFRESH_TOKEN_LIFETIME": timedelta(
         days=int(os.getenv("REFRESH_TOKEN_LIFETIME_DAYS", 1))
     ),
+
     "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": True,
 }
@@ -178,8 +190,44 @@ CORS_ALLOWED_ORIGINS = os.getenv(
     "CORS_ALLOWED_ORIGINS", ""
 ).split(",")
 
+
 # -------------------------------------------------
 # COOKIE SECURITY
 # -------------------------------------------------
 COOKIE_SECURE = os.getenv("COOKIE_SECURE", "False") == "True"
-COOKIE_SAMESITE = os.getenv("COOKIE_SAMESITE", "Lax")
+COOKIE_SAMESITE = os.getenv("COOKIE_SAMESITE")
+
+
+# -------------------------------------------------
+# MEDIA
+# -------------------------------------------------
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
+
+
+# -------------------------------------------------
+# REDIS
+# -------------------------------------------------
+REDIS_URL = os.getenv("REDIS_URL")
+# -------------------------------------------------
+# CELERY
+# -------------------------------------------------
+CELERY_BROKER_URL = REDIS_URL
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+
+# -------------------------------------------------
+# EMAIL
+# -------------------------------------------------
+EMAIL_BACKEND = os.getenv("EMAIL_BACKEND")
+EMAIL_HOST = os.getenv("EMAIL_HOST")
+EMAIL_PORT = int(os.getenv("EMAIL_PORT"))
+EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True") == "True"
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL")
+
+# -------------------------------------------------
+# FRONTEND URLS
+# -------------------------------------------------
+ADMIN_FRONTEND_URL = os.getenv("ADMIN_FRONTEND_URL")

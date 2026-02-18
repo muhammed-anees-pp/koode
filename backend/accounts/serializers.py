@@ -2,6 +2,8 @@ from django.contrib.auth import authenticate
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.utils.translation import gettext_lazy as _
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
 
 
 """
@@ -19,7 +21,6 @@ class AdminLoginSerializer(serializers.Serializer):
         }
     )
 
-    # VALIDATIONS FOR ADMIN LOGIN
     def validate(self, attrs):
         email = attrs.get("email").strip().lower()
         password = attrs.get("password")
@@ -61,3 +62,40 @@ class AdminLoginSerializer(serializers.Serializer):
             "access": str(refresh.access_token),
             "refresh": str(refresh),
         }
+    
+
+"""
+ADMIN FORGOT PASSWORD SERIALIZER
+"""
+class AdminForgotPasswordSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+    def validate_email(self,value):
+        return value.strip().lower()
+
+
+"""
+ADMIN RESET PASSWORD SERIALIZER
+"""
+class AdminResetPasswordSerializer(serializers.Serializer):
+    token = serializers.RegexField(
+        r'^[A-Za-z0-9_\-]+$',
+        error_messages={"invalid": "Invalid reset token format"}
+    )
+    new_password = serializers.CharField(write_only=True)
+    confirm_password = serializers.CharField(write_only=True)
+
+    def validate(self, data):
+        if data["new_password"] != data["confirm_password"]:
+            raise serializers.ValidationError(
+                {"confirm_password": "Passwords do not match"}
+            )
+
+        try:
+            validate_password(data["new_password"])
+        except DjangoValidationError as e:
+            raise serializers.ValidationError(
+                {"new_password": list(e.messages)}
+            )
+
+        return data

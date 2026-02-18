@@ -1,11 +1,12 @@
-from . serializers import AdminLoginSerializer
+from . serializers import AdminLoginSerializer, AdminForgotPasswordSerializer, AdminResetPasswordSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status
 from django.conf import settings
-from rest_framework.permissions import IsAuthenticated
-
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from .services.password_reset_service import AdminPasswordResetService
+from . throttles import ForgotPasswordThrottle
 
 
 ############################
@@ -62,7 +63,7 @@ class RefreshTokenView(APIView):
 
 
 """
-ADMIN LOGOUT
+ADMIN LOGOUT VIEW
 """
 class AdminLogoutView(APIView):
     permission_classes = [IsAuthenticated]
@@ -85,3 +86,45 @@ class AdminLogoutView(APIView):
         response.delete_cookie("refresh_token")
 
         return response
+
+
+
+"""
+ADMIN FORGOT PASSWORD VIEW
+"""
+class AdminForgotPasswordView(APIView):
+    permission_classes = [AllowAny]
+    throttle_classes = [ForgotPasswordThrottle]
+
+    def post(self, request):
+        serializer = AdminForgotPasswordSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        AdminPasswordResetService().request_reset(
+            serializer.validated_data["email"]
+        )
+
+        return Response(
+            {"message": "If the email exists, a reset link has been sent."},
+            status=status.HTTP_200_OK,
+        )
+
+"""
+ADMIN RESET PASSWORD VIEW
+"""
+class AdminResetPasswordView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = AdminResetPasswordSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        AdminPasswordResetService().reset_password(
+            token=serializer.validated_data["token"],
+            new_password=serializer.validated_data["new_password"],
+        )
+
+        return Response(
+            {"message": "Password reset successful"},
+            status=status.HTTP_200_OK,
+        )
