@@ -20,3 +20,12 @@ export const adminLogout = async () => {
   const response = await axiosInstance.post("admin/auth/logout/");
   return response.data;
 };
+
+export const adminForgotPassword = async (email) => {
+  const response = await axiosInstance.post("/admin/auth/forgot-password/", { email });
+  return response.data; 
+};
+
+export const adminResetPassword = async (data) => {
+  return axiosInstance.post("/admin/auth/reset-password/", data);
+};
