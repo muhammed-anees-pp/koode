@@ -60,6 +60,8 @@ class AdminLoginSerializer(serializers.Serializer):
 
         self.context["user"] = user
         refresh = RefreshToken.for_user(user)
+        refresh["role"] = user.role
+        refresh.access_token["role"] = user.role
 
         return {
             "access": str(refresh.access_token),
@@ -158,6 +160,8 @@ class PatientLoginSerializer(serializers.Serializer):
             raise serializers.ValidationError("Please verify your email first")
 
         refresh = RefreshToken.for_user(user)
+        refresh["role"] = user.role
+        refresh.access_token["role"] = user.role
 
         return {
             "access": str(refresh.access_token),

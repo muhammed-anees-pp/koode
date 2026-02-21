@@ -56,9 +56,12 @@ class RefreshTokenView(APIView):
 
         try:
             refresh = RefreshToken(refresh_token)
-            access = str(refresh.access_token)
+            access = refresh.access_token
+            role = refresh.get("role")
+            if role:
+                access["role"] = role
 
-            return Response({"access": access})
+            return Response({"access": str(access)})
         except Exception:
             return Response({"detail": "Invalid token"}, status = 401)
 
