@@ -6,6 +6,9 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 
 
+############################
+####        ADMIN       ####
+############################
 """
 ADMIN LOGIN SERIALIZER
 """
@@ -99,3 +102,64 @@ class AdminResetPasswordSerializer(serializers.Serializer):
             )
 
         return data
+    
+
+
+############################
+####       PATIENT      ####
+############################
+"""
+PATIENT SIGNUP SERIALIZER
+"""
+class PatientSignupSerializer(serializers.Serializer):
+    full_name = serializers.CharField(max_length=255)
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only=True, min_length=8)
+    confirm_password = serializers.CharField(write_only=True)
+
+    def validate_email(self, value):
+        return value.strip().lower()
+
+    def validate(self, data):
+        if data["password"] != data["confirm_password"]:
+            raise serializers.ValidationError(
+                {"confirm_password": "Passwords do not match"}
+            )
+
+        try:
+            validate_password(data["password"])
+        except DjangoValidationError as e:
+            raise serializers.ValidationError(
+                {"password": list(e.messages)}
+            )
+
+        return data
+
+
+"""
+PATIENT LOGIN SERIALIZER
+"""
+class PatientLoginSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only=True)
+
+    def validate(self, attrs):
+        email = attrs.get("email").strip().lower()
+        password = attrs.get("password")
+        user = authenticate(request=self.context.get("request"), username=email, password=password)
+
+        if not user:
+            raise serializers.ValidationError("Invalid email or password")
+
+        if user.role != "PATIENT":
+            raise serializers.ValidationError("Invalid login portal")
+
+        if not user.is_active:
+            raise serializers.ValidationError("Please verify your email first")
+
+        refresh = RefreshToken.for_user(user)
+
+        return {
+            "access": str(refresh.access_token),
+            "refresh": str(refresh)
+        }

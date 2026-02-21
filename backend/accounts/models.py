@@ -20,17 +20,10 @@ class UserManager(BaseUserManager):
             raise ValueError("Can't create admin")
 
         email = self.normalize_email(email)
-
         extra_fields.setdefault("role", "PATIENT")
         extra_fields.setdefault("is_staff", False)
         extra_fields.setdefault("is_superuser", False)
-
-        user = self.model(
-            email=email,
-            full_name=full_name,
-            **extra_fields
-        )
-
+        user = self.model(email=email, full_name=full_name, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
         return user
@@ -43,18 +36,11 @@ class UserManager(BaseUserManager):
             raise ValueError("Full name is required")
 
         email = self.normalize_email(email)
-
         extra_fields["role"] = "ADMIN"
         extra_fields["is_staff"] = True
         extra_fields["is_superuser"] = True
         extra_fields["is_active"] = True
-
-        user = self.model(
-            email=email,
-            full_name=full_name,
-            **extra_fields
-        )
-
+        user = self.model(email=email, full_name=full_name, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
         return user
@@ -73,24 +59,12 @@ class User(AbstractBaseUser, PermissionsMixin):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     email = models.EmailField(unique=True)
     full_name = models.CharField(max_length=255)
-    profile_picture = models.ImageField(
-        upload_to="profile_pictures/",
-        null=True,
-        blank=True
-    )
-    role = models.CharField(
-        max_length=20,
-        choices=ROLE_CHOICES,
-        default="PATIENT"
-    )
-
+    profile_picture = models.ImageField(upload_to="profile_pictures/", null=True, blank=True)
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default="PATIENT")
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
-
     date_joined = models.DateTimeField(default=timezone.now)
-
     objects = UserManager()
-
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["full_name"]
 
