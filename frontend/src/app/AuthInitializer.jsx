@@ -1,25 +1,33 @@
 import { useEffect } from "react";
-import { useAdminStore } from "../store/admin.store";
-import { refreshAccessToken } from "../api/admin.api";
+import { useAuthStore } from "../store/auth.store";
+import { refreshAccessToken } from "../api/auth.api";
 
 const AuthInitializer = ({ children }) => {
-  const login = useAdminStore((s) => s.login);
-  const stopChecking = useAdminStore((s) => s.stopChecking);
+  const login = useAuthStore((s) => s.login);
+  const stopChecking = useAuthStore((s) => s.stopChecking);
+  const isAuthChecking = useAuthStore((s) => s.isAuthChecking);
 
   useEffect(() => {
     const initAuth = async () => {
       try {
         const data = await refreshAccessToken();
-        login({ access: data.access });
-      } catch (err) {
+
+        if (!data?.access) {
+          stopChecking();
+          return;
+        }
+
+        const base64Payload = data.access.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+        const payload = JSON.parse(atob(base64Payload));
+
+        login({ access: data.access }, payload.role);
+      } catch {
         stopChecking();
       }
     };
 
     initAuth();
   }, []);
-
-  const isAuthChecking = useAdminStore((s) => s.isAuthChecking);
 
   if (isAuthChecking) {
     return <div>Loading...</div>;

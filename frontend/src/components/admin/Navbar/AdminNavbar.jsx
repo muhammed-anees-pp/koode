@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
 import { adminLogout } from "../../../api/admin.api";
-import { useAdminStore } from "../../../store/admin.store";
+import { useAuthStore } from "../../../store/auth.store";
 import "./AdminNavbar.css";
 
 export default function Navbar() {
@@ -10,8 +10,9 @@ export default function Navbar() {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const navigate = useNavigate();
   const menuRef = useRef(null);
-  
-  const { admin, isAuthenticated, logout: logoutStore } = useAdminStore();
+
+  const { admin, user, isAuthenticated, logout: logoutStore } = useAuthStore();
+  const currentUser = user || admin;
 
   const logoutMutation = useMutation({
     mutationFn: adminLogout,
@@ -40,10 +41,10 @@ export default function Navbar() {
     return null;
   }
 
-  const displayName = admin?.full_name || admin?.email?.split('@')[0];
-  const adminEmail = admin?.email || "";
-  
-  const avatarUrl = admin?.profile_image || 
+  const displayName = currentUser?.full_name || currentUser?.email?.split('@')[0];
+  const adminEmail = currentUser?.email || "";
+
+  const avatarUrl = currentUser?.profile_image ||
     `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=6366f1&color=fff&size=128`;
 
   return (
@@ -144,7 +145,7 @@ export default function Navbar() {
               </div>
             )}
           </div>
-          
+
         </div>
       </div>
 

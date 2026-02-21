@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import { adminLogin } from "../../../api/admin.api";
-import { useAdminStore } from "../../../store/admin.store";
+import { useAuthStore } from "../../../store/auth.store";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { useState } from "react";
@@ -25,7 +25,7 @@ const schema = z.object({
 
 const AdminLogin = () => {
   const navigate = useNavigate();
-  const login = useAdminStore((s) => s.login);
+  const login = useAuthStore((s) => s.login);
 
   const [formData, setFormData] = useState({
     email: "",
@@ -39,7 +39,7 @@ const AdminLogin = () => {
   const getErrorMessage = (error) => {
     if (error.response?.data) {
       const data = error.response.data;
-      
+
       if (data.non_field_errors && data.non_field_errors.length > 0) {
         return data.non_field_errors[0];
       }
@@ -63,10 +63,10 @@ const AdminLogin = () => {
         return data;
       }
     }
-    
+
 
     const status = error.response?.status;
-    
+
     if (status === 401) {
       return "Invalid email or password";
     }
@@ -82,15 +82,15 @@ const AdminLogin = () => {
     if (status >= 500) {
       return "Server error. Please try again later";
     }
-    
+
     return "Login failed. Please try again.";
   };
 
   const mutation = useMutation({
     mutationFn: adminLogin,
     onSuccess: (data) => {
-      login(data);
-      
+      login(data, "ADMIN");
+
       if (rememberMe) {
         localStorage.setItem("adminTokens", JSON.stringify(data));
         localStorage.setItem("rememberAdmin", "true");
@@ -101,12 +101,12 @@ const AdminLogin = () => {
         localStorage.removeItem("rememberAdmin");
         localStorage.removeItem("rememberedAdminEmail");
       }
-      
+
       navigate("/admin/dashboard");
     },
     onError: (error) => {
       console.log("Login error:", error.response?.data);
-      
+
       const errorMessage = getErrorMessage(error);
       setValidationErrors({
         form: errorMessage
@@ -116,7 +116,7 @@ const AdminLogin = () => {
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
-    
+
     if (validationErrors[e.target.name]) {
       setValidationErrors({ ...validationErrors, [e.target.name]: null });
     }

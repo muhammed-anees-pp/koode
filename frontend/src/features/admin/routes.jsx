@@ -3,10 +3,10 @@ import AdminLogin from "./pages/AdminLogin";
 import Dashboard from "./pages/AdminDashboard";
 import AdminForgotPassword from "./pages/AdminForgotPassword";
 import AdminResetPassword from "./pages/AdminResetPassword";
-import { useAdminStore } from "../../store/admin.store";
+import { useAuthStore } from "../../store/auth.store";
 
 const AdminRoutes = () => {
-  const isAuthenticated = useAdminStore((s) => s.isAuthenticated);
+  const { isAuthenticated, role } = useAuthStore();
 
   return (
     <Routes>
@@ -17,7 +17,11 @@ const AdminRoutes = () => {
       <Route
         path="dashboard"
         element={
-          isAuthenticated ? <Dashboard /> : <Navigate to="/admin/login" />
+          isAuthenticated && role === "ADMIN" ? (
+            <Dashboard />
+          ) : (
+            <Navigate to="/admin/login" />
+          )
         }
       />
 

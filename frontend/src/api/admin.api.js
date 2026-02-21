@@ -10,12 +10,6 @@ export const fetchDashboard = async () => {
   return response.data;
 };
 
-export const refreshAccessToken = async () => {
-  const response = await axiosInstance.post("admin/auth/refresh/");
-  return response.data;
-};
-
-
 export const adminLogout = async () => {
   const response = await axiosInstance.post("admin/auth/logout/");
   return response.data;
