@@ -119,8 +119,18 @@ class PatientSignupSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True, min_length=8)
     confirm_password = serializers.CharField(write_only=True)
 
+    def validate_full_name(self, value):
+        import re
+        if not re.match(r"^[a-zA-Z\s]*$", value):
+            raise serializers.ValidationError("Full name can only contain English letters and spaces.")
+        return value.strip()
+
     def validate_email(self, value):
-        return value.strip().lower()
+        from accounts.models import User
+        email = value.strip().lower()
+        if User.objects.filter(email=email).exists():
+            raise serializers.ValidationError("A user with this email already exists.")
+        return email
 
     def validate(self, data):
         if data["password"] != data["confirm_password"]:
