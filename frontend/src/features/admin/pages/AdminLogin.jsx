@@ -102,7 +102,7 @@ const AdminLogin = () => {
         localStorage.removeItem("rememberedAdminEmail");
       }
 
-      navigate("/admin/dashboard");
+      navigate("/admin/dashboard", { replace: true });
     },
     onError: (error) => {
       console.log("Login error:", error.response?.data);

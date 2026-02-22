@@ -11,21 +11,20 @@ const PatientRoutes = () => {
 
   return (
     <Routes>
-      <Route path="signup" element={<PatientSignup />} />
+      <Route
+        path="signup"
+        element={isAuthenticated && role === "PATIENT" ? <Navigate to="/patient/home" replace /> : <PatientSignup />}
+      />
       <Route path="verification-sent" element={<VerificationSent />} />
-      <Route path="login" element={<PatientLogin />} />
+      <Route
+        path="login"
+        element={isAuthenticated && role === "PATIENT" ? <Navigate to="/patient/home" replace /> : <PatientLogin />}
+      />
       <Route path="verify-email" element={<VerificationSent />} />
       <Route path="verify-success" element={<VerificationSent />} />
       <Route path="verify-error" element={<VerificationSent />} />
 
-      <Route
-        path="home"
-        element={
-          isAuthenticated && role === "PATIENT"
-            ? <PatientHome />
-            : <Navigate to="/patient/login" />
-        }
-      />
+      <Route path="home" element={<PatientHome />} />
 
       <Route path="*" element={<Navigate to="login" />} />
     </Routes>

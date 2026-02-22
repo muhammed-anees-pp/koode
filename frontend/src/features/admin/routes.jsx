@@ -10,9 +10,18 @@ const AdminRoutes = () => {
 
   return (
     <Routes>
-      <Route path="login" element={<AdminLogin />} />
-      <Route path="forgot-password" element={<AdminForgotPassword />} />
-      <Route path="reset-password" element={<AdminResetPassword />} />
+      <Route
+        path="login"
+        element={isAuthenticated && role === "ADMIN" ? <Navigate to="/admin/dashboard" replace /> : <AdminLogin />}
+      />
+      <Route
+        path="forgot-password"
+        element={isAuthenticated && role === "ADMIN" ? <Navigate to="/admin/dashboard" replace /> : <AdminForgotPassword />}
+      />
+      <Route
+        path="reset-password"
+        element={isAuthenticated && role === "ADMIN" ? <Navigate to="/admin/dashboard" replace /> : <AdminResetPassword />}
+      />
 
       <Route
         path="dashboard"

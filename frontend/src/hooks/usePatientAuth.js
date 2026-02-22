@@ -62,7 +62,7 @@ export const usePatientLoginMutation = (setError, setLocalError) => {
         onSuccess: (data) => {
             const access = data.access;
             login({ access }, "PATIENT");
-            navigate("/patient/home");
+            navigate("/patient/home", { replace: true });
         },
         onError: (err) => {
             const errorData = err.response?.data;
