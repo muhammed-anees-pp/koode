@@ -169,6 +169,7 @@ class PatientLoginSerializer(serializers.Serializer):
         if not user.is_active:
             raise serializers.ValidationError("Please verify your email first")
 
+        self.context["user"] = user
         refresh = RefreshToken.for_user(user)
         refresh["role"] = user.role
         refresh.access_token["role"] = user.role

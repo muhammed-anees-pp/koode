@@ -23,11 +23,19 @@ class AdminLoginView(APIView):
         serializer = AdminLoginSerializer(data=request.data)
         serializer.is_valid(raise_exception = True)
         data = serializer.validated_data
+        user = serializer.context.get("user")
         access = data["access"]
         refresh = data["refresh"]
 
+        user_data = {
+            "email": user.email,
+            "full_name": user.full_name,
+            "profile_picture": user.profile_picture.url if user.profile_picture else None,
+            "role": user.role
+        }
+
         response = Response(
-            {"access": access},
+            {"access": access, "user": user_data},
             status = status.HTTP_200_OK
         )
 
@@ -186,8 +194,17 @@ class PatientLoginView(APIView):
         serializer = PatientLoginSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
+        user = serializer.context.get("user")
+
+        user_data = {
+            "email": user.email,
+            "full_name": user.full_name,
+            "profile_picture": user.profile_picture.url if user.profile_picture else None,
+            "role": user.role
+        }
+
         response = Response(
-            {"access": data["access"]},
+            {"access": data["access"], "user": user_data},
             status=status.HTTP_200_OK
         )
 
