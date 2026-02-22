@@ -6,13 +6,13 @@ import "../../../styles/patient/PatientNavbar.css";
 import logo from "../../../assets/patient-logo.png";
 
 const PatientNavbar = () => {
-    const { patient, logout, isAuthenticated, role } = useAuthStore();
+    const { user: authUser, logout, isAuthenticated, role } = useAuthStore();
     const navigate = useNavigate();
 
     const user = {
-        name: patient?.full_name || 'Patient',
-        email: patient?.email || '',
-        avatar: patient?.profile_image ? `http://localhost:8000${patient.profile_image}` : "https://via.placeholder.com/150",
+        name: authUser?.full_name || 'Patient',
+        email: authUser?.email || '',
+        avatar: authUser?.profile_picture ? `http://localhost:8000${authUser.profile_picture}` : "https://via.placeholder.com/150",
         isOnline: true
     };
 
@@ -32,7 +32,6 @@ const PatientNavbar = () => {
     const servicesDropdownRef = useRef(null);
     const concernDropdownRef = useRef(null);
 
-    // Close dropdowns when clicking outside
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target)) {
@@ -75,10 +74,6 @@ const PatientNavbar = () => {
         } else if (action === 'User Profile' || action === 'Settings') {
             navigate('#');
         }
-    };
-
-    const handleLoginClick = () => {
-        navigate('/patient/login');
     };
 
     return (

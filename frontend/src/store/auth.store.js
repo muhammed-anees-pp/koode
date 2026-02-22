@@ -1,39 +1,52 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
-export const useAuthStore = create((set) => ({
-  accessToken: null,
-  user: null,
-  role: null,
-  isAuthenticated: false,
-  isAuthChecking: true,
-  admin: null, 
-
-  login: (data, role) => {
-    set({
-      accessToken: data.access,
-      role: role,
-      isAuthenticated: true,
-      isAuthChecking: false,
-      admin: role === "ADMIN" ? data.user : null,
-    });
-  },
-
-  setAdminData: (data) => {
-    set({ admin: data });
-  },
-
-  logout: () =>
-    set({
+export const useAuthStore = create(
+  persist(
+    (set) => ({
       accessToken: null,
       user: null,
       role: null,
       isAuthenticated: false,
-      isAuthChecking: false,
-      admin: null,
-    }),
+      isAuthChecking: true,
 
-  stopChecking: () =>
-    set({
-      isAuthChecking: false,
+      login: (data, role) => {
+        set({
+          accessToken: data.access,
+          user: data.user,
+          role: role,
+          isAuthenticated: true,
+          isAuthChecking: false,
+        });
+      },
+
+      updateUser: (data) => {
+        set((state) => ({
+          user: { ...state.user, ...data },
+        }));
+      },
+
+      logout: () =>
+        set({
+          accessToken: null,
+          user: null,
+          role: null,
+          isAuthenticated: false,
+          isAuthChecking: false,
+        }),
+
+      stopChecking: () =>
+        set({
+          isAuthChecking: false,
+        }),
     }),
-}));
+    {
+      name: "koode-auth-storage",
+      partialize: (state) => ({
+        user: state.user,
+        role: state.role,
+        isAuthenticated: state.isAuthenticated
+      }),
+    }
+  )
+);

@@ -11,8 +11,8 @@ export default function Navbar() {
   const navigate = useNavigate();
   const menuRef = useRef(null);
 
-  const { admin, user, isAuthenticated, logout: logoutStore } = useAuthStore();
-  const currentUser = user || admin;
+  const { user, isAuthenticated, logout: logoutStore } = useAuthStore();
+  const currentUser = user;
 
   const logoutMutation = useMutation({
     mutationFn: adminLogout,
@@ -41,8 +41,7 @@ export default function Navbar() {
     return null;
   }
 
-  const displayName = currentUser?.full_name || currentUser?.email?.split('@')[0];
-  const adminEmail = currentUser?.email || "";
+  const displayName = currentUser?.full_name || "Admin";
 
   const avatarUrl = currentUser?.profile_image ||
     `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=6366f1&color=fff&size=128`;
@@ -92,8 +91,6 @@ export default function Navbar() {
             {showUserMenu && (
               <div className="user-menu">
                 <div className="user-menu-header">
-                  <div className="user-menu-name">{displayName}</div>
-                  <div className="user-menu-email">{adminEmail}</div>
                 </div>
                 <div className="user-menu-divider"></div>
                 <button className="user-menu-item" onClick={() => navigate("/admin/profile")}>
