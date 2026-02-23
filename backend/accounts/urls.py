@@ -1,6 +1,7 @@
 from django.urls import path
 from .views import (AdminLoginView, RefreshTokenView, AdminLogoutView, AdminForgotPasswordView, AdminResetPasswordView,
-                    PatientSignupView, PatientVerifyEmailView, PatientLoginView, PatientLogoutView, PatientForgotPasswordView, PatientResetPasswordView)
+                    PatientSignupView, PatientVerifyEmailView, PatientLoginView, PatientLogoutView, PatientForgotPasswordView, 
+                    PatientResetPasswordView, PatientGoogleAuthView)
 
 urlpatterns = [
     path("admin/auth/login/", AdminLoginView.as_view()),
@@ -14,4 +15,5 @@ urlpatterns = [
     path("patient/logout/", PatientLogoutView.as_view()),
     path("patient/forgot-password/", PatientForgotPasswordView.as_view()),
     path("patient/reset-password/", PatientResetPasswordView.as_view()),
+    path("patient/google-auth/", PatientGoogleAuthView.as_view()),
 ]
