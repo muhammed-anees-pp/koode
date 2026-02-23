@@ -261,7 +261,7 @@ class PatientForgotPasswordView(APIView):
         )
 
         return Response(
-            {"message": "If the email exists, a reset link has been sent."},
+            {"message": "If the email exists, a reset link has been sent to"},
             status=status.HTTP_200_OK,
         )
 
