@@ -33,3 +33,8 @@ export const patientForgotPassword = async (email) => {
 export const patientResetPassword = async (data) => {
   return axiosInstance.post("/patient/reset-password/", data);
 };
+
+export const patientGoogleAuth = async (data) => {
+  const response = await axiosInstance.post("patient/google-auth/", data);
+  return response.data;
+};

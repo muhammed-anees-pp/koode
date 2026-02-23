@@ -8,6 +8,8 @@ import patientLogo from "../../../assets/patient-logo.png";
 import "../../../styles/patient/PatientAuth.css";
 import PatientAuthNavbar from "../../../components/patient/AuthNavbar/PatientAuthNavbar";
 import PatientAuthFooter from "../../../components/patient/AuthFooter/PatientAuthFooter";
+import { useGooglePatientAuthMutation } from "../../../hooks/usePatientAuth";
+
 
 const signupSchema = z
   .object({
@@ -51,17 +53,34 @@ const PatientSignup = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [localError, setLocalError] = useState("");
+  
 
   const mutation = usePatientSignupMutation(setError, setLocalError);
+  const googleAuthMutation = useGooglePatientAuthMutation();
 
   const onSubmit = (data) => {
     setLocalError("");
     mutation.mutate(data);
   };
 
+  // GOOGLE SIGNUP
   const handleGoogleSignUp = () => {
-    console.log("Sign up with Google");
-  };
+  window.google.accounts.id.initialize({
+    client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+    callback: async (response) => {
+      try {
+        await googleAuthMutation.mutateAsync({
+          token: response.credential,
+          mode: "signup",
+        });
+      } catch (err) {
+        setLocalError("Google signup failed");
+      }
+    },
+  });
+
+  window.google.accounts.id.prompt();
+};
 
   return (
     <div className="patient-auth-layout">

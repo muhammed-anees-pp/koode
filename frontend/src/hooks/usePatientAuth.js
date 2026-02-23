@@ -2,6 +2,7 @@ import { useMutation } from "@tanstack/react-query";
 import { patientSignup, patientLogin } from "../api/patient.api";
 import { useAuthStore } from "../store/auth.store";
 import { useNavigate } from "react-router-dom";
+import { patientGoogleAuth } from "../api/patient.api";
 
 export const usePatientSignupMutation = (setError, setLocalError) => {
     const navigate = useNavigate();
@@ -95,3 +96,18 @@ export const usePatientLoginMutation = (setError, setLocalError) => {
         },
     });
 };
+
+export const useGooglePatientAuthMutation = () => {
+  const navigate = useNavigate();
+  const login = useAuthStore((s) => s.login);
+
+  return useMutation({
+    mutationFn: patientGoogleAuth,
+
+    onSuccess: (data) => {
+      login(data, "PATIENT");
+      navigate("/patient/home");
+    },
+  });
+};
+

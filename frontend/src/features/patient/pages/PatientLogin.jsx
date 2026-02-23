@@ -8,6 +8,7 @@ import patientLogo from "../../../assets/patient-logo.png";
 import "../../../styles/patient/PatientAuth.css";
 import PatientAuthNavbar from "../../../components/patient/AuthNavbar/PatientAuthNavbar";
 import PatientAuthFooter from "../../../components/patient/AuthFooter/PatientAuthFooter";
+import { useGooglePatientAuthMutation } from "../../../hooks/usePatientAuth";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email format"),
@@ -15,6 +16,7 @@ const loginSchema = z.object({
 });
 
 const PatientLogin = () => {
+  console.log("Google Client ID:", import.meta.env.VITE_GOOGLE_CLIENT_ID);
   const {
     register,
     handleSubmit,
@@ -33,15 +35,31 @@ const PatientLogin = () => {
   const [localError, setLocalError] = useState("");
 
   const mutation = usePatientLoginMutation(setError, setLocalError);
+  const googleAuthMutation = useGooglePatientAuthMutation();
 
   const onSubmit = (data) => {
     setLocalError("");
     mutation.mutate(data);
   };
 
+  // GOOGLE LOGIN
   const handleGoogleLogin = () => {
-    console.log("Login with Google");
-  };
+  window.google.accounts.id.initialize({
+    client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+    callback: async (response) => {
+      try {
+        await googleAuthMutation.mutateAsync({
+          token: response.credential,
+          mode: "login",
+        });
+      } catch (err) {
+        setLocalError("No account found. Please sign up.");
+      }
+    },
+  });
+
+  window.google.accounts.id.prompt();
+};
 
   return (
     <div className="patient-auth-layout">
