@@ -9,32 +9,52 @@ from accounts.tasks import send_password_reset_email
 RESET_TTL = 60 * 5
 
 """
-ADMIN PASSWORD RESET SERVIECE
+FORGOT PASSWORD RESET SERVICE
 """
-class AdminPasswordResetService:
+class ForgotPasswordResetService:
+
+    ROLE_CONFIG = {
+        "ADMIN": {
+            "redis_prefix": "admin",
+            "frontend_url": settings.ADMIN_FRONTEND_URL,
+        },
+        "PATIENT": {
+            "redis_prefix": "patient",
+            "frontend_url": settings.PATIENT_FRONTEND_URL,
+        },
+    }
+
+    def __init__(self, role):
+        if role not in self.ROLE_CONFIG:
+            raise ValueError("Invalid role")
+
+        self.role = role
+        self.redis_prefix = self.ROLE_CONFIG[role]["redis_prefix"]
+        self.frontend_url = self.ROLE_CONFIG[role]["frontend_url"]
+
     # RESET REQUEST
     def request_reset(self, email):
         email = email.strip().lower()
 
         try:
-            user = User.objects.get(email=email, role="ADMIN")
+            user = User.objects.get(email=email, role=self.role)
         except User.DoesNotExist:
             return
-        
-        pattern = "admin:password_reset:*"
+
+        pattern = f"{self.redis_prefix}:password_reset:*"
         for key in redis_client.scan_iter(pattern):
             if redis_client.get(key) == user.email:
                 redis_client.delete(key)
 
         token = secrets.token_urlsafe(48)
-        redis_key = f"admin:password_reset:{token}"
+        redis_key = f"{self.redis_prefix}:password_reset:{token}"
         redis_client.setex(redis_key, RESET_TTL, user.email)
-        reset_link = f"{settings.ADMIN_FRONTEND_URL}/reset-password?token={token}"
+        reset_link = f"{self.frontend_url}/reset-password?token={token}"
         send_password_reset_email.delay(user.email, reset_link)
 
     # PASSWORD RESET
     def reset_password(self, token, new_password):
-        redis_key = f"admin:password_reset:{token}"
+        redis_key = f"{self.redis_prefix}:password_reset:{token}"
         email = redis_client.get(redis_key)
 
         if not email:
@@ -43,53 +63,7 @@ class AdminPasswordResetService:
             )
 
         try:
-            user = User.objects.get(email=email, role="ADMIN")
-        except User.DoesNotExist:
-            raise ValidationError(
-                {"token": "Invalid reset attempt"}
-            )
-
-        user.set_password(new_password)
-        user.save()
-        redis_client.delete(redis_key)
-
-
-"""
-PATIENT PASSWORD RESET SERVIECE
-"""
-class PatientPasswordResetService:
-    # RESET REQUEST
-    def request_reset(self, email):
-        email = email.strip().lower()
-
-        try:
-            user = User.objects.get(email=email, role="PATIENT")
-        except User.DoesNotExist:
-            return
-        
-        pattern = "admin:password_reset:*"
-        for key in redis_client.scan_iter(pattern):
-            if redis_client.get(key) == user.email:
-                redis_client.delete(key)
-
-        token = secrets.token_urlsafe(48)
-        redis_key = f"admin:password_reset:{token}"
-        redis_client.setex(redis_key, RESET_TTL, user.email)
-        reset_link = f"{settings.PATIENT_FRONTEND_URL}/reset-password?token={token}"
-        send_password_reset_email.delay(user.email, reset_link)
-
-    # PASSWORD RESET
-    def reset_password(self, token, new_password):
-        redis_key = f"admin:password_reset:{token}"
-        email = redis_client.get(redis_key)
-
-        if not email:
-            raise ValidationError(
-                {"token": "Invalid or expired reset token"}
-            )
-
-        try:
-            user = User.objects.get(email=email, role="PATIENT")
+            user = User.objects.get(email=email, role=self.role)
         except User.DoesNotExist:
             raise ValidationError(
                 {"token": "Invalid reset attempt"}

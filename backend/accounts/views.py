@@ -4,12 +4,11 @@ from rest_framework.views import APIView
 from rest_framework import status
 from django.conf import settings
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from .services.password_reset_service import AdminPasswordResetService, PatientPasswordResetService
+from .services.password_reset_service import ForgotPasswordResetService
 from . throttles import ForgotPasswordThrottle
 from .services.patient_auth_service import PatientAuthService
-from . serializers import (AdminLoginSerializer, AdminForgotPasswordSerializer, AdminResetPasswordSerializer,
-                           PatientSignupSerializer, PatientLoginSerializer,
-                           ForgotPasswordSerializer, ResetPasswordSerializer)
+from . serializers import (AdminLoginSerializer, ForgotPasswordSerializer, ResetPasswordSerializer,
+                           PatientSignupSerializer, PatientLoginSerializer)
 
 
 
@@ -111,10 +110,10 @@ class AdminForgotPasswordView(APIView):
     throttle_classes = [ForgotPasswordThrottle]
 
     def post(self, request):
-        serializer = AdminForgotPasswordSerializer(data=request.data)
+        serializer = ForgotPasswordSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        AdminPasswordResetService().request_reset(
+        ForgotPasswordResetService(role="ADMIN").request_reset(
             serializer.validated_data["email"]
         )
 
@@ -130,10 +129,10 @@ class AdminResetPasswordView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        serializer = AdminResetPasswordSerializer(data=request.data)
+        serializer = ResetPasswordSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        AdminPasswordResetService().reset_password(
+        ForgotPasswordResetService(role="ADMIN").reset_password(
             token=serializer.validated_data["token"],
             new_password=serializer.validated_data["new_password"],
         )
@@ -257,7 +256,7 @@ class PatientForgotPasswordView(APIView):
         serializer = ForgotPasswordSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        PatientPasswordResetService().request_reset(
+        ForgotPasswordResetService(role="PATIENT").request_reset(
             serializer.validated_data["email"]
         )
 
@@ -277,7 +276,7 @@ class PatientResetPasswordView(APIView):
         serializer = ResetPasswordSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        PatientPasswordResetService().reset_password(
+        ForgotPasswordResetService(role="PATIENT").reset_password(
             token=serializer.validated_data["token"],
             new_password=serializer.validated_data["new_password"],
         )
