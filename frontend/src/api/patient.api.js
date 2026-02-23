@@ -24,3 +24,12 @@ export const patientLogout = async () => {
   const response = await axiosInstance.post("patient/logout/");
   return response.data;
 };
+
+export const patientForgotPassword = async (email) => {
+  const response = await axiosInstance.post("/patient/forgot-password/", { email });
+  return response.data; 
+};
+
+export const patientResetPassword = async (data) => {
+  return axiosInstance.post("/patient/reset-password/", data);
+};
