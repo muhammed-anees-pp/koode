@@ -4,11 +4,12 @@ from rest_framework.views import APIView
 from rest_framework import status
 from django.conf import settings
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from .services.password_reset_service import AdminPasswordResetService
+from .services.password_reset_service import AdminPasswordResetService, PatientPasswordResetService
 from . throttles import ForgotPasswordThrottle
 from .services.patient_auth_service import PatientAuthService
 from . serializers import (AdminLoginSerializer, AdminForgotPasswordSerializer, AdminResetPasswordSerializer,
-                           PatientSignupSerializer, PatientLoginSerializer)
+                           PatientSignupSerializer, PatientLoginSerializer,
+                           ForgotPasswordSerializer, ResetPasswordSerializer)
 
 
 
@@ -244,3 +245,44 @@ class PatientLogoutView(APIView):
         response.delete_cookie("refresh_token")
 
         return response
+    
+"""
+PATIENT FORGOT PASSWORD VIEW
+"""
+class PatientForgotPasswordView(APIView):
+    permission_classes = [AllowAny]
+    throttle_classes = [ForgotPasswordThrottle]
+
+    def post(self, request):
+        serializer = ForgotPasswordSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        PatientPasswordResetService().request_reset(
+            serializer.validated_data["email"]
+        )
+
+        return Response(
+            {"message": "If the email exists, a reset link has been sent."},
+            status=status.HTTP_200_OK,
+        )
+
+
+"""
+PATIENT RESET PASSWORD VIEW
+"""
+class PatientResetPasswordView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = ResetPasswordSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        PatientPasswordResetService().reset_password(
+            token=serializer.validated_data["token"],
+            new_password=serializer.validated_data["new_password"],
+        )
+
+        return Response(
+            {"message": "Password reset successful"},
+            status=status.HTTP_200_OK,
+        )

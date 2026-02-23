@@ -84,8 +84,7 @@ ADMIN RESET PASSWORD SERIALIZER
 """
 class AdminResetPasswordSerializer(serializers.Serializer):
     token = serializers.RegexField(
-        r'^[A-Za-z0-9_\-]+$',
-        error_messages={"invalid": "Invalid reset token format"}
+        r'^[A-Za-z0-9_\-]+$', error_messages={"invalid": "Invalid reset token format"}
     )
     new_password = serializers.CharField(write_only=True)
     confirm_password = serializers.CharField(write_only=True)
@@ -104,7 +103,6 @@ class AdminResetPasswordSerializer(serializers.Serializer):
             )
 
         return data
-    
 
 
 ############################
@@ -178,3 +176,39 @@ class PatientLoginSerializer(serializers.Serializer):
             "access": str(refresh.access_token),
             "refresh": str(refresh)
         }
+    
+
+"""
+PATIENT FORGOT PASSWORD SERIALIZER
+"""
+class ForgotPasswordSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+    def validate_email(self,value):
+        return value.strip().lower()
+
+
+
+"""
+PATIENT RESET PASSWORD SERIALIZER
+"""
+class ResetPasswordSerializer(serializers.Serializer):
+    token = serializers.RegexField(
+        r'^[A-Za-z0-9_\-]+$', error_messages={"invalid": "Invalid reset token format"}
+    )
+
+    new_password = serializers.CharField(write_only=True)
+    confirm_password = serializers.CharField(write_only=True)
+
+    def validate(self,data):
+        if data["new_password"] != data["confirm_password"]:
+            raise serializers.ValidationErr(
+                {"confirm_password": "Password do not match"}
+            )
+        try:
+            validate_password(data["new_password"])
+        except DjangoValidationError as e:
+            raise serializers.ValidationError(
+                {"new_password": list(e.messages)}
+            )
+        return data

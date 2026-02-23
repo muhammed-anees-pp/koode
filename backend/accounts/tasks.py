@@ -13,9 +13,9 @@ from accounts.models import User
     autoretry_for=(Exception,),
     retry_kwargs={"max_retries": 3, "countdown": 5},
 )
-def send_admin_reset_email(self, email, reset_link):
+def send_password_reset_email(self, email, reset_link):
 
-    subject = "Reset Your Admin Password"
+    subject = "Reset Your Password"
 
     text_content = f"""
 You requested a password reset.
