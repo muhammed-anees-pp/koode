@@ -1,3 +1,10 @@
+/* Page shell — fixed navbar + main + footer */
+.patient-layout {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
 /* Navbar Dropdown */
 .nav-dropdown-container {
     position: relative;
@@ -66,6 +73,11 @@
 }
 
 /* Home Page Specifics */
+.patient-layout .patient-content {
+    flex: 1;
+    padding: 100px 24px 64px;
+}
+
 .home-greeting {
     margin-bottom: 40px;
 }

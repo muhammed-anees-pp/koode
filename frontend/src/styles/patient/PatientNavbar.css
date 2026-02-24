@@ -33,8 +33,10 @@
     background-color: var(--white);
     border-bottom: 1px solid var(--border-color);
     padding: 0.875rem 2rem;
-    position: sticky;
+    position: fixed;
     top: 0;
+    left: 0;
+    right: 0;
     z-index: 1000;
     box-shadow: var(--shadow-sm);
 }
