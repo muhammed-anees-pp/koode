@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchAdminPatients } from "../../../api/admin.api";
 import Sidebar from "../../../components/admin/Sidebar/AdminSidebar";
@@ -7,17 +7,84 @@ import "../../../styles/admin/AdminPatientList.css";
 
 const BASE_URL = "http://localhost:8000";
 
-function PatientAvatar({ name, photo }) {
+function PatientAvatar({ name, photo, size = 38 }) {
     if (photo) {
         const src = photo.startsWith("http") ? photo : `${BASE_URL}${photo}`;
-        return <img src={src} alt={name} className="apl-avatar-img" />;
+        return <img src={src} alt={name} className="apl-avatar-img" style={{ width: size, height: size }} />;
     }
     const initials = name ? name.charAt(0).toUpperCase() : "?";
     const colours = ["#7C3AED", "#0EA5E9", "#10B981", "#F59E0B", "#EF4444", "#EC4899", "#14B8A6", "#6366F1"];
     const colour = colours[(name?.charCodeAt(0) || 0) % colours.length];
     return (
-        <div className="apl-avatar-initials" style={{ background: colour }}>
+        <div className="apl-avatar-initials" style={{ background: colour, width: size, height: size, fontSize: size * 0.37 }}>
             {initials}
+        </div>
+    );
+}
+
+function PatientDetailModal({ patient, onClose }) {
+    useEffect(() => {
+        const handler = (e) => { if (e.key === "Escape") onClose(); };
+        window.addEventListener("keydown", handler);
+        return () => window.removeEventListener("keydown", handler);
+    }, [onClose]);
+
+    if (!patient) return null;
+
+    return (
+        <div className="pdm-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+            <div className="pdm-card">
+                {/* Close Button */}
+                <button className="pdm-close" onClick={onClose} aria-label="Close">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                </button>
+
+                {/* Avatar + Name */}
+                <div className="pdm-hero">
+                    <div className="pdm-avatar-wrap">
+                        <PatientAvatar name={patient.full_name} photo={patient.profile_picture} size={90} />
+                        <span className={`pdm-status-dot ${patient.is_active ? "pdm-dot-active" : "pdm-dot-suspended"}`} />
+                    </div>
+                    <h2 className="pdm-name">{patient.full_name}</h2>
+                    <p className="pdm-pid">ID: #{patient.patient_id}</p>
+                    <span className={`apl-badge ${patient.is_active ? "apl-badge-active" : "apl-badge-suspended"}`}>
+                        <span className="apl-badge-dot" />
+                        {patient.is_active ? "Active" : "Suspended"}
+                    </span>
+                </div>
+
+                {/* Divider */}
+                <div className="pdm-divider" />
+
+                {/* Info Grid */}
+                <div className="pdm-grid">
+                    <div className="pdm-field">
+                        <span className="pdm-label">Age</span>
+                        <span className="pdm-value">{patient.age != null ? `${patient.age} Years` : "—"}</span>
+                    </div>
+                    <div className="pdm-field">
+                        <span className="pdm-label">Email</span>
+                        <span className="pdm-value">{patient.email || "—"}</span>
+                    </div>
+                    <div className="pdm-field">
+                        <span className="pdm-label">Phone</span>
+                        <span className="pdm-value">{patient.phone_number || "—"}</span>
+                    </div>
+                    <div className="pdm-field">
+                        <span className="pdm-label">Joined Date</span>
+                        <span className="pdm-value">{patient.joined_date || "—"}</span>
+                    </div>
+                    <div className="pdm-field">
+                        <span className="pdm-label">Gender</span>
+                        <span className="pdm-value">{patient.gender || "—"}</span>
+                    </div>
+                </div>
+
+                {/* Dismiss */}
+                <button className="pdm-dismiss" onClick={onClose}>Dismiss View</button>
+            </div>
         </div>
     );
 }
@@ -27,7 +94,7 @@ export default function AdminPatientList() {
     const [pageSize, setPageSize] = useState(10);
     const [search, setSearch] = useState("");
     const [inputVal, setInputVal] = useState("");
-
+    const [selectedPatient, setSelectedPatient] = useState(null);
 
     const handleSearchChange = useCallback((e) => {
         const val = e.target.value;
@@ -147,7 +214,11 @@ export default function AdminPatientList() {
                                         <td>
                                             <div className="apl-actions">
                                                 {/* View */}
-                                                <button className="apl-action-btn" title="View patient">
+                                                <button
+                                                    className="apl-action-btn"
+                                                    title="View patient"
+                                                    onClick={() => setSelectedPatient(p)}
+                                                >
                                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                                         <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                                                         <circle cx="12" cy="12" r="3" />
@@ -202,6 +273,11 @@ export default function AdminPatientList() {
 
                 </div>
             </div>
+
+            {/* Patient Detail Modal */}
+            {selectedPatient && (
+                <PatientDetailModal patient={selectedPatient} onClose={() => setSelectedPatient(null)} />
+            )}
         </div>
     );
 }

@@ -51,10 +51,16 @@ class AdminPatientListView(APIView):
 
         BASE_URL = request.build_absolute_uri("/").rstrip("/")
 
+        from datetime import date as date_type
         results = []
         for p in patients:
             pic = p.user.profile_picture
             pic_url = f"{BASE_URL}{pic.url}" if pic else None
+            age = None
+            if p.date_of_birth:
+                today = date_type.today()
+                dob = p.date_of_birth
+                age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
             results.append({
                 "patient_id": p.patient_id,
                 "full_name": p.user.full_name,
@@ -62,6 +68,9 @@ class AdminPatientListView(APIView):
                 "profile_picture": pic_url,
                 "is_active": not p.is_deactivated,
                 "joined_date": p.created_at.strftime("%b %d, %Y") if p.created_at else None,
+                "phone_number": p.phone_number or None,
+                "gender": p.get_gender_display() if p.gender else None,
+                "age": age,
             })
 
         return Response({
