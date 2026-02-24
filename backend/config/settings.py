@@ -233,6 +233,8 @@ DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL")
 # -------------------------------------------------
 ADMIN_FRONTEND_URL = os.getenv("ADMIN_FRONTEND_URL")
 PATIENT_FRONTEND_URL = os.getenv("PATIENT_FRONTEND_URL")
+PSYCHOLOGIST_FRONTEND_URL = os.getenv("PSYCHOLOGIST_FRONTEND_URL")
+
 
 # -------------------------------------------------
 # GOOGLE CLIENT ID

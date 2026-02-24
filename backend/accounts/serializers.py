@@ -74,44 +74,6 @@ class AdminLoginSerializer(serializers.Serializer):
 ####       PATIENT      ####
 ############################
 """
-PATIENT SIGNUP SERIALIZER
-"""
-class PatientSignupSerializer(serializers.Serializer):
-    full_name = serializers.CharField(max_length=255)
-    email = serializers.EmailField()
-    password = serializers.CharField(write_only=True, min_length=8)
-    confirm_password = serializers.CharField(write_only=True)
-
-    def validate_full_name(self, value):
-        import re
-        if not re.match(r"^[a-zA-Z\s]*$", value):
-            raise serializers.ValidationError("Full name can only contain English letters and spaces.")
-        return value.strip()
-
-    def validate_email(self, value):
-        from accounts.models import User
-        email = value.strip().lower()
-        if User.objects.filter(email=email).exists():
-            raise serializers.ValidationError("A user with this email already exists.")
-        return email
-
-    def validate(self, data):
-        if data["password"] != data["confirm_password"]:
-            raise serializers.ValidationError(
-                {"confirm_password": "Passwords do not match"}
-            )
-
-        try:
-            validate_password(data["password"])
-        except DjangoValidationError as e:
-            raise serializers.ValidationError(
-                {"password": list(e.messages)}
-            )
-
-        return data
-
-
-"""
 PATIENT LOGIN SERIALIZER
 """
 class PatientLoginSerializer(serializers.Serializer):
@@ -146,8 +108,91 @@ class PatientLoginSerializer(serializers.Serializer):
 
 
 ############################
+####    PSYCHOLOGIST    ####
+############################ 
+"""
+PSYCHOLOGIST LOGIN SERIALIZER
+"""
+class PsychologistLoginSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only=True)
+
+    def validate(self, attrs):
+        email = attrs.get("email").strip().lower()
+        password = attrs.get("password")
+
+        user = authenticate(
+            request=self.context.get("request"),
+            username=email,
+            password=password
+        )
+
+        if not user:
+            raise serializers.ValidationError("Invalid email or password")
+
+        if user.role != "PSYCHOLOGIST":
+            raise serializers.ValidationError("Invalid login portal")
+
+        if not user.is_active:
+            raise serializers.ValidationError("Please verify your email first")
+
+        self.context["user"] = user
+        refresh = RefreshToken.for_user(user)
+        refresh["role"] = user.role
+        refresh.access_token["role"] = user.role
+
+        return {
+            "access": str(refresh.access_token),
+            "refresh": str(refresh)
+        }
+
+
+
+############################
 ####       COMMON       ####
 ############################
+"""
+SIGNUP SERIALIZER
+"""
+class SignupSerializer(serializers.Serializer):
+    full_name = serializers.CharField(max_length=255)
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only=True, min_length=8)
+    confirm_password = serializers.CharField(write_only=True)
+
+    def validate_full_name(self, value):
+        import re
+        if not re.match(r"^[a-zA-Z\s]*$", value):
+            raise serializers.ValidationError(
+                "Full name can only contain English letters and spaces."
+            )
+        return value.strip()
+
+    def validate_email(self, value):
+        from accounts.models import User
+        email = value.strip().lower()
+        if User.objects.filter(email=email).exists():
+            raise serializers.ValidationError(
+                "A user with this email already exists."
+            )
+        return email
+
+    def validate(self, data):
+        if data["password"] != data["confirm_password"]:
+            raise serializers.ValidationError(
+                {"confirm_password": "Passwords do not match"}
+            )
+
+        try:
+            validate_password(data["password"])
+        except DjangoValidationError as e:
+            raise serializers.ValidationError(
+                {"password": list(e.messages)}
+            )
+
+        return data
+
+
 """
 FORGOT PASSWORD SERIALIZER
 """

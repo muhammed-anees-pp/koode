@@ -109,4 +109,45 @@ def delete_unverified_patient(user_id):
 
 
 
+# PSYCHOLOGIST VERIFICATION EMAIL
+@shared_task
+def send_psychologist_verification_email(email, verify_link):
+    subject = "Verify Your Email - Koode"
 
+    message = f"""
+Hi,
+
+Please verify your email by clicking the link below:
+
+{verify_link}
+
+This link will expire in 10 minutes.
+
+If you did not register, please ignore this email.
+"""
+
+    send_mail(
+        subject,
+        message,
+        settings.DEFAULT_FROM_EMAIL,
+        [email],
+        fail_silently=False,
+    )
+
+# DELETE UNVERIFIED PSYCHOGLOGIST AFTER 10 MINUTES
+@shared_task
+def delete_unverified_psychologist(user_id):
+    """
+    Deletes patient if still unverified after 10 minutes
+    """
+
+    try:
+        user = User.objects.get(id=user_id, role="PSYCHOLOGIST")
+    except User.DoesNotExist:
+        return
+
+    if user.is_active:
+        return
+
+    if timezone.now() - user.date_joined >= timedelta(minutes=10):
+        user.delete()

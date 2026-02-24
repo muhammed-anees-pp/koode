@@ -7,9 +7,11 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from .services.password_reset_service import ForgotPasswordResetService
 from . throttles import ForgotPasswordThrottle
 from .services.patient_auth_service import PatientAuthService
+from .services.psychologist_auth_service import PsychologistAuthService
 from . serializers import (AdminLoginSerializer, ForgotPasswordSerializer, ResetPasswordSerializer,
-                           PatientSignupSerializer, PatientLoginSerializer)
+                           SignupSerializer, PatientLoginSerializer, PsychologistLoginSerializer)
 from .services.google_auth_service import GooglePatientAuthService
+
 
 
 ############################
@@ -156,7 +158,7 @@ class PatientSignupView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        serializer = PatientSignupSerializer(data=request.data)
+        serializer = SignupSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         PatientAuthService().signup(serializer.validated_data)
@@ -325,4 +327,110 @@ class PatientGoogleAuthView(APIView):
             path="/",
         )
 
+        return response
+    
+
+############################
+####    PSYCHOLOGIST    ####
+############################
+"""
+PSYCHOLOGIST SIGNUP VIEW
+"""
+class PsychologistSignupView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = SignupSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        PsychologistAuthService().signup(serializer.validated_data)
+
+        return Response(
+            {"message": "Signup successful. Please verify your email."},
+            status=status.HTTP_201_CREATED
+        )
+
+
+"""
+PSYCHOLOGIST ACCOUNT VERIFICATION VIEW
+"""
+class PsychologistVerifyEmailView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        token = request.data.get("token")
+
+        if not token:
+            return Response(
+                {"detail": "Token is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        PsychologistAuthService().verify_email(token)
+
+        return Response(
+            {"message": "Email verified successfully"},
+            status=status.HTTP_200_OK
+        )
+    
+"""
+PSYCHOLOGIST LOGIN VIEW
+"""
+class PsychologistLoginView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = PsychologistLoginSerializer(
+            data=request.data,
+            context={"request": request}
+        )
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        user = serializer.context.get("user")
+        user_data = {
+            "email": user.email,
+            "full_name": user.full_name,
+            "profile_picture": user.profile_picture.url if user.profile_picture else None,
+            "role": user.role
+        }
+
+        response = Response(
+            {"access": data["access"], "user": user_data},
+            status=status.HTTP_200_OK
+        )
+
+        response.set_cookie(
+            key="refresh_token",
+            value=data["refresh"],
+            httponly=True,
+            secure=settings.COOKIE_SECURE,
+            samesite=settings.COOKIE_SAMESITE,
+            path="/",
+        )
+
+        return response
+
+
+"""
+PSYCHOLOGIST LOGOUT VIEW
+"""
+class PsychologistLogoutView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        refresh_token = request.COOKIES.get("refresh_token")
+
+        if refresh_token:
+            try:
+                token = RefreshToken(refresh_token)
+                token.blacklist()
+            except Exception:
+                pass
+
+        response = Response(
+            {"detail": "Logged out successfully"},
+            status=status.HTTP_200_OK
+        )
+
+        response.delete_cookie("refresh_token")
         return response
