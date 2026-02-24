@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { psychologistSignup, psychologistLogin } from "../api/psychologist.api";
+import { psychologistSignup, psychologistLogin, psychologistGoogleAuth } from "../api/psychologist.api";
 import { useAuthStore } from "../store/auth.store";
 
 export const usePsychologistSignupMutation = (setFormError, setLocalError) => {
@@ -91,6 +91,20 @@ export const usePsychologistLoginMutation = (setFormError, setLocalError) => {
       else {
         setLocalError("Invalid email or password");
       }
+    },
+  });
+};
+
+export const useGooglePsychologistAuthMutation = () => {
+  const navigate = useNavigate();
+  const login = useAuthStore((s) => s.login);
+
+  return useMutation({
+    mutationFn: psychologistGoogleAuth,
+
+    onSuccess: (data) => {
+      login(data, "PSYCHOLOGIST");
+      navigate("/psychologist/home");
     },
   });
 };

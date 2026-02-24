@@ -345,6 +345,57 @@
     text-decoration: underline;
 }
 
+
+/* Google Button */
+.psychologist-auth-layout .google-btn {
+    width: 100%;
+    padding: 0.875rem 1.5rem;
+    font-size: 0.938rem;
+    font-weight: 500;
+    font-family: 'DM Sans', sans-serif;
+    color: var(--text-primary);
+    background-color: var(--white);
+    border: 1.5px solid var(--border-color);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    transition: var(--transition);
+}
+
+.psychologist-auth-layout .google-btn:hover {
+    background-color: var(--bg-gray);
+    border-color: #d1d5db;
+}
+
+.psychologist-auth-layout .google-btn:active {
+    transform: scale(0.98);
+}
+
+/* Divider */
+.psychologist-auth-layout .divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin: 1rem 0;
+    color: var(--text-light);
+    font-size: 0.813rem;
+    font-weight: 500;
+}
+
+.psychologist-auth-layout .divider::before,
+.psychologist-auth-layout .divider::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.psychologist-auth-layout .divider span {
+    padding: 0 1rem;
+}
+
 /* Submit Button */
 .psychologist-auth-layout .submit-btn {
     width: 100%;

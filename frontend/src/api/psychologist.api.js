@@ -29,6 +29,11 @@ export const psychologistResetPassword = async (data) => {
   return axiosInstance.post("/psychologist/reset-password/", data);
 };
 
+export const psychologistGoogleAuth = async (data) => {
+  const response = await axiosInstance.post("psychologist/google-auth/", data);
+  return response.data;
+};
+
 export const psychologistApplication = async () => {
     const response = await axiosInstance.post("psychologist/application/");
     return response.data;
