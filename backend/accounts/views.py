@@ -10,8 +10,7 @@ from .services.patient_auth_service import PatientAuthService
 from .services.psychologist_auth_service import PsychologistAuthService
 from . serializers import (AdminLoginSerializer, ForgotPasswordSerializer, ResetPasswordSerializer,
                            SignupSerializer, PatientLoginSerializer, PsychologistLoginSerializer)
-from .services.google_auth_service import GooglePatientAuthService
-
+from .services.google_auth_service import GooglePatientAuthService, GooglePsychologistAuthService
 
 
 ############################
@@ -477,3 +476,45 @@ class PsychologistResetPasswordView(APIView):
             {"message": "Password reset successful"},
             status=status.HTTP_200_OK,
         )
+    
+
+"""
+GOOGLE SIGN UP AND LOGIN FOR PSYCHOLOGIST
+"""
+class PsychologistGoogleAuthView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        token = request.data.get("token")
+        mode = request.data.get("mode")
+
+        if not token or not mode:
+            return Response({"detail": "Token and mode required"}, status=400)
+
+        idinfo = GooglePsychologistAuthService.verify_google_token(token)
+        result = GooglePsychologistAuthService.authenticate_or_create(idinfo, mode)
+        user = result["user"]
+
+        response = Response(
+            {
+                "access": result["access"],
+                "user": {
+                    "email": user.email,
+                    "full_name": user.full_name,
+                    "profile_picture": user.profile_picture.url if user.profile_picture else None,
+                    "role": user.role,
+                }
+            },
+            status=status.HTTP_200_OK
+        )
+
+        response.set_cookie(
+            key="refresh_token",
+            value=result["refresh"],
+            httponly=True,
+            secure=settings.COOKIE_SECURE,
+            samesite=settings.COOKIE_SAMESITE,
+            path="/",
+        )
+
+        return response
