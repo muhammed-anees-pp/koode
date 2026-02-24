@@ -22,6 +22,10 @@ class ForgotPasswordResetService:
             "redis_prefix": "patient",
             "frontend_url": settings.PATIENT_FRONTEND_URL,
         },
+        "PSYCHOLOGIST": {
+            "redis_prefix": "psychologist",
+            "frontend_url": settings.PSYCHOLOGIST_FRONTEND_URL,
+        },
     }
 
     def __init__(self, role):

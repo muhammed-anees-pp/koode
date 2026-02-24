@@ -2,7 +2,7 @@ from django.urls import path
 from .views import (AdminLoginView, RefreshTokenView, AdminLogoutView, AdminForgotPasswordView, AdminResetPasswordView,
                     PatientSignupView, PatientVerifyEmailView, PatientLoginView, PatientLogoutView, PatientForgotPasswordView, 
                     PatientResetPasswordView, PatientGoogleAuthView, PsychologistSignupView, PsychologistVerifyEmailView,
-                    PsychologistLoginView, PsychologistLogoutView)
+                    PsychologistLoginView, PsychologistLogoutView, PsycologistForgotPasswordView, PsychologistResetPasswordView)
 
 urlpatterns = [
     # ADMIN
@@ -24,4 +24,6 @@ urlpatterns = [
     path("psychologist/verify-email/", PsychologistVerifyEmailView.as_view()),
     path("psychologist/login/", PsychologistLoginView.as_view()),
     path("psychologist/logout/", PsychologistLogoutView.as_view()),
+    path("psychologist/forgot-password/", PsycologistForgotPasswordView.as_view()),
+    path("psychologist/reset-password/", PsychologistResetPasswordView.as_view()),
 ]

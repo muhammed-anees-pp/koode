@@ -330,6 +330,7 @@ class PatientGoogleAuthView(APIView):
         return response
     
 
+
 ############################
 ####    PSYCHOLOGIST    ####
 ############################
@@ -434,3 +435,45 @@ class PsychologistLogoutView(APIView):
 
         response.delete_cookie("refresh_token")
         return response
+
+
+"""
+PSYCHOLOGIST FORGOT PASSWORD VIEW
+"""
+class PsycologistForgotPasswordView(APIView):
+    permission_classes = [AllowAny]
+    throttle_classes = [ForgotPasswordThrottle]
+
+    def post(self, request):
+        serializer = ForgotPasswordSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        ForgotPasswordResetService(role="PSYCHOLOGIST").request_reset(
+            serializer.validated_data["email"]
+        )
+
+        return Response(
+            {"message": "If the email exists, a reset link has been sent to"},
+            status=status.HTTP_200_OK,
+        )
+
+
+"""
+PSYCHOLOGIST RESET PASSWORD VIEW
+"""
+class PsychologistResetPasswordView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = ResetPasswordSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        ForgotPasswordResetService(role="PSYCHOLOGIST").reset_password(
+            token=serializer.validated_data["token"],
+            new_password=serializer.validated_data["new_password"],
+        )
+
+        return Response(
+            {"message": "Password reset successful"},
+            status=status.HTTP_200_OK,
+        )
