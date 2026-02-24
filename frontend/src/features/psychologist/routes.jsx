@@ -3,6 +3,8 @@ import PsychologistSignup from "./pages/PsychologistSignup";
 import PsychologistLogin from "./pages/PsychologistLogin";
 import PsychologistHome from "./pages/PsychologistHome";
 import PsychologistVerification from "./pages/PsychologistVerification";
+import PsychologistForgotPassword from "./pages/PsychologistForgotPassword";
+import PsychologistResetPassword from "./pages/PsychologistResetPassword";
 import { useAuthStore } from "../../store/auth.store";
 
 const PsychologistRoutes = () => {
@@ -22,6 +24,14 @@ const PsychologistRoutes = () => {
       <Route
         path="login"
         element={isAuthenticated && role === "PSYCHOLOGIST" ? (<Navigate to="/psychologist/home" replace />) : (<PsychologistLogin />)}
+      />
+      <Route 
+        path="forgot-password"
+        element={isAuthenticated && role === "PSYCHOLOGIST" ? <Navigate to="/psychologist/home" replace /> : <PsychologistForgotPassword />}
+      />
+      <Route
+        path="reset-password"
+        element={isAuthenticated && role === "PSYCHOLOGIST" ? <Navigate to="/psychologist/home" replace /> : <PsychologistResetPassword />}
       />
       <Route
         path="home"

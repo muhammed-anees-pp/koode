@@ -3,10 +3,10 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation } from "@tanstack/react-query";
-import { patientResetPassword } from "../../../api/patient.api";
-import logo from "../../../assets/patient-logo.png";
+import { psychologistResetPassword } from "../../../api/psychologist.api";
+import logo from "../../../assets/psychologist-logo.png";
 import { useState, useEffect } from "react";
-import "../../../styles/patient/PatientResetPassword.css";
+import "../../../styles/psychologist/PsychologistResetPassword.css";
 
 const getErrorMessage = (error) => {
   if (error.response?.data) {
@@ -72,7 +72,7 @@ const CircleIcon = () => (
   </svg>
 );
 
-const PatientResetPassword = () => {
+const PsychologistResetPassword = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const token = searchParams.get("token");
@@ -91,7 +91,7 @@ const PatientResetPassword = () => {
   const confirmPassword = watch("confirmPassword");
 
   const mutation = useMutation({
-    mutationFn: (passwordData) => patientResetPassword(passwordData),
+    mutationFn: (passwordData) => psychologistResetPassword(passwordData),
     onSuccess: () => { setTokenError(""); reset(); },
     onError: (error) => {
       const errorMessage = getErrorMessage(error);
@@ -104,7 +104,7 @@ const PatientResetPassword = () => {
 
   useEffect(() => {
     if (mutation.isSuccess) {
-      const timer = setTimeout(() => navigate("/patient/login"), 3000);
+      const timer = setTimeout(() => navigate("/psychologist/login"), 3000);
       return () => clearTimeout(timer);
     }
   }, [mutation.isSuccess, navigate]);
@@ -159,15 +159,15 @@ const PatientResetPassword = () => {
   // Validating state
   if (isValidating) {
     return (
-      <div className="patient-rp-page">
-        <div className="patient-rp-topbar">
-          <img src={logo} alt="koode.in" className="patient-rp-logo" />
+      <div className="psychologist-rp-page">
+        <div className="psychologist-rp-topbar">
+          <img src={logo} alt="Koode Psychologist" className="psychologist-rp-logo" />
         </div>
-        <div className="patient-rp-card-wrapper">
-          <div className="patient-rp-card-bar" />
-          <div className="patient-rp-card patient-rp-center">
-            <div className="patient-rp-spinner" />
-            <p className="patient-rp-loading-text">Validating reset link...</p>
+        <div className="psychologist-rp-card-wrapper">
+          <div className="psychologist-rp-card-bar" />
+          <div className="psychologist-rp-card psychologist-rp-center">
+            <div className="psychologist-rp-spinner" />
+            <p className="psychologist-rp-loading-text">Validating reset link...</p>
           </div>
         </div>
       </div>
@@ -177,34 +177,33 @@ const PatientResetPassword = () => {
   // Invalid token state 
   if (!isTokenValid) {
     return (
-      <div className="patient-rp-page">
-        <div className="patient-rp-topbar">
-          <img src={logo} alt="koode.in" className="patient-rp-logo" />
-          <Link to="/patient/login" className="patient-rp-return-link">Return to Login <span>→</span></Link>
+      <div className="psychologist-rp-page">
+        <div className="psychologist-rp-topbar">
+          <img src={logo} alt="Koode Psychologist" className="psychologist-rp-logo" />
         </div>
-        <div className="patient-rp-card-wrapper">
-          <div className="patient-rp-card-bar" />
-          <div className="patient-rp-card patient-rp-center">
-            <div className="patient-rp-icon-circle rp-icon-error">
+        <div className="psychologist-rp-card-wrapper">
+          <div className="psychologist-rp-card-bar" />
+          <div className="psychologist-rp-card psychologist-rp-center">
+            <div className="psychologist-rp-icon-circle rp-icon-error">
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
                 <circle cx="12" cy="12" r="10" stroke="#ef4444" strokeWidth="2" />
                 <path d="M12 8V12M12 16H12.01" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" />
               </svg>
             </div>
-            <h2 className="patient-rp-title">Invalid Reset Link</h2>
-            <div className="patient-rp-error-banner" style={{ marginBottom: "24px" }}>
+            <h2 className="psychologist-rp-title">Invalid Reset Link</h2>
+            <div className="psychologist-rp-error-banner" style={{ marginBottom: "24px" }}>
               <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
                 <circle cx="10" cy="10" r="9" stroke="#ef4444" strokeWidth="2" />
                 <path d="M10 6v5M10 14v1" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" />
               </svg>
               <span>This password reset link is invalid or has expired</span>
             </div>
-            <Link to="/patient/forgot-password" className="patient-rp-btn" style={{ textDecoration: "none" }}>
-              Request New Link <span className="patient-rp-btn-arrow">→</span>
+            <Link to="/psychologist/forgot-password" className="psychologist-rp-btn" style={{ textDecoration: "none" }}>
+              Request New Link <span className="psychologist-rp-btn-arrow">→</span>
             </Link>
-            <div className="patient-rp-back">
-              <Link to="/patient/login" className="patient-rp-back-link">
-                <span className="patient-rp-back-arrow">←</span> Back to Login
+            <div className="psychologist-rp-back">
+              <Link to="/psychologist/login" className="psychologist-rp-back-link">
+                <span className="psychologist-rp-back-arrow">←</span> Back to Login
               </Link>
             </div>
           </div>
@@ -216,30 +215,26 @@ const PatientResetPassword = () => {
   // Success state 
   if (mutation.isSuccess) {
     return (
-      <div className="patient-rp-page">
-        <div className="patient-rp-topbar">
-          <img src={logo} alt="koode.in" className="patient-rp-logo" />
-          <Link to="/patient/login" className="patient-rp-return-link">Return to Login <span>→</span></Link>
+      <div className="psychologist-rp-page">
+        <div className="psychologist-rp-topbar">
+          <img src={logo} alt="Koode Psychologist" className="psychologist-rp-logo" />
         </div>
-        <div className="patient-rp-card-wrapper">
-          <div className="patient-rp-card-bar" />
-          <div className="patient-rp-card patient-rp-center">
-            <div className="patient-rp-icon-circle rp-icon-success">
+        <div className="psychologist-rp-card-wrapper">
+          <div className="psychologist-rp-card-bar" />
+          <div className="psychologist-rp-card psychologist-rp-center">
+            <div className="psychologist-rp-icon-circle rp-icon-success">
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="12" r="10" stroke="#2bbfa4" strokeWidth="2" />
-                <path d="M8 12L11 15L16 9" stroke="#2bbfa4" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                <circle cx="12" cy="12" r="10" stroke="#1188d8e3" strokeWidth="2" />
+                <path d="M8 12L11 15L16 9" stroke="#1188d8e3" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </div>
-            <h2 className="patient-rp-title">Password Reset!</h2>
-            <p className="patient-rp-subtitle">Your password has been reset successfully.</p>
-            <div className="patient-rp-redirect-pill">
-              <div className="patient-rp-spinner rp-spinner-sm" />
+            <h2 className="psychologist-rp-title">Password Reset!</h2>
+            <p className="psychologist-rp-subtitle">Your password has been reset successfully.</p>
+            <div className="psychologist-rp-redirect-pill">
+              <div className="psychologist-rp-spinner rp-spinner-sm" />
               <span>Redirecting to login...</span>
             </div>
           </div>
-        </div>
-        <div className="patient-rp-footer">
-          Need help? <Link to="/contact" className="patient-rp-support-link">Contact Support</Link>
         </div>
       </div>
     );
@@ -247,33 +242,32 @@ const PatientResetPassword = () => {
 
   // Main form
   return (
-    <div className="patient-rp-page">
+    <div className="psychologist-rp-page">
       {/* Top bar */}
-      <div className="patient-rp-topbar">
-        <img src={logo} alt="koode.in" className="patient-rp-logo" />
-        <Link to="/patient/login" className="patient-rp-return-link">Return to Login <span>→</span></Link>
+      <div className="psychologist-rp-topbar">
+        <img src={logo} alt="Koode Psychologist" className="psychologist-rp-logo" />
       </div>
 
       {/* Card */}
-      <div className="patient-rp-card-wrapper">
-        <div className="patient-rp-card-bar" />
-        <div className="patient-rp-card">
+      <div className="psychologist-rp-card-wrapper">
+        <div className="psychologist-rp-card-bar" />
+        <div className="psychologist-rp-card">
           {/* Icon */}
-          <div className="patient-rp-icon-circle">
+          <div className="psychologist-rp-icon-circle">
             <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
               <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"
-                stroke="#2bbfa4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M3 3v5h5" stroke="#2bbfa4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                stroke="#1188d8ce" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M3 3v5h5" stroke="#1188d8ce" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </div>
 
-          <h2 className="patient-rp-title">Reset Password</h2>
-          <p className="patient-rp-subtitle">
+          <h2 className="psychologist-rp-title">Reset Password</h2>
+          <p className="psychologist-rp-subtitle">
             Create a strong password for your account to ensure your data stays secure.
           </p>
 
           {mutation.isError && !mutation.isSuccess && (
-            <div className="patient-rp-error-banner">
+            <div className="psychologist-rp-error-banner">
               <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
                 <circle cx="10" cy="10" r="9" stroke="#ef4444" strokeWidth="2" />
                 <path d="M10 6v5M10 14v1" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" />
@@ -282,36 +276,36 @@ const PatientResetPassword = () => {
             </div>
           )}
 
-          <form onSubmit={handleSubmit(onSubmit)} className="patient-rp-form" noValidate>
-            <div className="patient-rp-field">
-              <label className="patient-rp-label" htmlFor="newPassword">New Password</label>
-              <div className="patient-rp-input-wrap">
+          <form onSubmit={handleSubmit(onSubmit)} className="psychologist-rp-form" noValidate>
+            <div className="psychologist-rp-field">
+              <label className="psychologist-rp-label" htmlFor="newPassword">New Password</label>
+              <div className="psychologist-rp-input-wrap">
                 <input
                   id="newPassword"
                   type={showNewPassword ? "text" : "password"}
                   placeholder="Enter new password"
-                  className={`patient-rp-input${errors.newPassword ? " error" : ""}`}
+                  className={`psychologist-rp-input${errors.newPassword ? " error" : ""}`}
                   disabled={mutation.isPending}
                   {...register("newPassword")}
                 />
-                <button type="button" className="patient-rp-eye" onClick={() => setShowNewPassword(!showNewPassword)} aria-label="Toggle password visibility">
+                <button type="button" className="psychologist-rp-eye" onClick={() => setShowNewPassword(!showNewPassword)} aria-label="Toggle password visibility">
                   <EyeIcon open={showNewPassword} />
                 </button>
               </div>
-              {errors.newPassword && <span className="patient-rp-field-error">{errors.newPassword.message}</span>}
+              {errors.newPassword && <span className="psychologist-rp-field-error">{errors.newPassword.message}</span>}
 
               {/* Strength bar */}
               {newPassword && (
-                <div className="patient-rp-strength">
-                  <div className="patient-rp-strength-bars">
+                <div className="psychologist-rp-strength">
+                  <div className="psychologist-rp-strength-bars">
                     {[1, 2, 3, 4, 5].map((l) => (
-                      <div key={l} className="patient-rp-strength-bar"
+                      <div key={l} className="psychologist-rp-strength-bar"
                         style={{ backgroundColor: passwordStrength && l <= passwordStrength.level ? passwordStrength.color : "#e2e8f0" }}
                       />
                     ))}
                   </div>
                   {passwordStrength && (
-                    <span className="patient-rp-strength-label" style={{ color: passwordStrength.color }}>
+                    <span className="psychologist-rp-strength-label" style={{ color: passwordStrength.color }}>
                       {passwordStrength.text}
                     </span>
                   )}
@@ -319,29 +313,29 @@ const PatientResetPassword = () => {
               )}
             </div>
 
-            <div className="patient-rp-field">
-              <label className="patient-rp-label" htmlFor="confirmPassword">Confirm New Password</label>
-              <div className="patient-rp-input-wrap">
+            <div className="psychologist-rp-field">
+              <label className="psychologist-rp-label" htmlFor="confirmPassword">Confirm New Password</label>
+              <div className="psychologist-rp-input-wrap">
                 <input
                   id="confirmPassword"
                   type={showConfirmPassword ? "text" : "password"}
                   placeholder="Confirm new password"
-                  className={`patient-rp-input${errors.confirmPassword ? " error" : ""}`}
+                  className={`psychologist-rp-input${errors.confirmPassword ? " error" : ""}`}
                   disabled={mutation.isPending}
                   {...register("confirmPassword")}
                 />
-                <button type="button" className="patient-rp-eye" onClick={() => setShowConfirmPassword(!showConfirmPassword)} aria-label="Toggle password visibility">
+                <button type="button" className="psychologist-rp-eye" onClick={() => setShowConfirmPassword(!showConfirmPassword)} aria-label="Toggle password visibility">
                   <EyeIcon open={showConfirmPassword} />
                 </button>
               </div>
-              {errors.confirmPassword && <span className="patient-rp-field-error">{errors.confirmPassword.message}</span>}
+              {errors.confirmPassword && <span className="psychologist-rp-field-error">{errors.confirmPassword.message}</span>}
             </div>
 
-            <div className="patient-rp-requirements">
-              <p className="patient-rp-req-title">Password Requirements</p>
-              <ul className="patient-rp-req-list">
+            <div className="psychologist-rp-requirements">
+              <p className="psychologist-rp-req-title">Password Requirements</p>
+              <ul className="psychologist-rp-req-list">
                 {requirements.map((req, i) => (
-                  <li key={i} className={`patient-rp-req-item${req.met ? " met" : ""}`}>
+                  <li key={i} className={`psychologist-rp-req-item${req.met ? " met" : ""}`}>
                     {req.met ? <CheckIcon /> : <CircleIcon />}
                     <span>{req.text}</span>
                   </li>
@@ -349,20 +343,16 @@ const PatientResetPassword = () => {
               </ul>
             </div>
 
-            <button type="submit" className="patient-rp-btn" disabled={mutation.isPending}>
+            <button type="submit" className="psychologist-rp-btn" disabled={mutation.isPending}>
               {mutation.isPending ? "Resetting Password..." : "Reset Password"}
-              {!mutation.isPending && <span className="patient-rp-btn-arrow">→</span>}
+              {!mutation.isPending && <span className="psychologist-rp-btn-arrow">→</span>}
             </button>
           </form>
+          <Link to="/psychologist/login" className="psychologist-rp-return-link"><span className="psychologist-rp-back-arrow">←</span>Return to Login</Link>
         </div>
-      </div>
-
-      {/* Footer */}
-      <div className="patient-rp-footer">
-        Need help? <Link to="/contact" className="patient-rp-support-link">Contact Support</Link>
       </div>
     </div>
   );
 };
 
-export default PatientResetPassword;
+export default PsychologistResetPassword;

@@ -20,6 +20,15 @@ export const psychologistLogout = async () => {
     return response.data;
 };
 
+export const psychologistForgotPassword = async (email) => {
+  const response = await axiosInstance.post("/psychologist/forgot-password/", { email });
+  return response.data; 
+};
+
+export const psychologistResetPassword = async (data) => {
+  return axiosInstance.post("/psychologist/reset-password/", data);
+};
+
 export const psychologistApplication = async () => {
     const response = await axiosInstance.post("psychologist/application/");
     return response.data;

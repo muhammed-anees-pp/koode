@@ -2,7 +2,7 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Outfit:wght@400;500;600;700&display=swap');
 
 /* CSS Variables */
-:root {
+.psychologist-auth-layout {
     --primary-color: #1188d8e3;
     --primary-hover: #1188d8ce;
     --primary-dark: #1188D8;
@@ -58,6 +58,7 @@
         opacity: 0;
         transform: translateY(-10px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -142,6 +143,7 @@
         opacity: 0;
         transform: translateY(20px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -232,7 +234,7 @@
 
 .psychologist-auth-layout .form-group input:focus {
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(26, 190, 170, 0.1);
+    box-shadow: 0 0 0 3px rgba(17, 136, 216, 0.1);
 }
 
 .psychologist-auth-layout .form-group input:hover:not(:focus) {
@@ -308,12 +310,12 @@
     background-color: var(--white);
 }
 
-.psychologist-auth-layout .checkbox-label input[type="checkbox"]:checked ~ .checkbox-custom {
+.psychologist-auth-layout .checkbox-label input[type="checkbox"]:checked~.checkbox-custom {
     background-color: var(--primary-color);
     border-color: var(--primary-color);
 }
 
-.psychologist-auth-layout .checkbox-label input[type="checkbox"]:checked ~ .checkbox-custom::after {
+.psychologist-auth-layout .checkbox-label input[type="checkbox"]:checked~.checkbox-custom::after {
     content: '';
     width: 4px;
     height: 8px;
@@ -357,18 +359,18 @@
     cursor: pointer;
     transition: var(--transition);
     margin-top: 1rem;
-    box-shadow: 0 2px 4px rgba(26, 190, 170, 0.2);
+    box-shadow: 0 2px 4px rgba(17, 136, 216, 0.2);
 }
 
 .psychologist-auth-layout .submit-btn:hover {
     background-color: var(--primary-hover);
-    box-shadow: 0 4px 8px rgba(26, 190, 170, 0.3);
+    box-shadow: 0 4px 8px rgba(17, 136, 216, 0.3);
     transform: translateY(-1px);
 }
 
 .psychologist-auth-layout .submit-btn:active {
     transform: translateY(0);
-    box-shadow: 0 2px 4px rgba(26, 190, 170, 0.2);
+    box-shadow: 0 2px 4px rgba(17, 136, 216, 0.2);
 }
 
 .psychologist-auth-layout .submit-btn:disabled {
@@ -440,6 +442,7 @@
         opacity: 0;
         transform: translateY(10px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -502,14 +505,17 @@
 /* Card Top Border */
 .psychologist-auth-layout .card-top-border {
     height: 6px;
-    background: linear-gradient(90deg, var(--primary-color) 0%, #20d4bc 100%);
+    background: linear-gradient(90deg, var(--primary-color) 0%, #1188d8 100%);
     animation: shimmer 3s ease-in-out infinite;
 }
 
 @keyframes shimmer {
-    0%, 100% {
+
+    0%,
+    100% {
         opacity: 1;
     }
+
     50% {
         opacity: 0.8;
     }
@@ -528,12 +534,15 @@
         opacity: 0;
         transform: scale(0.5) translateY(-20px);
     }
+
     60% {
         transform: scale(1.1) translateY(0);
     }
+
     80% {
         transform: scale(0.95);
     }
+
     100% {
         opacity: 1;
         transform: scale(1);
@@ -543,7 +552,7 @@
 .psychologist-auth-layout .email-icon-bg {
     width: 120px;
     height: 120px;
-    background: linear-gradient(135deg, rgba(26, 190, 170, 0.1) 0%, rgba(32, 212, 188, 0.15) 100%);
+    background: linear-gradient(135deg, rgba(17, 136, 216, 0.1) 0%, rgba(17, 136, 216, 0.15) 100%);
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -554,11 +563,11 @@
 
 .psychologist-auth-layout .verify-card:hover .email-icon-bg {
     transform: scale(1.05);
-    background: linear-gradient(135deg, rgba(26, 190, 170, 0.15) 0%, rgba(32, 212, 188, 0.2) 100%);
+    background: linear-gradient(135deg, rgba(17, 136, 216, 0.15) 0%, rgba(17, 136, 216, 0.2) 100%);
 }
 
 .psychologist-auth-layout .email-icon-bg svg {
-    filter: drop-shadow(0 2px 4px rgba(26, 190, 170, 0.2));
+    filter: drop-shadow(0 2px 4px rgba(17, 136, 216, 0.2));
 }
 
 .psychologist-auth-layout .heart-badge {
@@ -577,9 +586,12 @@
 }
 
 @keyframes heartPulse {
-    0%, 100% {
+
+    0%,
+    100% {
         transform: scale(1);
     }
+
     50% {
         transform: scale(1.1);
     }
@@ -641,18 +653,18 @@
     align-items: center;
     justify-content: center;
     gap: 0.625rem;
-    box-shadow: 0 2px 4px rgba(26, 190, 170, 0.2);
+    box-shadow: 0 2px 4px rgba(17, 136, 216, 0.2);
 }
 
 .psychologist-auth-layout .resend-btn:hover:not(:disabled) {
     background-color: var(--primary-hover);
-    box-shadow: 0 4px 8px rgba(26, 190, 170, 0.3);
+    box-shadow: 0 4px 8px rgba(17, 136, 216, 0.3);
     transform: translateY(-1px);
 }
 
 .psychologist-auth-layout .resend-btn:active:not(:disabled) {
     transform: translateY(0);
-    box-shadow: 0 2px 4px rgba(26, 190, 170, 0.2);
+    box-shadow: 0 2px 4px rgba(17, 136, 216, 0.2);
 }
 
 .psychologist-auth-layout .resend-btn:disabled {
@@ -687,6 +699,7 @@
         opacity: 0;
         transform: translateY(-10px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -772,7 +785,7 @@
 
 /* Selection Color */
 .psychologist-auth-layout ::selection {
-    background-color: rgba(26, 190, 170, 0.2);
+    background-color: rgba(17, 136, 216, 0.2);
     color: var(--text-primary);
 }
 

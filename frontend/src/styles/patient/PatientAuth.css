@@ -2,7 +2,7 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Outfit:wght@400;500;600;700&display=swap');
 
 /* CSS Variables */
-:root {
+.patient-auth-layout {
     --primary-color: #1ABEAA;
     --primary-hover: #18a896;
     --primary-dark: #159584;
