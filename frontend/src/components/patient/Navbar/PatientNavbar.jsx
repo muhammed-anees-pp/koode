@@ -71,7 +71,9 @@ const PatientNavbar = () => {
             logout();
             localStorage.removeItem('user_role');
             navigate('/patient/login');
-        } else if (action === 'User Profile' || action === 'Settings') {
+        } else if (action === 'User Profile') {
+            navigate('/patient/profile');
+        } else if (action === 'Settings') {
             navigate('#');
         }
     };
