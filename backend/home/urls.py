@@ -1,6 +1,6 @@
 from django.urls import path
-from . import views
+from .views import HomeView
 
 urlpatterns = [
-    path('api/status/', views.api_status, name='api_status'),
+    path("", HomeView.as_view()),
 ]
