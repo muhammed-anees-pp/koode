@@ -171,13 +171,11 @@ export default function PatientProfile() {
     const queryClient = useQueryClient();
     const fileInputRef = useRef(null);
 
-    if (!isAuthenticated || role !== "PATIENT") {
-        return <Navigate to="/patient/login" replace />;
-    }
-
+    // ── All hooks must be called unconditionally at the top ──
     const { data: profile, isLoading, isError } = useQuery({
         queryKey: ["patient-profile"],
         queryFn: fetchPatientProfile,
+        enabled: isAuthenticated && role === "PATIENT",
     });
 
     const [isEditing, setIsEditing] = useState(false);
@@ -194,21 +192,28 @@ export default function PatientProfile() {
         full_name: "", phone_number: "", date_of_birth: "",
         gender: "", emergency_contact_name: "", emergency_contact_number: "",
     });
-    const [formReady, setFormReady] = useState(false);
-
-    if (profile && !formReady) {
-        setForm({
-            full_name: profile.user?.full_name || "",
-            phone_number: profile.phone_number || "",
-            date_of_birth: profile.date_of_birth || "",
-            gender: profile.gender || "",
-            emergency_contact_name: profile.emergency_contact_name || "",
-            emergency_contact_number: profile.emergency_contact_number || "",
-        });
-        setFormReady(true);
-    }
 
     const [selectedTopics, setSelectedTopics] = useState(["Anxiety", "Work Stress"]);
+
+    // Populate form when profile data loads
+    useEffect(() => {
+        if (profile) {
+            setForm({
+                full_name: profile.user?.full_name || "",
+                phone_number: profile.phone_number || "",
+                date_of_birth: profile.date_of_birth || "",
+                gender: profile.gender || "",
+                emergency_contact_name: profile.emergency_contact_name || "",
+                emergency_contact_number: profile.emergency_contact_number || "",
+            });
+        }
+    }, [profile]);
+
+    // Auth guard — placed AFTER all hooks
+    if (!isAuthenticated || role !== "PATIENT") {
+        return <Navigate to="/patient/login" replace />;
+    }
+
     const toggleTopic = (t) =>
         setSelectedTopics((prev) => prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]);
 
