@@ -1,0 +1,347 @@
+/* Admin Patient List Page */
+
+.apl-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 24px;
+}
+
+.apl-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #f1f5f9;
+    margin: 0 0 4px;
+}
+
+.apl-subtitle {
+    font-size: 13px;
+    color: #94a3b8;
+    margin: 0;
+}
+
+/* Controls row */
+.apl-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.apl-search-wrap {
+    position: relative;
+    flex: 1;
+    min-width: 220px;
+    max-width: 360px;
+}
+
+.apl-search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #64748b;
+}
+
+.apl-search {
+    width: 100%;
+    padding: 9px 12px 9px 36px;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 9px;
+    color: #e2e8f0;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+}
+
+.apl-search::placeholder {
+    color: #64748b;
+}
+
+.apl-search:focus {
+    border-color: #1ABEAA;
+}
+
+.apl-control-btns {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.apl-btn-outline {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    background: transparent;
+    color: #94a3b8;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.apl-btn-outline:hover {
+    border-color: #475569;
+    color: #e2e8f0;
+}
+
+.apl-btn-ghost {
+    padding: 8px 14px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: #64748b;
+    font-size: 13px;
+    cursor: pointer;
+    transition: color 0.15s;
+}
+
+.apl-btn-ghost:hover {
+    color: #e2e8f0;
+}
+
+/* Table */
+.apl-table-wrap {
+    background: #1e293b;
+    border-radius: 12px;
+    border: 1px solid #1e293b;
+    overflow: hidden;
+}
+
+.apl-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+}
+
+.apl-table thead th {
+    padding: 13px 16px;
+    text-align: left;
+    font-size: 11.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #64748b;
+    background: #0f172a;
+    border-bottom: 1px solid #1e293b;
+}
+
+.apl-row {
+    border-bottom: 1px solid #1e2d3d;
+    transition: background 0.12s;
+}
+
+.apl-row:last-child {
+    border-bottom: none;
+}
+
+.apl-row:hover {
+    background: #162032;
+}
+
+.apl-table td {
+    padding: 13px 16px;
+    vertical-align: middle;
+    color: #cbd5e1;
+}
+
+/* Name cell */
+.apl-name-cell {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.apl-avatar-img {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.apl-avatar-initials {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+}
+
+.apl-name {
+    font-weight: 600;
+    color: #e2e8f0;
+    font-size: 13.5px;
+}
+
+.apl-pid {
+    font-size: 11.5px;
+    color: #64748b;
+    margin-top: 2px;
+}
+
+.apl-email {
+    color: #94a3b8;
+}
+
+.apl-date {
+    color: #94a3b8;
+}
+
+/* Status badge */
+.apl-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.apl-badge-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+}
+
+.apl-badge-active {
+    background: rgba(16, 185, 129, 0.12);
+    color: #10b981;
+}
+
+.apl-badge-active .apl-badge-dot {
+    background: #10b981;
+}
+
+.apl-badge-suspended {
+    background: rgba(239, 68, 68, 0.12);
+    color: #ef4444;
+}
+
+.apl-badge-suspended .apl-badge-dot {
+    background: #ef4444;
+}
+
+/* Action buttons */
+.apl-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.apl-action-btn {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.apl-action-btn:hover {
+    background: #0f172a;
+    color: #94a3b8;
+}
+
+.apl-action-suspend {
+    color: #94a3b8;
+}
+
+.apl-action-suspend:hover {
+    color: #ef4444 !important;
+}
+
+.apl-action-active {
+    color: #10b981;
+}
+
+.apl-action-active:hover {
+    color: #34d399 !important;
+    background: rgba(16, 185, 129, 0.08) !important;
+}
+
+/* Empty / loading state */
+.apl-state-cell {
+    text-align: center;
+    padding: 48px 16px !important;
+    color: #475569;
+    font-size: 14px;
+}
+
+.apl-state-error {
+    color: #ef4444;
+}
+
+/* Pagination */
+.apl-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 20px;
+    margin-top: 16px;
+    font-size: 13px;
+    color: #64748b;
+}
+
+.apl-page-size {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.apl-page-size select {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    color: #e2e8f0;
+    padding: 4px 8px;
+    font-size: 13px;
+    cursor: pointer;
+    outline: none;
+}
+
+.apl-page-nav {
+    display: flex;
+    gap: 4px;
+}
+
+.apl-page-btn {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #334155;
+    border-radius: 7px;
+    background: transparent;
+    color: #94a3b8;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.apl-page-btn:hover:not(:disabled) {
+    border-color: #475569;
+    color: #e2e8f0;
+}
+
+.apl-page-btn:disabled {
+    opacity: 0.35;
+    cursor: default;
+}

@@ -51,7 +51,7 @@ const Sidebar = () => {
       },
       {
         name: "Patients",
-        path: "#",
+        path: "/admin/patients",
         icon: (
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
             <path
@@ -253,9 +253,8 @@ const Sidebar = () => {
             <Link
               key={item.path}
               to={item.path}
-              className={`nav-item ${
-                location.pathname === item.path ? "active" : ""
-              }`}
+              className={`nav-item ${location.pathname === item.path ? "active" : ""
+                }`}
             >
               <span className="nav-icon">{item.icon}</span>
               <span className="nav-text">{item.name}</span>
@@ -271,9 +270,8 @@ const Sidebar = () => {
             <Link
               key={item.path}
               to={item.path}
-              className={`nav-item ${
-                location.pathname === item.path ? "active" : ""
-              }`}
+              className={`nav-item ${location.pathname === item.path ? "active" : ""
+                }`}
             >
               <span className="nav-icon">{item.icon}</span>
               <span className="nav-text">{item.name}</span>
@@ -289,9 +287,8 @@ const Sidebar = () => {
             <Link
               key={item.path}
               to={item.path}
-              className={`nav-item ${
-                location.pathname === item.path ? "active" : ""
-              }`}
+              className={`nav-item ${location.pathname === item.path ? "active" : ""
+                }`}
             >
               <span className="nav-icon">{item.icon}</span>
               <span className="nav-text">{item.name}</span>
