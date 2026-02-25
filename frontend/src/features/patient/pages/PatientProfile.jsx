@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Navigate } from "react-router-dom";
 import { fetchPatientProfile, updatePatientProfile } from "../../../api/patient.api";
 import { useAuthStore } from "../../../store/auth.store";
+import { usePatientSessionGuard } from "../../../hooks/usePatientSessionGuard";
 import PatientNavbar from "../../../components/patient/Navbar/PatientNavbar";
 import PatientFooter from "../../../components/patient/Footer/PatientFooter";
 import "../../../styles/patient/PatientProfile.css";
@@ -171,7 +172,7 @@ export default function PatientProfile() {
     const queryClient = useQueryClient();
     const fileInputRef = useRef(null);
 
-    // ── All hooks must be called unconditionally at the top ──
+    usePatientSessionGuard();
     const { data: profile, isLoading, isError } = useQuery({
         queryKey: ["patient-profile"],
         queryFn: fetchPatientProfile,

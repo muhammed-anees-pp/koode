@@ -3,10 +3,14 @@ import { fetchPatientHome } from "../../../api/patient.api";
 import PatientNavbar from "../../../components/patient/Navbar/PatientNavbar";
 import PatientFooter from "../../../components/patient/Footer/PatientFooter";
 import { useAuthStore } from "../../../store/auth.store";
+import { usePatientSessionGuard } from "../../../hooks/usePatientSessionGuard";
 import "../../../styles/patient/PatientHome.css";
 
 export default function PatientHome() {
   const { patient, isAuthenticated } = useAuthStore();
+
+  // Session guard: detects mid-session suspension
+  usePatientSessionGuard();
 
   const { data } = useQuery({
     queryKey: ["patient-home"],

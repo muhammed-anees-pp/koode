@@ -5,6 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from .permissions import IsAdminUserRole
 from patients.models import PatientProfile
 from django.db.models import Q
+from django.shortcuts import get_object_or_404
 
 
 """
@@ -66,7 +67,7 @@ class AdminPatientListView(APIView):
                 "full_name": p.user.full_name,
                 "email": p.user.email,
                 "profile_picture": pic_url,
-                "is_active": not p.is_deactivated,
+                "is_active": p.user.is_active,
                 "joined_date": p.created_at.strftime("%b %d, %Y") if p.created_at else None,
                 "phone_number": p.phone_number or None,
                 "gender": p.get_gender_display() if p.gender else None,
@@ -79,4 +80,23 @@ class AdminPatientListView(APIView):
             "page": page,
             "page_size": page_size,
             "total_pages": max(1, -(-total // page_size)),
+        }, status=status.HTTP_200_OK)
+
+
+"""
+ADMIN PATIENT SUSPEND / ACTIVATE
+"""
+class AdminPatientSuspendView(APIView):
+    permission_classes = [IsAuthenticated, IsAdminUserRole]
+
+    def post(self, request, patient_id):
+        profile = get_object_or_404(PatientProfile, patient_id=patient_id)
+        user = profile.user
+        user.is_active = not user.is_active
+        user.save(update_fields=["is_active"])
+        action = "activated" if user.is_active else "suspended"
+        return Response({
+            "patient_id": patient_id,
+            "is_active": user.is_active,
+            "detail": f"Patient {action} successfully.",
         }, status=status.HTTP_200_OK)

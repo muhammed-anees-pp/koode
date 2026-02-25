@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { fetchAdminPatients } from "../../../api/admin.api";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { fetchAdminPatients, togglePatientSuspension } from "../../../api/admin.api";
 import Sidebar from "../../../components/admin/Sidebar/AdminSidebar";
 import Navbar from "../../../components/admin/Navbar/AdminNavbar";
 import "../../../styles/admin/AdminPatientList.css";
@@ -22,6 +22,7 @@ function PatientAvatar({ name, photo, size = 38 }) {
     );
 }
 
+/* Patient Detail Modal */
 function PatientDetailModal({ patient, onClose }) {
     useEffect(() => {
         const handler = (e) => { if (e.key === "Escape") onClose(); };
@@ -34,14 +35,11 @@ function PatientDetailModal({ patient, onClose }) {
     return (
         <div className="pdm-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
             <div className="pdm-card">
-                {/* Close Button */}
                 <button className="pdm-close" onClick={onClose} aria-label="Close">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                         <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
                     </svg>
                 </button>
-
-                {/* Avatar + Name */}
                 <div className="pdm-hero">
                     <div className="pdm-avatar-wrap">
                         <PatientAvatar name={patient.full_name} photo={patient.profile_picture} size={90} />
@@ -54,11 +52,7 @@ function PatientDetailModal({ patient, onClose }) {
                         {patient.is_active ? "Active" : "Suspended"}
                     </span>
                 </div>
-
-                {/* Divider */}
                 <div className="pdm-divider" />
-
-                {/* Info Grid */}
                 <div className="pdm-grid">
                     <div className="pdm-field">
                         <span className="pdm-label">Age</span>
@@ -81,9 +75,66 @@ function PatientDetailModal({ patient, onClose }) {
                         <span className="pdm-value">{patient.gender || "—"}</span>
                     </div>
                 </div>
-
-                {/* Dismiss */}
                 <button className="pdm-dismiss" onClick={onClose}>Dismiss View</button>
+            </div>
+        </div>
+    );
+}
+
+/* Suspend Confirm Modal */
+function SuspendConfirmModal({ patient, onConfirm, onCancel, isLoading }) {
+    useEffect(() => {
+        const handler = (e) => { if (e.key === "Escape") onCancel(); };
+        window.addEventListener("keydown", handler);
+        return () => window.removeEventListener("keydown", handler);
+    }, [onCancel]);
+
+    const willSuspend = patient.is_active;
+
+    return (
+        <div className="pdm-overlay" onClick={(e) => { if (e.target === e.currentTarget) onCancel(); }}>
+            <div className="scm-card">
+                {/* Icon */}
+                <div className={`scm-icon-wrap ${willSuspend ? "scm-icon-suspend" : "scm-icon-activate"}`}>
+                    {willSuspend ? (
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <circle cx="12" cy="12" r="10" />
+                            <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+                        </svg>
+                    ) : (
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <circle cx="12" cy="12" r="10" />
+                            <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                    )}
+                </div>
+
+                <h3 className="scm-title">
+                    {willSuspend ? "Suspend Patient?" : "Activate Patient?"}
+                </h3>
+
+                <p className="scm-body">
+                    {willSuspend
+                        ? <>You are about to suspend <strong>{patient.full_name}</strong>. They will be immediately blocked from logging in or using the platform.</>
+                        : <>You are about to re-activate <strong>{patient.full_name}</strong>. They will regain access to the platform.</>
+                    }
+                </p>
+
+                <div className="scm-actions">
+                    <button className="scm-btn-cancel" onClick={onCancel} disabled={isLoading}>
+                        Cancel
+                    </button>
+                    <button
+                        className={`scm-btn-confirm ${willSuspend ? "scm-btn-suspend" : "scm-btn-activate"}`}
+                        onClick={onConfirm}
+                        disabled={isLoading}
+                    >
+                        {isLoading
+                            ? (willSuspend ? "Suspending…" : "Activating…")
+                            : (willSuspend ? "Yes, Suspend" : "Yes, Activate")
+                        }
+                    </button>
+                </div>
             </div>
         </div>
     );
@@ -95,6 +146,9 @@ export default function AdminPatientList() {
     const [search, setSearch] = useState("");
     const [inputVal, setInputVal] = useState("");
     const [selectedPatient, setSelectedPatient] = useState(null);
+    const [suspendTarget, setSuspendTarget] = useState(null);
+
+    const queryClient = useQueryClient();
 
     const handleSearchChange = useCallback((e) => {
         const val = e.target.value;
@@ -111,6 +165,24 @@ export default function AdminPatientList() {
         queryFn: () => fetchAdminPatients({ page, pageSize, search }),
         keepPreviousData: true,
     });
+
+    const suspendMutation = useMutation({
+        mutationFn: (patientId) => togglePatientSuspension(patientId),
+        onSuccess: () => {
+            queryClient.invalidateQueries(["admin-patients"]);
+            setSuspendTarget(null);
+        },
+    });
+
+    const handleSuspendClick = (patient) => {
+        setSuspendTarget(patient);
+    };
+
+    const handleSuspendConfirm = () => {
+        if (suspendTarget) {
+            suspendMutation.mutate(suspendTarget.patient_id);
+        }
+    };
 
     const patients = data?.results || [];
     const total = data?.total || 0;
@@ -228,6 +300,7 @@ export default function AdminPatientList() {
                                                 <button
                                                     className={`apl-action-btn ${!p.is_active ? "apl-action-active" : "apl-action-suspend"}`}
                                                     title={p.is_active ? "Suspend patient" : "Activate patient"}
+                                                    onClick={() => handleSuspendClick(p)}
                                                 >
                                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                                         <circle cx="12" cy="12" r="10" />
@@ -277,6 +350,16 @@ export default function AdminPatientList() {
             {/* Patient Detail Modal */}
             {selectedPatient && (
                 <PatientDetailModal patient={selectedPatient} onClose={() => setSelectedPatient(null)} />
+            )}
+
+            {/* Suspend / Activate Confirmation Modal */}
+            {suspendTarget && (
+                <SuspendConfirmModal
+                    patient={suspendTarget}
+                    onConfirm={handleSuspendConfirm}
+                    onCancel={() => setSuspendTarget(null)}
+                    isLoading={suspendMutation.isPending}
+                />
             )}
         </div>
     );
