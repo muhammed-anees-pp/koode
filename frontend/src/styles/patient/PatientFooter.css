@@ -90,13 +90,15 @@
 }
 
 /* Footer */
-.patient-layout .patient-footer {
+.patient-layout .patient-footer,
+.ph-landing .patient-footer {
     background: #14b8a6;
     color: white;
     padding: 60px 40px 20px;
 }
 
-.patient-layout .footer-grid {
+.patient-layout .footer-grid,
+.ph-landing .footer-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr) 1.5fr;
     gap: 40px;
@@ -104,34 +106,40 @@
     margin: 0 auto 60px;
 }
 
-.patient-layout .footer-col h4 {
+.patient-layout .footer-col h4,
+.ph-landing .footer-col h4 {
     font-size: 16px;
     font-weight: 700;
     margin-bottom: 24px;
 }
 
-.patient-layout .footer-col ul {
+.patient-layout .footer-col ul,
+.ph-landing .footer-col ul {
     list-style: none;
     padding: 0;
     margin: 0;
 }
 
-.patient-layout .footer-col li {
+.patient-layout .footer-col li,
+.ph-landing .footer-col li {
     margin-bottom: 12px;
 }
 
-.patient-layout .footer-col a {
+.patient-layout .footer-col a,
+.ph-landing .footer-col a {
     color: rgba(255, 255, 255, 0.9);
     text-decoration: none;
     font-size: 14px;
 }
 
-.patient-layout .footer-col a:hover {
+.patient-layout .footer-col a:hover,
+.ph-landing .footer-col a:hover {
     color: white;
     text-decoration: underline;
 }
 
-.patient-layout .join-community {
+.patient-layout .join-community,
+.ph-landing .join-community {
     background: black;
     color: white;
     padding: 12px 24px;
@@ -143,7 +151,8 @@
     margin-bottom: 16px;
 }
 
-.patient-layout .hiring-badge {
+.patient-layout .hiring-badge,
+.ph-landing .hiring-badge {
     background: #fbbf24;
     color: black;
     padding: 8px 24px;
@@ -153,7 +162,8 @@
     display: inline-block;
 }
 
-.patient-layout .footer-bottom {
+.patient-layout .footer-bottom,
+.ph-landing .footer-bottom {
     text-align: center;
     border-top: 1px solid rgba(255, 255, 255, 0.2);
     padding-top: 20px;
@@ -163,7 +173,9 @@
 
 /* Responsive Overrides */
 @media (max-width: 1024px) {
-    .patient-layout .footer-grid {
+
+    .patient-layout .footer-grid,
+    .ph-landing .footer-grid {
         grid-template-columns: repeat(2, 1fr);
         gap: 30px;
     }
@@ -174,24 +186,29 @@
         padding: 24px;
     }
 
-    .patient-layout .patient-footer {
+    .patient-layout .patient-footer,
+    .ph-landing .patient-footer {
         padding: 40px 24px 20px;
     }
 
-    .patient-layout .footer-grid {
+    .patient-layout .footer-grid,
+    .ph-landing .footer-grid {
         grid-template-columns: 1fr;
         gap: 30px;
     }
 
-    .patient-layout .footer-col {
+    .patient-layout .footer-col,
+    .ph-landing .footer-col {
         text-align: center;
     }
 
-    .patient-layout .footer-col.text-right {
+    .patient-layout .footer-col.text-right,
+    .ph-landing .footer-col.text-right {
         text-align: center !important;
     }
 
-    .patient-layout .footer-col h4 {
+    .patient-layout .footer-col h4,
+    .ph-landing .footer-col h4 {
         margin-bottom: 16px;
     }
 }
