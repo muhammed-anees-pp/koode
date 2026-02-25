@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { usePatientLoginMutation } from "../../../hooks/usePatientAuth";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,10 +16,6 @@ const loginSchema = z.object({
 });
 
 const PatientLogin = () => {
-  console.log("Google Client ID:", import.meta.env.VITE_GOOGLE_CLIENT_ID);
-  const location = useLocation();
-  const isSuspended = new URLSearchParams(location.search).get("reason") === "suspended";
-
   const {
     register,
     handleSubmit,
@@ -33,12 +29,11 @@ const PatientLogin = () => {
     },
   });
 
-
   const [showPassword, setShowPassword] = useState(false);
   const [localError, setLocalError] = useState("");
 
   const mutation = usePatientLoginMutation(setError, setLocalError);
-  const googleAuthMutation = useGooglePatientAuthMutation();
+  const googleAuthMutation = useGooglePatientAuthMutation(setLocalError);
 
   const onSubmit = (data) => {
     setLocalError("");
@@ -78,31 +73,6 @@ const PatientLogin = () => {
           <div className="card-logo">
             <img src={patientLogo} alt="Koode" style={{ height: "80px" }} />
           </div>
-
-          {/* Suspension Banner */}
-          {isSuspended && (
-            <div style={{
-              background: "rgba(239,68,68,0.10)",
-              border: "1px solid rgba(239,68,68,0.35)",
-              borderRadius: "10px",
-              padding: "12px 16px",
-              marginBottom: "12px",
-              display: "flex",
-              alignItems: "flex-start",
-              gap: "10px",
-            }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" style={{ flexShrink: 0, marginTop: 2 }}>
-                <circle cx="12" cy="12" r="10" />
-                <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
-              </svg>
-              <div>
-                <p style={{ color: "#ef4444", fontWeight: 600, fontSize: "13.5px", margin: 0 }}>Account Suspended</p>
-                <p style={{ color: "#fca5a5", fontSize: "13px", margin: "2px 0 0" }}>
-                  Your account has been suspended. Please contact support for assistance.
-                </p>
-              </div>
-            </div>
-          )}
 
           {/* Title */}
           <h1 className="card-title">Welcome Back</h1>

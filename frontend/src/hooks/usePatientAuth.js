@@ -66,14 +66,16 @@ export const usePatientLoginMutation = (setError, setLocalError) => {
         },
         onError: (err) => {
             const errorData = err.response?.data;
-            const checkSuspended = (obj) => obj?.code === "suspended" || obj?.detail?.code === "suspended";
             const nonFieldArr = errorData?.non_field_errors;
-            const nestedSuspended = Array.isArray(nonFieldArr) && nonFieldArr.some(
-                (e) => typeof e === "object" && e?.code === "suspended"
-            );
+            const isSuspended =
+                errorData?.code === "suspended" ||
+                (Array.isArray(nonFieldArr) &&
+                    nonFieldArr.some(
+                        (e) => typeof e === "object" && e?.code === "suspended"
+                    ));
 
-            if (checkSuspended(errorData) || nestedSuspended) {
-                navigate("/patient/login?reason=suspended", { replace: true });
+            if (isSuspended) {
+                setLocalError("Your account has been suspended. Please contact support.");
                 return;
             }
 
@@ -108,7 +110,8 @@ export const usePatientLoginMutation = (setError, setLocalError) => {
     });
 };
 
-export const useGooglePatientAuthMutation = () => {
+
+export const useGooglePatientAuthMutation = (setLocalError) => {
     const navigate = useNavigate();
     const login = useAuthStore((s) => s.login);
 
@@ -122,18 +125,15 @@ export const useGooglePatientAuthMutation = () => {
 
         onError: (err) => {
             const data = err.response?.data;
-
             const isSuspended =
                 data?.code === "suspended" ||
-                data?.detail === "Your account has been suspended. Please contact support." ||
-                (Array.isArray(data) && data.some((e) => typeof e === "object" && e?.code === "suspended")) ||
-                (typeof data?.code === "string" && data.code === "suspended");
+                (Array.isArray(data) &&
+                    data.some((e) => typeof e === "object" && e?.code === "suspended"));
 
             if (isSuspended) {
                 err._handled = true;
-                navigate("/patient/login?reason=suspended", { replace: true });
+                setLocalError?.("Your account has been suspended. Please contact support.");
             }
         },
     });
 };
-

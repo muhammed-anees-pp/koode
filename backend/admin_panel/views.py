@@ -6,7 +6,8 @@ from .permissions import IsAdminUserRole
 from patients.models import PatientProfile
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
-
+from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
+from rest_framework_simplejwt.tokens import RefreshToken
 
 """
 ADMIN DASHBOARD
@@ -92,8 +93,18 @@ class AdminPatientSuspendView(APIView):
     def post(self, request, patient_id):
         profile = get_object_or_404(PatientProfile, patient_id=patient_id)
         user = profile.user
+        currently_active = user.is_active
         user.is_active = not user.is_active
         user.save(update_fields=["is_active"])
+
+        if currently_active and not user.is_active:
+            outstanding_tokens = OutstandingToken.objects.filter(user=user)
+            for token in outstanding_tokens:
+                try:
+                    BlacklistedToken.objects.get_or_create(token=token)
+                except Exception:
+                    pass
+
         action = "activated" if user.is_active else "suspended"
         return Response({
             "patient_id": patient_id,

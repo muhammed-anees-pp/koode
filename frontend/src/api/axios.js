@@ -14,7 +14,7 @@ axiosInstance.interceptors.request.use((config) => {
   return config;
 });
 
-// Response interceptor — detect suspension mid-session
+// Response interceptor 
 axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -22,12 +22,9 @@ axiosInstance.interceptors.response.use(
     const status = error?.response?.status;
 
     if (status === 401 && data?.code === "suspended") {
-      // Clear auth state
       useAuthStore.getState().logout();
-      // Redirect to patient login with reason
-      if (typeof window !== "undefined") {
-        window.location.href = "/patient/login?reason=suspended";
-      }
+      localStorage.removeItem("koode-auth-storage");
+      window.location.href = "/patient/login";
     }
 
     return Promise.reject(error);
