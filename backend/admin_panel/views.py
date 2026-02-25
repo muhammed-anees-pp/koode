@@ -36,8 +36,15 @@ class AdminPatientListView(APIView):
         search = request.query_params.get("search", "").strip()
         page = int(request.query_params.get("page", 1))
         page_size = int(request.query_params.get("page_size", 10))
+        sort_by = request.query_params.get("sort_by", "joined_date")
+        sort_dir = request.query_params.get("sort_dir", "desc") 
+        filter_status = request.query_params.get("filter_status", "all")
+        queryset = PatientProfile.objects.select_related("user").all()
 
-        queryset = PatientProfile.objects.select_related("user").all().order_by("-created_at")
+        if filter_status == "active":
+            queryset = queryset.filter(user__is_active=True)
+        elif filter_status == "suspended":
+            queryset = queryset.filter(user__is_active=False)
 
         if search:
             queryset = queryset.filter(
@@ -45,6 +52,17 @@ class AdminPatientListView(APIView):
                 Q(user__email__icontains=search) |
                 Q(patient_id__icontains=search)
             )
+
+        SORT_MAP = {
+            "name": "user__full_name",
+            "joined_date": "created_at",
+            "status": "user__is_active",
+        }
+        sort_field = SORT_MAP.get(sort_by, "created_at")
+        if sort_dir == "asc":
+            queryset = queryset.order_by(sort_field)
+        else:
+            queryset = queryset.order_by(f"-{sort_field}")
 
         total = queryset.count()
         start = (page - 1) * page_size

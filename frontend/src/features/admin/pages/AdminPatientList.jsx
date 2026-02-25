@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchAdminPatients, togglePatientSuspension } from "../../../api/admin.api";
 import Sidebar from "../../../components/admin/Sidebar/AdminSidebar";
@@ -54,26 +54,11 @@ function PatientDetailModal({ patient, onClose }) {
                 </div>
                 <div className="pdm-divider" />
                 <div className="pdm-grid">
-                    <div className="pdm-field">
-                        <span className="pdm-label">Age</span>
-                        <span className="pdm-value">{patient.age != null ? `${patient.age} Years` : "—"}</span>
-                    </div>
-                    <div className="pdm-field">
-                        <span className="pdm-label">Email</span>
-                        <span className="pdm-value">{patient.email || "—"}</span>
-                    </div>
-                    <div className="pdm-field">
-                        <span className="pdm-label">Phone</span>
-                        <span className="pdm-value">{patient.phone_number || "—"}</span>
-                    </div>
-                    <div className="pdm-field">
-                        <span className="pdm-label">Joined Date</span>
-                        <span className="pdm-value">{patient.joined_date || "—"}</span>
-                    </div>
-                    <div className="pdm-field">
-                        <span className="pdm-label">Gender</span>
-                        <span className="pdm-value">{patient.gender || "—"}</span>
-                    </div>
+                    <div className="pdm-field"><span className="pdm-label">Age</span><span className="pdm-value">{patient.age != null ? `${patient.age} Years` : "—"}</span></div>
+                    <div className="pdm-field"><span className="pdm-label">Email</span><span className="pdm-value">{patient.email || "—"}</span></div>
+                    <div className="pdm-field"><span className="pdm-label">Phone</span><span className="pdm-value">{patient.phone_number || "—"}</span></div>
+                    <div className="pdm-field"><span className="pdm-label">Joined Date</span><span className="pdm-value">{patient.joined_date || "—"}</span></div>
+                    <div className="pdm-field"><span className="pdm-label">Gender</span><span className="pdm-value">{patient.gender || "—"}</span></div>
                 </div>
                 <button className="pdm-dismiss" onClick={onClose}>Dismiss View</button>
             </div>
@@ -94,45 +79,32 @@ function SuspendConfirmModal({ patient, onConfirm, onCancel, isLoading }) {
     return (
         <div className="pdm-overlay" onClick={(e) => { if (e.target === e.currentTarget) onCancel(); }}>
             <div className="scm-card">
-                {/* Icon */}
                 <div className={`scm-icon-wrap ${willSuspend ? "scm-icon-suspend" : "scm-icon-activate"}`}>
                     {willSuspend ? (
                         <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <circle cx="12" cy="12" r="10" />
-                            <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+                            <circle cx="12" cy="12" r="10" /><line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
                         </svg>
                     ) : (
                         <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <circle cx="12" cy="12" r="10" />
-                            <polyline points="20 6 9 17 4 12" />
+                            <circle cx="12" cy="12" r="10" /><polyline points="20 6 9 17 4 12" />
                         </svg>
                     )}
                 </div>
-
-                <h3 className="scm-title">
-                    {willSuspend ? "Suspend Patient?" : "Activate Patient?"}
-                </h3>
-
+                <h3 className="scm-title">{willSuspend ? "Suspend Patient?" : "Activate Patient?"}</h3>
                 <p className="scm-body">
                     {willSuspend
                         ? <>You are about to suspend <strong>{patient.full_name}</strong>. They will be immediately blocked from logging in or using the platform.</>
                         : <>You are about to re-activate <strong>{patient.full_name}</strong>. They will regain access to the platform.</>
                     }
                 </p>
-
                 <div className="scm-actions">
-                    <button className="scm-btn-cancel" onClick={onCancel} disabled={isLoading}>
-                        Cancel
-                    </button>
+                    <button className="scm-btn-cancel" onClick={onCancel} disabled={isLoading}>Cancel</button>
                     <button
                         className={`scm-btn-confirm ${willSuspend ? "scm-btn-suspend" : "scm-btn-activate"}`}
                         onClick={onConfirm}
                         disabled={isLoading}
                     >
-                        {isLoading
-                            ? (willSuspend ? "Suspending…" : "Activating…")
-                            : (willSuspend ? "Yes, Suspend" : "Yes, Activate")
-                        }
+                        {isLoading ? (willSuspend ? "Suspending…" : "Activating…") : (willSuspend ? "Yes, Suspend" : "Yes, Activate")}
                     </button>
                 </div>
             </div>
@@ -140,13 +112,46 @@ function SuspendConfirmModal({ patient, onConfirm, onCancel, isLoading }) {
     );
 }
 
+/* Generic dropdown hook — closes on outside click */
+function useDropdown() {
+    const [open, setOpen] = useState(false);
+    const ref = useRef(null);
+    useEffect(() => {
+        const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+        document.addEventListener("mousedown", handler);
+        return () => document.removeEventListener("mousedown", handler);
+    }, []);
+    return { open, setOpen, ref };
+}
+
+const SORT_OPTIONS = [
+    { label: "Name (A → Z)", sortBy: "name", sortDir: "asc" },
+    { label: "Name (Z → A)", sortBy: "name", sortDir: "desc" },
+    { label: "Newest first", sortBy: "joined_date", sortDir: "desc" },
+    { label: "Oldest first", sortBy: "joined_date", sortDir: "asc" },
+    { label: "Active first", sortBy: "status", sortDir: "desc" },
+    { label: "Suspended first", sortBy: "status", sortDir: "asc" },
+];
+
+const FILTER_OPTIONS = [
+    { label: "All Patients", value: "all" },
+    { label: "Active only", value: "active" },
+    { label: "Suspended only", value: "suspended" },
+];
+
 export default function AdminPatientList() {
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
     const [search, setSearch] = useState("");
     const [inputVal, setInputVal] = useState("");
+    const [sortBy, setSortBy] = useState("joined_date");
+    const [sortDir, setSortDir] = useState("desc");
+    const [filterStatus, setFilterStatus] = useState("all");
     const [selectedPatient, setSelectedPatient] = useState(null);
     const [suspendTarget, setSuspendTarget] = useState(null);
+
+    const filterDropdown = useDropdown();
+    const sortDropdown = useDropdown();
 
     const queryClient = useQueryClient();
 
@@ -154,41 +159,44 @@ export default function AdminPatientList() {
         const val = e.target.value;
         setInputVal(val);
         clearTimeout(window._aplSearchTimer);
-        window._aplSearchTimer = setTimeout(() => {
-            setSearch(val);
-            setPage(1);
-        }, 350);
+        window._aplSearchTimer = setTimeout(() => { setSearch(val); setPage(1); }, 350);
     }, []);
 
+    const applySort = (opt) => {
+        setSortBy(opt.sortBy);
+        setSortDir(opt.sortDir);
+        setPage(1);
+        sortDropdown.setOpen(false);
+    };
+
+    const applyFilter = (val) => {
+        setFilterStatus(val);
+        setPage(1);
+        filterDropdown.setOpen(false);
+    };
+
     const { data, isLoading, isError } = useQuery({
-        queryKey: ["admin-patients", page, pageSize, search],
-        queryFn: () => fetchAdminPatients({ page, pageSize, search }),
+        queryKey: ["admin-patients", page, pageSize, search, sortBy, sortDir, filterStatus],
+        queryFn: () => fetchAdminPatients({ page, pageSize, search, sortBy, sortDir, filterStatus }),
         keepPreviousData: true,
     });
 
     const suspendMutation = useMutation({
         mutationFn: (patientId) => togglePatientSuspension(patientId),
-        onSuccess: () => {
-            queryClient.invalidateQueries(["admin-patients"]);
-            setSuspendTarget(null);
-        },
+        onSuccess: () => { queryClient.invalidateQueries(["admin-patients"]); setSuspendTarget(null); },
     });
-
-    const handleSuspendClick = (patient) => {
-        setSuspendTarget(patient);
-    };
-
-    const handleSuspendConfirm = () => {
-        if (suspendTarget) {
-            suspendMutation.mutate(suspendTarget.patient_id);
-        }
-    };
 
     const patients = data?.results || [];
     const total = data?.total || 0;
     const totalPages = data?.total_pages || 1;
     const start = total === 0 ? 0 : (page - 1) * pageSize + 1;
     const end = Math.min(page * pageSize, total);
+
+    const hasActiveFilters = search || filterStatus !== "all";
+
+    /* Active sort label for button */
+    const activeSortLabel = SORT_OPTIONS.find(o => o.sortBy === sortBy && o.sortDir === sortDir)?.label || "Sort";
+    const activeFilterLabel = FILTER_OPTIONS.find(o => o.value === filterStatus)?.label || "Filter";
 
     return (
         <div className="dashboard-layout">
@@ -219,23 +227,78 @@ export default function AdminPatientList() {
                                 onChange={handleSearchChange}
                             />
                         </div>
+
                         <div className="apl-control-btns">
-                            <button className="apl-btn-outline">
-                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-                                </svg>
-                                Filter
-                            </button>
-                            <button className="apl-btn-outline">
-                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" />
-                                    <line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" />
-                                    <line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" />
-                                </svg>
-                                Sort
-                            </button>
-                            {(search || inputVal) && (
-                                <button className="apl-btn-ghost" onClick={() => { setSearch(""); setInputVal(""); setPage(1); }}>
+                            {/* Filter dropdown */}
+                            <div className="apl-dropdown-wrap" ref={filterDropdown.ref}>
+                                <button
+                                    className={`apl-btn-outline ${filterStatus !== "all" ? "apl-btn-outline-active" : ""}`}
+                                    onClick={() => { filterDropdown.setOpen(o => !o); sortDropdown.setOpen(false); }}
+                                >
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+                                    </svg>
+                                    {filterStatus !== "all" ? activeFilterLabel : "Filter"}
+                                </button>
+
+                                {filterDropdown.open && (
+                                    <div className="apl-dropdown-menu">
+                                        <p className="apl-dropdown-label">Status</p>
+                                        {FILTER_OPTIONS.map(opt => (
+                                            <button
+                                                key={opt.value}
+                                                className={`apl-dropdown-item ${filterStatus === opt.value ? "apl-dropdown-item-active" : ""}`}
+                                                onClick={() => applyFilter(opt.value)}
+                                            >
+                                                {opt.label}
+                                                {filterStatus === opt.value && (
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                                        <polyline points="20 6 9 17 4 12" />
+                                                    </svg>
+                                                )}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Sort dropdown */}
+                            <div className="apl-dropdown-wrap" ref={sortDropdown.ref}>
+                                <button
+                                    className={`apl-btn-outline ${sortBy !== "joined_date" || sortDir !== "desc" ? "apl-btn-outline-active" : ""}`}
+                                    onClick={() => { sortDropdown.setOpen(o => !o); filterDropdown.setOpen(false); }}
+                                >
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" />
+                                        <line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" />
+                                        <line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" />
+                                    </svg>
+                                    Sort
+                                </button>
+
+                                {sortDropdown.open && (
+                                    <div className="apl-dropdown-menu">
+                                        <p className="apl-dropdown-label">Sort by</p>
+                                        {SORT_OPTIONS.map(opt => (
+                                            <button
+                                                key={opt.label}
+                                                className={`apl-dropdown-item ${sortBy === opt.sortBy && sortDir === opt.sortDir ? "apl-dropdown-item-active" : ""}`}
+                                                onClick={() => applySort(opt)}
+                                            >
+                                                {opt.label}
+                                                {sortBy === opt.sortBy && sortDir === opt.sortDir && (
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                                        <polyline points="20 6 9 17 4 12" />
+                                                    </svg>
+                                                )}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            {hasActiveFilters && (
+                                <button className="apl-btn-ghost" onClick={() => { setSearch(""); setInputVal(""); setFilterStatus("all"); setPage(1); }}>
                                     Clear
                                 </button>
                             )}
@@ -255,12 +318,8 @@ export default function AdminPatientList() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {isLoading && (
-                                    <tr><td colSpan={5} className="apl-state-cell">Loading patients…</td></tr>
-                                )}
-                                {isError && (
-                                    <tr><td colSpan={5} className="apl-state-cell apl-state-error">Failed to load. Please refresh.</td></tr>
-                                )}
+                                {isLoading && <tr><td colSpan={5} className="apl-state-cell">Loading patients…</td></tr>}
+                                {isError && <tr><td colSpan={5} className="apl-state-cell apl-state-error">Failed to load. Please refresh.</td></tr>}
                                 {!isLoading && !isError && patients.length === 0 && (
                                     <tr><td colSpan={5} className="apl-state-cell">No patients found{search ? ` for "${search}"` : ""}.</td></tr>
                                 )}
@@ -285,28 +344,19 @@ export default function AdminPatientList() {
                                         <td className="apl-date">{p.joined_date}</td>
                                         <td>
                                             <div className="apl-actions">
-                                                {/* View */}
-                                                <button
-                                                    className="apl-action-btn"
-                                                    title="View patient"
-                                                    onClick={() => setSelectedPatient(p)}
-                                                >
+                                                <button className="apl-action-btn" title="View patient" onClick={() => setSelectedPatient(p)}>
                                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                                                        <circle cx="12" cy="12" r="3" />
+                                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" />
                                                     </svg>
                                                 </button>
-                                                {/* Suspend / Activate toggle */}
                                                 <button
                                                     className={`apl-action-btn ${!p.is_active ? "apl-action-active" : "apl-action-suspend"}`}
                                                     title={p.is_active ? "Suspend patient" : "Activate patient"}
-                                                    onClick={() => handleSuspendClick(p)}
+                                                    onClick={() => setSuspendTarget(p)}
                                                 >
                                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                                         <circle cx="12" cy="12" r="10" />
-                                                        {p.is_active
-                                                            ? <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
-                                                            : <polyline points="20 6 9 17 4 12" />}
+                                                        {p.is_active ? <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" /> : <polyline points="20 6 9 17 4 12" />}
                                                     </svg>
                                                 </button>
                                             </div>
@@ -332,14 +382,10 @@ export default function AdminPatientList() {
                         </div>
                         <div className="apl-page-nav">
                             <button className="apl-page-btn" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                                    <polyline points="15 18 9 12 15 6" />
-                                </svg>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6" /></svg>
                             </button>
                             <button className="apl-page-btn" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                                    <polyline points="9 18 15 12 9 6" />
-                                </svg>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6" /></svg>
                             </button>
                         </div>
                     </div>
@@ -347,16 +393,11 @@ export default function AdminPatientList() {
                 </div>
             </div>
 
-            {/* Patient Detail Modal */}
-            {selectedPatient && (
-                <PatientDetailModal patient={selectedPatient} onClose={() => setSelectedPatient(null)} />
-            )}
-
-            {/* Suspend / Activate Confirmation Modal */}
+            {selectedPatient && <PatientDetailModal patient={selectedPatient} onClose={() => setSelectedPatient(null)} />}
             {suspendTarget && (
                 <SuspendConfirmModal
                     patient={suspendTarget}
-                    onConfirm={handleSuspendConfirm}
+                    onConfirm={() => suspendMutation.mutate(suspendTarget.patient_id)}
                     onCancel={() => setSuspendTarget(null)}
                     isLoading={suspendMutation.isPending}
                 />
