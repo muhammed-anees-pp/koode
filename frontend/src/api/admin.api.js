@@ -30,3 +30,8 @@ export const fetchAdminPatients = async ({ page = 1, pageSize = 10, search = "" 
   const response = await axiosInstance.get(`admin/patients/?${params}`);
   return response.data;
 };
+
+export const togglePatientSuspension = async (patientId) => {
+  const response = await axiosInstance.post(`admin/patients/${patientId}/suspend/`);
+  return response.data;
+};

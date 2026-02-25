@@ -81,8 +81,19 @@ class PatientLoginSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True)
 
     def validate(self, attrs):
+        from accounts.models import User as UserModel
         email = attrs.get("email").strip().lower()
         password = attrs.get("password")
+
+        try:
+            db_user = UserModel.objects.get(email=email, role="PATIENT")
+            if not db_user.is_active:
+                raise serializers.ValidationError(
+                    {"code": "suspended", "detail": "Your account has been suspended. Please contact support."}
+                )
+        except UserModel.DoesNotExist:
+            pass
+
         user = authenticate(request=self.context.get("request"), username=email, password=password)
 
         if not user:
@@ -90,9 +101,6 @@ class PatientLoginSerializer(serializers.Serializer):
 
         if user.role != "PATIENT":
             raise serializers.ValidationError("Invalid login portal")
-
-        if not user.is_active:
-            raise serializers.ValidationError("Please verify your email first")
 
         self.context["user"] = user
         refresh = RefreshToken.for_user(user)

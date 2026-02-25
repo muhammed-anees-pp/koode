@@ -537,3 +537,125 @@
 .pdm-dismiss:hover {
     color: #94a3b8;
 }
+
+/* ═══════════════════════════════════════
+   Suspend Confirmation Modal
+═══════════════════════════════════════ */
+
+.scm-card {
+    position: relative;
+    background: #111827;
+    border: 1px solid #1e293b;
+    border-radius: 20px;
+    padding: 36px 32px 28px;
+    width: 100%;
+    max-width: 380px;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+    animation: pdm-slide-up 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    text-align: center;
+}
+
+/* Icon */
+.scm-icon-wrap {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 4px;
+}
+
+.scm-icon-suspend {
+    background: rgba(239, 68, 68, 0.12);
+    color: #ef4444;
+}
+
+.scm-icon-activate {
+    background: rgba(16, 185, 129, 0.12);
+    color: #10b981;
+}
+
+.scm-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #f1f5f9;
+    margin: 0;
+}
+
+.scm-body {
+    font-size: 13.5px;
+    color: #94a3b8;
+    line-height: 1.6;
+    margin: 0;
+}
+
+.scm-body strong {
+    color: #e2e8f0;
+    font-weight: 600;
+}
+
+/* Actions */
+.scm-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+    width: 100%;
+}
+
+.scm-btn-cancel {
+    flex: 1;
+    padding: 10px 0;
+    border: 1px solid #334155;
+    border-radius: 10px;
+    background: transparent;
+    color: #94a3b8;
+    font-size: 13.5px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.scm-btn-cancel:hover:not(:disabled) {
+    border-color: #475569;
+    color: #e2e8f0;
+}
+
+.scm-btn-confirm {
+    flex: 1;
+    padding: 10px 0;
+    border: none;
+    border-radius: 10px;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.scm-btn-suspend {
+    background: #ef4444;
+    color: #fff;
+}
+
+.scm-btn-suspend:hover:not(:disabled) {
+    background: #dc2626;
+}
+
+.scm-btn-activate {
+    background: #10b981;
+    color: #fff;
+}
+
+.scm-btn-activate:hover:not(:disabled) {
+    background: #059669;
+}
+
+.scm-btn-confirm:disabled,
+.scm-btn-cancel:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
