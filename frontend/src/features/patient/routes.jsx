@@ -36,12 +36,13 @@ const PatientRoutes = () => {
         path="reset-password"
         element={isAuthenticated && role === "PATIENT" ? <Navigate to="/patient/home" replace /> : <PatientResetPassword />}
       />
+      {/* home is open to ALL — PatientHome handles auth-based rendering internally */}
       <Route path="home" element={<PatientHome />} />
       <Route
         path="profile"
         element={isAuthenticated && role === "PATIENT" ? <PatientProfile /> : <Navigate to="/patient/login" replace />}
       />
-      <Route path="*" element={<Navigate to="login" />} />
+      <Route path="*" element={<Navigate to="home" />} />
     </Routes>
   );
 };
