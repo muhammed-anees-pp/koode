@@ -27,7 +27,7 @@ export const patientLogout = async () => {
 
 export const patientForgotPassword = async (email) => {
   const response = await axiosInstance.post("/patient/forgot-password/", { email });
-  return response.data; 
+  return response.data;
 };
 
 export const patientResetPassword = async (data) => {
@@ -36,5 +36,17 @@ export const patientResetPassword = async (data) => {
 
 export const patientGoogleAuth = async (data) => {
   const response = await axiosInstance.post("patient/google-auth/", data);
+  return response.data;
+};
+
+export const fetchPatientProfile = async () => {
+  const response = await axiosInstance.get("patient/profile/");
+  return response.data;
+};
+
+export const updatePatientProfile = async (data) => {
+  const response = await axiosInstance.put("patient/profile/", data, {
+    headers: data instanceof FormData ? { "Content-Type": "multipart/form-data" } : {},
+  });
   return response.data;
 };

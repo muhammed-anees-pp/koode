@@ -64,11 +64,24 @@ class RefreshTokenView(APIView):
             return Response({"detail": "No refresh token"}, status = 401)
 
         try:
+            from accounts.models import User
             refresh = RefreshToken(refresh_token)
             access = refresh.access_token
             role = refresh.get("role")
             if role:
                 access["role"] = role
+
+            user_id = refresh.get("user_id") or refresh.payload.get("user_id")
+            if user_id:
+                try:
+                    user = User.objects.get(pk=user_id)
+                    if not user.is_active:
+                        return Response(
+                            {"code": "suspended", "detail": "Your account has been suspended."},
+                            status=401
+                        )
+                except User.DoesNotExist:
+                    return Response({"detail": "Invalid token"}, status=401)
 
             return Response({"access": str(access)})
         except Exception:

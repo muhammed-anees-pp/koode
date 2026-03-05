@@ -44,6 +44,8 @@ class GooglePatientAuthService:
         if mode == "login":
             if not user:
                 raise ValidationError({"email": "No account found. Please sign up."})
+            if not user.is_active:
+                raise ValidationError({"code": "suspended", "detail": "Your account has been suspended. Please contact support."})
 
         # SIGNUP MODE
         elif mode == "signup":
