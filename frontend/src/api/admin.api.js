@@ -35,3 +35,11 @@ export const togglePatientSuspension = async (patientId) => {
   const response = await axiosInstance.post(`admin/patients/${patientId}/suspend/`);
   return response.data;
 };
+
+export const fetchAdminApplications = async ({ search = "", filterStatus = "all", sortBy = "date", sortDir = "desc" } = {}) => {
+  const params = new URLSearchParams({ sort_by: sortBy, sort_dir: sortDir });
+  if (search) params.append("search", search);
+  if (filterStatus !== "all") params.append("status", filterStatus);
+  const response = await axiosInstance.get(`application/admin/application-list/?${params}`);
+  return response.data;
+};
