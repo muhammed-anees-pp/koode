@@ -1,21 +1,16 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
-from . permissions import IsPsychologist
-
 
 
 """
-APPLICATION PAGE VIEW
+LIST ACTIVE SPECIALIZATIONS
 """
-class ApplicationView(APIView):
-    permission_classes = [IsAuthenticated, IsPsychologist]
+class SpecializationListView(APIView):
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        data = {
-            "message": "Welcome to Home",
-            "patient_email": request.user.email,
-            "role": request.user.role,
-        }
-        return Response(data, status = status.HTTP_200_OK)
+        from .models import Specialization
+        specializations = Specialization.objects.filter(active=True).order_by("name")
+        data = [{"id": s.id, "name": s.name} for s in specializations]
+        return Response(data)
