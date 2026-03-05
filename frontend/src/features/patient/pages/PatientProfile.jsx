@@ -7,15 +7,12 @@ import { usePatientSessionGuard } from "../../../hooks/usePatientSessionGuard";
 import PatientNavbar from "../../../components/patient/Navbar/PatientNavbar";
 import PatientFooter from "../../../components/patient/Footer/PatientFooter";
 
-const BASE_URL = "http://localhost:8000";
 const CROP_SIZE = 400;
 const PREVIEW_SIZE = 220;
 
-const fullImgUrl = (path) => !path ? null : path.startsWith("http") ? path : `${BASE_URL}${path}`;
-
 const DEFAULT_TOPICS = ["Anxiety", "Work Stress", "Depression", "Relationship Issues", "Sleep Disorders", "Trauma", "Eating Disorders"];
 
-// Shared class strings
+// Shared
 const inputCls = "w-full px-4 py-3 text-sm font-['DM_Sans',sans-serif] text-ui-900 bg-ui-50 border border-ui-200 rounded-[10px] outline-none transition-all duration-200 placeholder:text-ui-400 focus:border-patient-primary focus:bg-white focus:shadow-[0_0_0_3px_rgba(26,190,170,0.1)] disabled:opacity-60 disabled:cursor-not-allowed";
 const selectCls = "w-full px-4 py-3 text-sm font-['DM_Sans',sans-serif] text-ui-900 bg-ui-50 border border-ui-200 rounded-[10px] outline-none transition-all duration-200 focus:border-patient-primary focus:bg-white focus:shadow-[0_0_0_3px_rgba(26,190,170,0.1)] cursor-pointer appearance-none";
 const labelCls = "block text-xs font-semibold text-ui-500 uppercase tracking-[0.06em] mb-1.5";
@@ -217,7 +214,7 @@ export default function PatientProfile() {
     const userAvatar = profile?.user?.profile_picture || null;
     const formatDate = (d) => !d ? null : new Date(d).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
     const capitalize = (s) => !s ? "" : s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
-    const avatarSrc = pendingRemove ? null : (pendingPreview || fullImgUrl(userAvatar));
+    const avatarSrc = pendingRemove ? null : (pendingPreview || userAvatar || null);
     const avatarInitial = userName.charAt(0).toUpperCase();
 
     const SectionHeader = ({ icon, label, iconBg = "bg-[rgba(26,190,170,0.1)] text-patient-primary" }) => (
@@ -256,11 +253,17 @@ export default function PatientProfile() {
                         <div className="flex items-center gap-6">
                             {/* Avatar */}
                             <div className="relative flex-shrink-0">
-                                <div className="w-[88px] h-[88px] rounded-full overflow-hidden bg-gradient-to-br from-patient-primary to-patient-dark shadow-patient-md">
-                                    {avatarSrc ? (
-                                        <img src={avatarSrc} alt={userName} className="w-full h-full object-cover" style={pendingRemove ? { opacity: 0.35 } : {}} />
-                                    ) : (
-                                        <div className="w-full h-full text-white text-2xl font-bold flex items-center justify-center">{avatarInitial}</div>
+                                <div className="w-[88px] h-[88px] rounded-full overflow-hidden shadow-patient-md relative">
+                                    <div className="absolute inset-0 bg-gradient-to-br from-patient-primary to-patient-dark text-white text-2xl font-bold flex items-center justify-center">
+                                        {avatarInitial}
+                                    </div>
+                                    {avatarSrc && !pendingRemove && (
+                                        <img
+                                            src={avatarSrc}
+                                            alt={userName}
+                                            className="absolute inset-0 w-full h-full object-cover"
+                                            onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                                        />
                                     )}
                                 </div>
                                 {isEditing && (

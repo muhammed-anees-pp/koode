@@ -31,10 +31,8 @@ const PsychologistForgotPassword = () => {
 
   return (
     <div className="min-h-screen bg-[#eef0f5] flex flex-col items-center justify-center p-5">
-      {/* Card */}
       <div className="w-full max-w-[400px]">
         <div className="bg-white rounded-2xl p-8 shadow-[0_4px_24px_rgba(0,0,0,0.10)] animate-fade-in">
-          {/* Logo */}
           <div className="text-center mb-6">
             <img src={logo} alt="Koode" className="h-12 w-auto block mx-auto scale-[1.6] origin-center mb-5" />
             {!showSuccessMessage && (

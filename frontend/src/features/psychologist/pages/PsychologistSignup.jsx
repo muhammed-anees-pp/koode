@@ -73,7 +73,6 @@ const PsychologistSignup = () => {
   return (
     <div className={pageCls}>
       <div className={cardCls}>
-        {/* Logo */}
         <div className="text-center mb-7">
           <img src={psychologistLogo} alt="Koode" className="h-14 w-auto block mx-auto scale-[1.6] origin-center mb-5" />
           <h1 className="text-2xl font-bold text-gray-900 mb-1">Join Our Clinical Network</h1>
@@ -81,21 +80,18 @@ const PsychologistSignup = () => {
         </div>
 
         <form className="flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)}>
-          {/* Full Name */}
           <div>
             <label htmlFor="full_name" className={labelCls}>Full Name</label>
             <input type="text" id="full_name" placeholder="Dr. John Doe" {...register("full_name")} className={inputCls(!!errors.full_name)} />
             {errors.full_name && <p className={errCls}>{errors.full_name.message}</p>}
           </div>
 
-          {/* Email */}
           <div>
             <label htmlFor="email" className={labelCls}>Email Address</label>
             <input type="text" id="email" placeholder="you@clinic.com" {...register("email")} className={inputCls(!!errors.email)} />
             {errors.email && <p className={errCls}>{errors.email.message}</p>}
           </div>
 
-          {/* Password */}
           <div>
             <label htmlFor="password" className={labelCls}>Password</label>
             <div className="relative">
@@ -105,7 +101,6 @@ const PsychologistSignup = () => {
             {errors.password && <p className={errCls}>{errors.password.message}</p>}
           </div>
 
-          {/* Confirm Password */}
           <div>
             <label htmlFor="confirm_password" className={labelCls}>Confirm Password</label>
             <div className="relative">
@@ -115,7 +110,6 @@ const PsychologistSignup = () => {
             {errors.confirm_password && <p className={errCls}>{errors.confirm_password.message}</p>}
           </div>
 
-          {/* Terms */}
           <div>
             <label className="flex items-start gap-2 cursor-pointer select-none">
               <input type="checkbox" {...register("agreeToTerms")} className="mt-0.5 w-4 h-4 accent-psycho-primary" />
@@ -133,7 +127,6 @@ const PsychologistSignup = () => {
             {mutation.isPending ? "Creating Account..." : "Create Professional Account"}
           </button>
 
-          {/* Divider */}
           <div className="flex items-center gap-3">
             <div className="flex-1 h-px bg-gray-200" />
             <span className="text-xs text-gray-400 font-medium">Or</span>

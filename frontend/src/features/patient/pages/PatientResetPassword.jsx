@@ -58,7 +58,7 @@ const CircleIcon = () => (
   </svg>
 );
 
-// Shared class strings
+// Shared
 const pageCls = "min-h-screen flex flex-col items-center bg-[#f0f2f0] font-['DM_Sans',sans-serif] pb-10";
 const topbarCls = "w-full py-[22px] px-8 flex items-center justify-between";
 const logoCls = "h-9 w-auto object-contain scale-[2] origin-left ml-4";
@@ -237,7 +237,6 @@ const PatientResetPassword = () => {
           )}
 
           <form onSubmit={handleSubmit(onSubmit)} className="w-full flex flex-col gap-[18px]" noValidate>
-            {/* New Password */}
             <div className="flex flex-col items-start gap-1.5 w-full">
               <label className="text-[13px] font-semibold text-[#1a2233]" htmlFor="newPassword">New Password</label>
               <div className="relative w-full">
@@ -246,7 +245,6 @@ const PatientResetPassword = () => {
               </div>
               {errors.newPassword && <span className={fieldErrorCls}>{errors.newPassword.message}</span>}
 
-              {/* Strength bar */}
               {newPassword && (
                 <div className="w-full flex items-center gap-[10px] mt-0.5">
                   <div className="flex gap-1 flex-1">
@@ -259,7 +257,6 @@ const PatientResetPassword = () => {
               )}
             </div>
 
-            {/* Confirm Password */}
             <div className="flex flex-col items-start gap-1.5 w-full">
               <label className="text-[13px] font-semibold text-[#1a2233]" htmlFor="confirmPassword">Confirm New Password</label>
               <div className="relative w-full">
@@ -269,7 +266,6 @@ const PatientResetPassword = () => {
               {errors.confirmPassword && <span className={fieldErrorCls}>{errors.confirmPassword.message}</span>}
             </div>
 
-            {/* Requirements */}
             <div className="w-full bg-[#f8fafb] border border-[#e2e8f0] rounded-[12px] px-[18px] py-4 text-left">
               <p className="text-[13px] font-bold text-[#1a2233] mb-3">Password Requirements</p>
               <ul className="list-none flex flex-col gap-[9px] p-0 m-0">
