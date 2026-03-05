@@ -66,6 +66,18 @@ export const usePatientLoginMutation = (setError, setLocalError) => {
         },
         onError: (err) => {
             const errorData = err.response?.data;
+            const nonFieldArr = errorData?.non_field_errors;
+            const isSuspended =
+                errorData?.code === "suspended" ||
+                (Array.isArray(nonFieldArr) &&
+                    nonFieldArr.some(
+                        (e) => typeof e === "object" && e?.code === "suspended"
+                    ));
+
+            if (isSuspended) {
+                setLocalError("Your account has been suspended. Please contact support.");
+                return;
+            }
 
             if (errorData) {
                 let mappedAny = false;
@@ -81,7 +93,8 @@ export const usePatientLoginMutation = (setError, setLocalError) => {
                 if (errorData.detail) {
                     setLocalError(errorData.detail);
                 } else if (errorData.non_field_errors) {
-                    setLocalError(errorData.non_field_errors[0]);
+                    const first = errorData.non_field_errors[0];
+                    setLocalError(typeof first === "object" ? (first.detail || "Login failed") : first);
                 } else if (!mappedAny) {
                     const firstErrorKey = Object.keys(errorData)[0];
                     setLocalError(
@@ -97,17 +110,30 @@ export const usePatientLoginMutation = (setError, setLocalError) => {
     });
 };
 
-export const useGooglePatientAuthMutation = () => {
-  const navigate = useNavigate();
-  const login = useAuthStore((s) => s.login);
 
-  return useMutation({
-    mutationFn: patientGoogleAuth,
+export const useGooglePatientAuthMutation = (setLocalError) => {
+    const navigate = useNavigate();
+    const login = useAuthStore((s) => s.login);
 
-    onSuccess: (data) => {
-      login(data, "PATIENT");
-      navigate("/patient/home");
-    },
-  });
+    return useMutation({
+        mutationFn: patientGoogleAuth,
+
+        onSuccess: (data) => {
+            login(data, "PATIENT");
+            navigate("/patient/home");
+        },
+
+        onError: (err) => {
+            const data = err.response?.data;
+            const isSuspended =
+                data?.code === "suspended" ||
+                (Array.isArray(data) &&
+                    data.some((e) => typeof e === "object" && e?.code === "suspended"));
+
+            if (isSuspended) {
+                err._handled = true;
+                setLocalError?.("Your account has been suspended. Please contact support.");
+            }
+        },
+    });
 };
-

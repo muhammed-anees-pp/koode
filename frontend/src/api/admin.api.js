@@ -17,9 +17,21 @@ export const adminLogout = async () => {
 
 export const adminForgotPassword = async (email) => {
   const response = await axiosInstance.post("/admin/auth/forgot-password/", { email });
-  return response.data; 
+  return response.data;
 };
 
 export const adminResetPassword = async (data) => {
   return axiosInstance.post("/admin/auth/reset-password/", data);
+};
+
+export const fetchAdminPatients = async ({ page = 1, pageSize = 10, search = "", sortBy = "joined_date", sortDir = "desc", filterStatus = "all" } = {}) => {
+  const params = new URLSearchParams({ page, page_size: pageSize, sort_by: sortBy, sort_dir: sortDir, filter_status: filterStatus });
+  if (search) params.append("search", search);
+  const response = await axiosInstance.get(`admin/patients/?${params}`);
+  return response.data;
+};
+
+export const togglePatientSuspension = async (patientId) => {
+  const response = await axiosInstance.post(`admin/patients/${patientId}/suspend/`);
+  return response.data;
 };

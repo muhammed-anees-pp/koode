@@ -3,6 +3,7 @@ import AdminLogin from "./pages/AdminLogin";
 import Dashboard from "./pages/AdminDashboard";
 import AdminForgotPassword from "./pages/AdminForgotPassword";
 import AdminResetPassword from "./pages/AdminResetPassword";
+import AdminPatientList from "./pages/AdminPatientList";
 import { useAuthStore } from "../../store/auth.store";
 
 const AdminRoutes = () => {
@@ -28,6 +29,17 @@ const AdminRoutes = () => {
         element={
           isAuthenticated && role === "ADMIN" ? (
             <Dashboard />
+          ) : (
+            <Navigate to="/admin/login" />
+          )
+        }
+      />
+
+      <Route
+        path="patients"
+        element={
+          isAuthenticated && role === "ADMIN" ? (
+            <AdminPatientList />
           ) : (
             <Navigate to="/admin/login" />
           )
