@@ -49,6 +49,8 @@ INSTALLED_APPS = [
     "accounts",
     "admin_panel",
     "patients",
+    "applications",
+    "psychologists",
 ]
 
 # -------------------------------------------------
