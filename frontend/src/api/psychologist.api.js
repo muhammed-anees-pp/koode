@@ -34,7 +34,24 @@ export const psychologistGoogleAuth = async (data) => {
   return response.data;
 };
 
-export const psychologistApplication = async () => {
-  const response = await axiosInstance.post("psychologist/application/");
+export const getApplicationStatus = async () => {
+  const response = await axiosInstance.get("application/status/");
+  return response.data;
+};
+
+export const getMyApplication = async () => {
+  const response = await axiosInstance.get("application/my/");
+  return response.data;
+};
+
+export const submitApplication = async (formData) => {
+  const response = await axiosInstance.post("application/submit/", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return response.data;
+};
+
+export const getSpecializations = async () => {
+  const response = await axiosInstance.get("psychologist/specializations/");
   return response.data;
 };
