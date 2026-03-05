@@ -41,7 +41,6 @@ function PatientDetailModal({ patient, onClose, onDeactivate }) {
         <div className={overlayClasses} onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
             <div className="bg-[#141826] border border-slate-700/50 rounded-2xl shadow-[0_24px_80px_rgba(0,0,0,0.6)] w-full max-w-[480px] relative overflow-hidden animate-[pdmSlideUp_0.22s_cubic-bezier(0.22,1,0.36,1)]">
 
-                {/* Close button */}
                 <button
                     className="absolute top-3 right-3 w-8 h-8 bg-slate-800/60 hover:bg-slate-700 rounded-full border-none cursor-pointer text-slate-400 hover:text-slate-200 flex items-center justify-center transition-all duration-200 z-10 text-lg font-light"
                     onClick={onClose}
@@ -50,22 +49,16 @@ function PatientDetailModal({ patient, onClose, onDeactivate }) {
                     ×
                 </button>
 
-                {/* Avatar + Identity */}
                 <div className="flex flex-col items-center text-center pt-8 pb-5 px-6">
                     <div className="relative mb-4">
-                        {/* White ring border */}
                         <div className="w-[96px] h-[96px] rounded-full border-[3px] border-white/80 flex items-center justify-center overflow-hidden">
                             <PatientAvatar name={patient.full_name} photo={patient.profile_picture} size={88} />
                         </div>
-                        {/* Online/status dot */}
                         <span className={`absolute bottom-1 right-1 w-4 h-4 rounded-full border-2 border-[#141826] ${patient.is_active ? "bg-emerald-400" : "bg-slate-500"}`} />
                     </div>
                     <h2 className="font-outfit text-[1.15rem] font-bold text-slate-100 mb-0.5">{patient.full_name}</h2>
-                    {/* Email below name */}
                     <p className="text-[12px] text-slate-400 mb-2">{patient.email}</p>
-                    {/* ID in purple/indigo */}
                     <p className="text-[12px] font-medium text-admin-primary mb-3">ID: #{patient.patient_id}</p>
-                    {/* Status badge — dark purple tint for active */}
                     <span className={`inline-flex items-center gap-1.5 px-4 py-1 text-[12px] font-semibold rounded-full ${patient.is_active
                         ? "bg-emerald-500/15 text-emerald-400"
                         : "bg-red-500/15 text-red-400"
@@ -77,7 +70,6 @@ function PatientDetailModal({ patient, onClose, onDeactivate }) {
 
                 <div className="h-px bg-slate-800/60" />
 
-                {/* Fields grid */}
                 <div className="grid grid-cols-2 px-6">
                     <Field label="Age" value={patient.age != null ? `${patient.age} Years` : "—"} />
                     <Field label="Phone" value={patient.phone_number} />
@@ -85,7 +77,6 @@ function PatientDetailModal({ patient, onClose, onDeactivate }) {
                     <Field label="Gender" value={patient.gender} />
                 </div>
 
-                {/* Dismiss View */}
                 <div className="text-center py-5">
                     <button
                         className="text-slate-500 text-sm bg-transparent border-none cursor-pointer hover:text-slate-300 transition-colors"
@@ -223,13 +214,11 @@ export default function AdminPatientList() {
             <div className="flex-1 ml-[220px] flex flex-col">
                 <Navbar />
                 <div className="flex-1 mt-[60px] p-6 lg:p-8">
-                    {/* Header */}
                     <div className="mb-7">
                         <h1 className="font-outfit text-2xl font-bold text-slate-100 tracking-tight">Patients</h1>
                         <p className="text-slate-400 text-sm mt-1">Manage registered patients and their account status.</p>
                     </div>
 
-                    {/* Controls */}
                     <div className="flex items-center gap-3 mb-5 flex-wrap">
                         <div className="relative w-[500px]">
                             <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none w-4 h-4" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
@@ -237,7 +226,6 @@ export default function AdminPatientList() {
                         </div>
 
                         <div className="flex items-center gap-2">
-                            {/* Filter */}
                             <div className="relative" ref={filterDropdown.ref}>
                                 <button className={btnOutlineCls(filterStatus !== "all")} onClick={() => { filterDropdown.setOpen(o => !o); sortDropdown.setOpen(false); }}>
                                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" /></svg>
@@ -256,7 +244,6 @@ export default function AdminPatientList() {
                                 )}
                             </div>
 
-                            {/* Sort */}
                             <div className="relative" ref={sortDropdown.ref}>
                                 <button className={btnOutlineCls(sortBy !== "joined_date" || sortDir !== "desc")} onClick={() => { sortDropdown.setOpen(o => !o); filterDropdown.setOpen(false); }}>
                                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" /></svg>
@@ -281,7 +268,6 @@ export default function AdminPatientList() {
                         </div>
                     </div>
 
-                    {/* Table */}
                     <div className="bg-[#141826] border border-slate-700/50 rounded-[14px] overflow-hidden">
                         <table className="w-full border-collapse">
                             <thead>
@@ -336,7 +322,6 @@ export default function AdminPatientList() {
                         </table>
                     </div>
 
-                    {/* Pagination */}
                     <div className="flex items-center justify-between mt-4 text-sm text-slate-500 flex-wrap gap-3">
                         <div className="flex items-center gap-2">
                             <span>Rows per page:</span>

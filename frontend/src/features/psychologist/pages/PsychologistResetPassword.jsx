@@ -206,7 +206,6 @@ const PsychologistResetPassword = () => {
           )}
 
           <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
-            {/* New Password */}
             <div>
               <label htmlFor="newPassword" className={labelCls}>New Password</label>
               <div className="relative">
@@ -226,7 +225,6 @@ const PsychologistResetPassword = () => {
               )}
             </div>
 
-            {/* Confirm Password */}
             <div>
               <label htmlFor="confirmPassword" className={labelCls}>Confirm New Password</label>
               <div className="relative">
@@ -236,7 +234,6 @@ const PsychologistResetPassword = () => {
               {errors.confirmPassword && <span className={fieldErrCls}>{errors.confirmPassword.message}</span>}
             </div>
 
-            {/* Requirements */}
             <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 text-xs">
               <p className="text-gray-700 font-semibold mb-2">Password Requirements</p>
               <ul className="flex flex-col gap-1.5 list-none p-0 m-0">

@@ -82,19 +82,16 @@ const PsychologistVerification = () => {
   return (
     <div className="min-h-screen bg-[#eef0f5] flex items-center justify-center p-5">
       <div className="bg-white rounded-2xl p-10 w-full max-w-[460px] shadow-[0_4px_24px_rgba(0,0,0,0.10)] animate-fade-in">
-        {/* Logo */}
         <div className="flex justify-center mb-6">
           <img src={logo} alt="Koode" className="h-12 w-auto block mx-auto scale-[1.6] origin-center" />
         </div>
 
-        {/* Icon */}
         <div className="flex justify-center mb-6">
           <div className={`w-20 h-20 ${iconWrapperCls[status] || iconWrapperCls.verifying} border rounded-2xl flex items-center justify-center`}>
             <CardIcon />
           </div>
         </div>
 
-        {/* Content */}
         <div className="text-center">
           {status === "check-email" && (
             <>

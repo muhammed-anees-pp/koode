@@ -4,11 +4,11 @@ import { useAuthStore } from "../../../store/auth.store";
 import { patientLogout } from "../../../api/patient.api";
 import logo from "../../../assets/patient-logo.png";
 
-// Shared class strings
+// Shared
 const navLinkCls = "text-[0.938rem] font-medium text-ui-600 no-underline cursor-pointer bg-transparent border-none py-1 px-0 transition-all duration-200 hover:text-patient-primary relative after:content-[''] after:absolute after:-bottom-0.5 after:left-0 after:w-0 after:h-[2px] after:bg-patient-primary after:transition-all after:duration-300 hover:after:w-full";
 const activeNavCls = (isActive) => `text-[0.938rem] font-medium no-underline cursor-pointer bg-transparent border-none py-1 px-0 transition-all duration-200 relative after:content-[''] after:absolute after:-bottom-0.5 after:left-0 after:h-[2px] after:bg-patient-primary after:transition-all after:duration-300 ${isActive
-        ? 'text-patient-primary after:w-full'
-        : 'text-ui-600 after:w-0 hover:text-patient-primary hover:after:w-full'
+    ? 'text-patient-primary after:w-full'
+    : 'text-ui-600 after:w-0 hover:text-patient-primary hover:after:w-full'
     }`;
 const dropdownItemCls = "block px-5 py-[10px] text-[0.875rem] font-medium text-ui-600 no-underline transition-all duration-200 hover:bg-[rgba(26,190,170,0.06)] hover:text-patient-primary hover:pl-7";
 const mobileNavLinkCls = "block py-[14px] px-6 text-base font-medium text-ui-700 no-underline border-b border-ui-100 transition-all duration-200 hover:text-patient-primary hover:bg-[rgba(26,190,170,0.05)] hover:pl-9";
@@ -22,7 +22,7 @@ const PatientNavbar = ({ authLink } = {}) => {
     const user = {
         name: authUser?.full_name || 'Patient',
         email: authUser?.email || '',
-        avatar: authUser?.profile_picture ? `http://localhost:8000${authUser.profile_picture}` : "https://via.placeholder.com/150",
+        avatar: authUser?.profile_picture || null,
         isOnline: true
     };
 
@@ -58,15 +58,39 @@ const PatientNavbar = ({ authLink } = {}) => {
         else if (action === 'Settings') { navigate('#'); }
     };
 
-    const hasCustomAvatar = user.avatar && user.avatar !== "https://via.placeholder.com/150";
+    const hasCustomAvatar = !!user.avatar;
 
-    const AvatarSmall = () => hasCustomAvatar
-        ? <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
-        : <div className="w-full h-full bg-gradient-to-br from-patient-primary to-patient-dark text-white text-sm font-bold flex items-center justify-center">{user.name.charAt(0).toUpperCase()}</div>;
+    const AvatarSmall = () => (
+        <div className="w-full h-full relative">
+            <div className="w-full h-full bg-gradient-to-br from-patient-primary to-patient-dark text-white text-sm font-bold flex items-center justify-center">
+                {user.name.charAt(0).toUpperCase()}
+            </div>
+            {hasCustomAvatar && (
+                <img
+                    src={user.avatar}
+                    alt={user.name}
+                    className="absolute inset-0 w-full h-full object-cover"
+                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                />
+            )}
+        </div>
+    );
 
-    const AvatarLarge = () => hasCustomAvatar
-        ? <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
-        : <div className="w-full h-full bg-gradient-to-br from-patient-primary to-patient-dark text-white text-xl font-bold flex items-center justify-center">{user.name.charAt(0).toUpperCase()}</div>;
+    const AvatarLarge = () => (
+        <div className="w-full h-full relative">
+            <div className="w-full h-full bg-gradient-to-br from-patient-primary to-patient-dark text-white text-xl font-bold flex items-center justify-center">
+                {user.name.charAt(0).toUpperCase()}
+            </div>
+            {hasCustomAvatar && (
+                <img
+                    src={user.avatar}
+                    alt={user.name}
+                    className="absolute inset-0 w-full h-full object-cover"
+                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                />
+            )}
+        </div>
+    );
 
     return (
         <div className="fixed top-0 left-0 right-0 z-[1000]">

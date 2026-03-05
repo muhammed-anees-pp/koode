@@ -73,7 +73,6 @@ const PsychologistLogin = () => {
   return (
     <div className={pageCls}>
       <div className={cardCls}>
-        {/* Logo */}
         <div className="text-center mb-7">
           <img src={psychologistLogo} alt="Koode" className="h-14 w-auto block mx-auto scale-[1.6] origin-center mb-5" />
           <h1 className="text-2xl font-bold text-gray-900 mb-1">Welcome back, Counselor</h1>
@@ -81,14 +80,12 @@ const PsychologistLogin = () => {
         </div>
 
         <form className="flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)}>
-          {/* Email */}
           <div>
             <label htmlFor="email" className={labelCls}>Email Address</label>
             <input type="email" id="email" placeholder="doctor@clinic.com" {...register("email")} className={inputCls(!!errors.email)} />
             {errors.email && <p className={errorMsgCls}>{errors.email.message}</p>}
           </div>
 
-          {/* Password */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <label htmlFor="password" className={labelCls} style={{ marginBottom: 0 }}>Password</label>
@@ -101,7 +98,6 @@ const PsychologistLogin = () => {
             {errors.password && <p className={errorMsgCls}>{errors.password.message}</p>}
           </div>
 
-          {/* Remember me */}
           <label className="flex items-center gap-2 cursor-pointer select-none -mt-1">
             <input type="checkbox" className="w-4 h-4 accent-psycho-primary rounded" />
             <span className="text-sm text-gray-600">Remember me</span>
@@ -113,7 +109,6 @@ const PsychologistLogin = () => {
             {mutation.isPending ? "Logging In..." : "Secure Log In"}
           </button>
 
-          {/* Divider */}
           <div className="flex items-center gap-3">
             <div className="flex-1 h-px bg-gray-200" />
             <span className="text-xs text-gray-400 font-medium">Or</span>

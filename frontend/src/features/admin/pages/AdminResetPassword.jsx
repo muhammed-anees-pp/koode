@@ -47,7 +47,6 @@ const inputCls = (hasErr) => `w-full bg-[#0d1117] border ${hasErr ? "border-red-
 const errorCls = "flex items-center gap-2 text-red-400 text-[13px] bg-red-500/10 border border-red-500/20 px-3 py-2 rounded-lg mt-2";
 const submitBtnCls = "w-full flex items-center justify-center gap-2 py-[14px] px-6 bg-admin-primary text-white font-semibold text-[0.938rem] border-none rounded-xl cursor-pointer transition-all duration-300 shadow-admin-btn hover:bg-admin-hover hover:shadow-admin-btn-hover hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-60 disabled:cursor-not-allowed";
 
-// Shared logo header — same size/ratio as login page
 const CardHeader = ({ title, subtitle }) => (
   <div className="text-center mb-8">
     <div className="flex justify-center mb-8">
@@ -58,7 +57,6 @@ const CardHeader = ({ title, subtitle }) => (
   </div>
 );
 
-// Footer — outside the card, matching login/forgot-password pattern
 const PageFooter = () => (
   <div className="mt-6 flex flex-col items-center gap-1.5">
     <div className="flex items-center gap-2 text-slate-500 text-sm">
@@ -146,7 +144,6 @@ const AdminResetPassword = () => {
     { text: "Contains special character (!@#$%)", test: /[^A-Za-z0-9]/.test(newPassword) },
   ];
 
-  // Validating state
   if (isValidating) {
     return (
       <div className="bg-admin-gradient min-h-screen flex flex-col items-center justify-center p-5 font-['DM_Sans',sans-serif]">
@@ -162,7 +159,6 @@ const AdminResetPassword = () => {
     );
   }
 
-  // Invalid token state
   if (!isTokenValid) {
     return (
       <div className="bg-admin-gradient min-h-screen flex flex-col items-center justify-center p-5 font-['DM_Sans',sans-serif]">
@@ -188,7 +184,6 @@ const AdminResetPassword = () => {
     );
   }
 
-  // Success state
   if (mutation.isSuccess) {
     return (
       <div className="bg-admin-gradient min-h-screen flex flex-col items-center justify-center p-5 font-['DM_Sans',sans-serif]">
@@ -211,7 +206,6 @@ const AdminResetPassword = () => {
     );
   }
 
-  // Form state
   return (
     <div className="bg-admin-gradient min-h-screen flex flex-col items-center justify-center p-5 font-['DM_Sans',sans-serif]">
       <div className={cardCls}>
@@ -220,7 +214,6 @@ const AdminResetPassword = () => {
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5" noValidate>
           {mutation.isError && !mutation.isSuccess && <div className={errorCls}>{getErrorMessage(mutation.error)}</div>}
 
-          {/* New Password */}
           <div>
             <label htmlFor="newPassword" className={labelCls}>New Password</label>
             <div className="relative">
@@ -241,7 +234,6 @@ const AdminResetPassword = () => {
             )}
           </div>
 
-          {/* Confirm Password */}
           <div>
             <label htmlFor="confirmPassword" className={labelCls}>Confirm Password</label>
             <div className="relative">
@@ -252,7 +244,6 @@ const AdminResetPassword = () => {
             {errors.confirmPassword && <div className={errorCls}>{errors.confirmPassword.message}</div>}
           </div>
 
-          {/* Requirements */}
           <div className="bg-[#0d1117] border border-slate-700/60 rounded-xl p-4 text-xs">
             <p className="text-slate-300 font-semibold mb-3">Password Requirements:</p>
             <ul className="flex flex-col gap-2 list-none p-0 m-0">

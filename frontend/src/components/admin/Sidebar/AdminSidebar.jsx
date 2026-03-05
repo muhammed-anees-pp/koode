@@ -57,12 +57,10 @@ const Sidebar = () => {
 
   return (
     <aside className="fixed top-0 left-0 h-full w-[220px] bg-[#0B0E14] border-r border-slate-800/40 flex flex-col z-[100]">
-      {/* Logo area — fixed 60px height matches navbar; overflow-hidden so scale doesn't push the border */}
       <div className="h-[60px] flex items-center justify-center px-4 border-b border-slate-800/40 flex-shrink-0 overflow-hidden">
         <img src={logo} alt="koode.in" className="w-28 h-auto scale-[2] origin-center" />
       </div>
 
-      {/* Nav */}
       <nav className="flex-1 overflow-y-auto py-3 scrollbar-thin">
         <NavSection title="Management" items={menuItems.management} />
         <NavSection title="Monitoring" items={menuItems.monitoring} />

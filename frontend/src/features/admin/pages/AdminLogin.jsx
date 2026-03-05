@@ -81,9 +81,7 @@ const AdminLogin = () => {
 
   return (
     <div className="bg-admin-gradient min-h-screen flex flex-col items-center justify-center p-5 font-['DM_Sans',sans-serif]">
-      {/* Card */}
       <div className="bg-[rgba(13,17,30,0.92)] border border-slate-800/60 rounded-2xl p-8 w-full max-w-[440px] shadow-[0_24px_80px_rgba(0,0,0,0.5)] animate-fade-in backdrop-blur-sm">
-        {/* Header */}
         <div className="text-center mb-8">
           <div className="flex justify-center mb-8">
             <img src={logo} alt="koode.in" className="w-40 sm:w-52 md:w-60 h-auto scale-125 sm:scale-150" />
@@ -93,7 +91,6 @@ const AdminLogin = () => {
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-5" noValidate>
-          {/* Email */}
           <div>
             <label className="block text-xs font-semibold text-slate-500 uppercase tracking-[0.07em] mb-2">Email Address</label>
             <div className={inputWrapCls}>
@@ -103,7 +100,6 @@ const AdminLogin = () => {
             {validationErrors.email && <div className={errorCls}>{validationErrors.email}</div>}
           </div>
 
-          {/* Password */}
           <div>
             <label className="block text-xs font-semibold text-slate-500 uppercase tracking-[0.07em] mb-2">Password</label>
             <div className={inputWrapCls}>
@@ -124,12 +120,10 @@ const AdminLogin = () => {
 
           {validationErrors.form && <div className={errorCls}>{validationErrors.form}</div>}
 
-          {/* Options */}
           <div className="flex items-center justify-end">
             <Link to="/admin/forgot-password" className="text-admin-primary text-sm font-medium no-underline transition-colors duration-200 hover:text-admin-hover">Forgot password?</Link>
           </div>
 
-          {/* Sign In Button — minimal style matching reference */}
           <button
             type="submit"
             disabled={mutation.isPending}
@@ -145,7 +139,6 @@ const AdminLogin = () => {
         </form>
       </div>
 
-      {/* Footer — outside card, matching reference */}
       <div className="mt-6 flex flex-col items-center gap-1.5">
         <div className="flex items-center gap-2 text-slate-500 text-sm">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1.33334L3.33334 3.33334V7.33334C3.33334 10.6667 5.66668 13.7333 8 14.6667C10.3333 13.7333 12.6667 10.6667 12.6667 7.33334V3.33334L8 1.33334Z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" /></svg>
