@@ -75,31 +75,26 @@ const PatientSignup = () => {
 
       <main className="flex-1 flex items-center justify-center px-6 py-12 animate-fade-in">
         <div className="bg-white rounded-lg2 shadow-card w-full max-w-[460px] px-10 py-7 transition-all duration-300 hover:shadow-card-hover">
-          {/* Logo */}
           <div className="flex items-center justify-center scale-[1.3]">
             <img src={patientLogo} alt="Koode" style={{ height: "80px" }} />
           </div>
 
-          {/* Title */}
           <h1 className="font-outfit text-2xl font-bold text-ui-900 text-center mb-2 mt-0 tracking-tight">Create Account</h1>
           <p className="text-[0.938rem] text-ui-500 text-center mb-8">Join with koode to start your wellness journey.</p>
 
           <form className="flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)}>
-            {/* Full Name */}
             <div className="flex flex-col gap-[0.625rem]">
               <label htmlFor="full_name" className="text-sm font-medium text-ui-900">Full Name</label>
               <input type="text" id="full_name" placeholder="John Doe" className={inputCls} {...register("full_name")} />
               {errors.full_name && <p className="text-red-500 text-sm mt-1 mb-0">{errors.full_name.message}</p>}
             </div>
 
-            {/* Email */}
             <div className="flex flex-col gap-[0.625rem]">
               <label htmlFor="email" className="text-sm font-medium text-ui-900">Email Address</label>
               <input type="text" id="email" placeholder="you@example.com" className={inputCls} {...register("email")} />
               {errors.email && <p className="text-red-500 text-sm mt-1 mb-0">{errors.email.message}</p>}
             </div>
 
-            {/* Password */}
             <div className="flex flex-col gap-[0.625rem]">
               <label htmlFor="password" className="text-sm font-medium text-ui-900">Password</label>
               <div className="relative">
@@ -111,7 +106,6 @@ const PatientSignup = () => {
               {errors.password && <p className="text-red-500 text-sm mt-1 mb-0">{errors.password.message}</p>}
             </div>
 
-            {/* Confirm Password */}
             <div className="flex flex-col gap-[0.625rem]">
               <label htmlFor="confirm_password" className="text-sm font-medium text-ui-900">Confirm Password</label>
               <div className="relative">
@@ -123,7 +117,6 @@ const PatientSignup = () => {
               {errors.confirm_password && <p className="text-red-500 text-sm mt-1 mb-0">{errors.confirm_password.message}</p>}
             </div>
 
-            {/* Terms Checkbox */}
             <div className="mt-1">
               <label className="flex items-center gap-[0.625rem] cursor-pointer text-sm text-ui-500 select-none">
                 <span className="relative flex-shrink-0">
@@ -144,7 +137,6 @@ const PatientSignup = () => {
 
             {localError && <p className="text-red-500 text-sm mt-2">{localError}</p>}
 
-            {/* Submit */}
             <button
               type="submit"
               className="w-full px-6 py-4 text-base font-semibold font-['DM_Sans',sans-serif] text-white bg-patient-primary border-none rounded-md2 cursor-pointer transition-all duration-300 mt-4 shadow-patient-sm hover:bg-patient-hover hover:shadow-patient-md hover:-translate-y-px active:translate-y-0 disabled:opacity-60 disabled:cursor-not-allowed"
@@ -153,12 +145,10 @@ const PatientSignup = () => {
               {mutation.isPending ? "Signing Up..." : "Sign Up"}
             </button>
 
-            {/* Divider */}
             <div className="flex items-center text-center my-4 text-ui-400 text-[0.813rem] font-medium before:content-[''] before:flex-1 before:border-b before:border-ui-200 after:content-[''] after:flex-1 after:border-b after:border-ui-200">
               <span className="px-4">OR</span>
             </div>
 
-            {/* Google */}
             <button
               type="button"
               className="w-full py-[0.875rem] px-6 text-[0.938rem] font-medium font-['DM_Sans',sans-serif] text-ui-900 bg-white border-[1.5px] border-ui-200 rounded-md2 cursor-pointer flex items-center justify-center gap-3 transition-all duration-300 hover:bg-ui-50 hover:border-ui-300 active:scale-[0.98]"

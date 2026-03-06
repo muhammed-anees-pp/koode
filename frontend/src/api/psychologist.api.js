@@ -1,28 +1,28 @@
 import axiosInstance from "./axios";
 
 export const psychologistSignup = async (data) => {
-    const response = await axiosInstance.post("psychologist/signup/", data);
-    return response.data;
+  const response = await axiosInstance.post("psychologist/signup/", data);
+  return response.data;
 };
 
 export const psychologistLogin = async (data) => {
-    const response = await axiosInstance.post("psychologist/login/", data);
-    return response.data;
+  const response = await axiosInstance.post("psychologist/login/", data);
+  return response.data;
 };
 
 export const psychologistVerifyEmail = async (token) => {
-    const response = await axiosInstance.post("psychologist/verify-email/", { token });
-    return response.data;
+  const response = await axiosInstance.post("psychologist/verify-email/", { token });
+  return response.data;
 };
 
 export const psychologistLogout = async () => {
-    const response = await axiosInstance.post("psychologist/logout/");
-    return response.data;
+  const response = await axiosInstance.post("psychologist/logout/");
+  return response.data;
 };
 
 export const psychologistForgotPassword = async (email) => {
   const response = await axiosInstance.post("/psychologist/forgot-password/", { email });
-  return response.data; 
+  return response.data;
 };
 
 export const psychologistResetPassword = async (data) => {
@@ -34,7 +34,24 @@ export const psychologistGoogleAuth = async (data) => {
   return response.data;
 };
 
-export const psychologistApplication = async () => {
-    const response = await axiosInstance.post("psychologist/application/");
-    return response.data;
+export const getApplicationStatus = async () => {
+  const response = await axiosInstance.get("application/status/");
+  return response.data;
+};
+
+export const getMyApplication = async () => {
+  const response = await axiosInstance.get("application/my/");
+  return response.data;
+};
+
+export const submitApplication = async (formData) => {
+  const response = await axiosInstance.post("application/submit/", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return response.data;
+};
+
+export const getSpecializations = async () => {
+  const response = await axiosInstance.get("psychologist/specializations/");
+  return response.data;
 };

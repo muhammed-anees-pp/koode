@@ -3,7 +3,6 @@ import { fetchDashboard } from "../../../api/admin.api";
 import Sidebar from "../../../components/admin/Sidebar/AdminSidebar";
 import Navbar from "../../../components/admin/Navbar/AdminNavbar";
 
-// ─── SVG Sparkline Charts ────────────────────────────────────────────────────
 const TREND_POINTS = [22, 30, 28, 45, 38, 52, 48, 60, 55, 70, 65, 80, 72, 85, 78, 90, 82, 75, 88, 95, 88, 100, 92, 98, 95, 105, 98, 110, 102, 115];
 function AppointmentsTrendChart() {
   const w = 460, h = 120, pad = 8;
@@ -50,7 +49,6 @@ function RevenueVsComplaintsChart() {
   );
 }
 
-// ─── Stat Cards ───────────────────────────────────────────────────────────────
 const STAT_COLORS = {
   blue: { bg: "bg-blue-500/10", icon: "text-blue-400", dot: "bg-blue-400" },
   cyan: { bg: "bg-cyan-500/10", icon: "text-cyan-400", dot: "bg-cyan-400" },
@@ -59,7 +57,6 @@ const STAT_COLORS = {
   green: { bg: "bg-emerald-500/10", icon: "text-emerald-400", dot: "bg-emerald-400" },
 };
 
-// ─── Dashboard ───────────────────────────────────────────────────────────────
 const Dashboard = () => {
   const { data, isLoading, isError } = useQuery({
     queryKey: ["admin-dashboard"],
@@ -111,13 +108,11 @@ const Dashboard = () => {
         <Navbar adminData={data} />
         <div className="flex-1 mt-[60px] p-6 lg:p-8">
 
-          {/* Page header */}
           <div className="mb-6">
             <h1 className="font-outfit text-[1.4rem] font-bold text-slate-100 tracking-tight">Dashboard Overview</h1>
             <p className="text-slate-500 text-sm mt-0.5">Welcome back, here's what's happening with koode today.</p>
           </div>
 
-          {/* Stat Cards */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
             {statsCards.map((stat) => {
               const c = STAT_COLORS[stat.color];
@@ -140,12 +135,9 @@ const Dashboard = () => {
             })}
           </div>
 
-          {/* Two-column layout */}
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-5">
 
-            {/* Left — Charts */}
             <div className="flex flex-col gap-5">
-              {/* Appointments Trend */}
               <div className="bg-[#151c2c] border border-slate-800/60 rounded-[14px] p-5">
                 <div className="flex items-center justify-between mb-1">
                   <div>
@@ -166,7 +158,6 @@ const Dashboard = () => {
                 </div>
               </div>
 
-              {/* Revenue vs Complaints */}
               <div className="bg-[#151c2c] border border-slate-800/60 rounded-[14px] p-5">
                 <div className="flex items-center justify-between mb-1">
                   <div>
@@ -184,9 +175,7 @@ const Dashboard = () => {
               </div>
             </div>
 
-            {/* Right — Quick Actions + Recent Activity */}
             <div className="flex flex-col gap-5">
-              {/* Quick Actions */}
               <div className="bg-[#151c2c] border border-slate-800/60 rounded-[14px] p-5">
                 <h3 className="text-slate-100 font-semibold text-sm mb-4">Quick Actions</h3>
                 <div className="flex flex-col gap-3">
@@ -221,7 +210,6 @@ const Dashboard = () => {
                 </div>
               </div>
 
-              {/* Recent Activity */}
               <div className="bg-[#151c2c] border border-slate-800/60 rounded-[14px] p-5 flex-1">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-slate-100 font-semibold text-sm">Recent Activity</h3>

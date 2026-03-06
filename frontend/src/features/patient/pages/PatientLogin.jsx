@@ -14,7 +14,6 @@ const loginSchema = z.object({
   password: z.string().min(1, "Password is required"),
 });
 
-// Shared input class
 const inputCls = "w-full px-4 py-4 text-[0.938rem] font-['DM_Sans',sans-serif] text-ui-900 bg-white border-[1.5px] border-ui-200 rounded-md2 transition-all duration-300 outline-none placeholder:text-ui-400 focus:border-patient-primary focus:shadow-[0_0_0_3px_rgba(26,190,170,0.1)] hover:border-ui-300";
 const eyeBtnCls = "absolute right-3 top-1/2 -translate-y-1/2 bg-transparent border-none text-ui-400 cursor-pointer p-2 flex items-center justify-center transition-all duration-300 rounded-sm2 hover:text-ui-500 hover:bg-ui-50";
 
@@ -60,27 +59,22 @@ const PatientLogin = () => {
 
       <main className="flex-1 flex items-center justify-center px-6 py-12 animate-fade-in">
         <div className="bg-white rounded-lg2 shadow-card w-full max-w-[460px] px-10 py-7 transition-all duration-300 hover:shadow-card-hover">
-          {/* Logo */}
           <div className="flex items-center justify-center scale-[1.3]">
             <img src={patientLogo} alt="Koode" style={{ height: "80px" }} />
           </div>
 
-          {/* Title */}
           <h1 className="font-outfit text-2xl font-bold text-ui-900 text-center mb-2 mt-0 tracking-tight">Welcome Back</h1>
           <p className="text-[0.938rem] text-ui-500 text-center mb-8">
             Please enter your details to access your secure space.
           </p>
 
-          {/* Form */}
           <form className="flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)}>
-            {/* Email */}
             <div className="flex flex-col gap-[0.625rem]">
               <label htmlFor="email" className="text-sm font-medium text-ui-900">Email Address</label>
               <input type="email" id="email" placeholder="you@example.com" className={inputCls} {...register("email")} />
               {errors.email && <p className="text-red-500 text-sm mt-1 mb-0">{errors.email.message}</p>}
             </div>
 
-            {/* Password */}
             <div className="flex flex-col gap-[0.625rem]">
               <div className="flex justify-between items-center">
                 <label htmlFor="password" className="text-sm font-medium text-ui-900">Password</label>
@@ -115,7 +109,6 @@ const PatientLogin = () => {
 
             {localError && <p className="text-red-500 text-sm mt-2">{localError}</p>}
 
-            {/* Submit */}
             <button
               type="submit"
               className="w-full px-6 py-4 text-base font-semibold font-['DM_Sans',sans-serif] text-white bg-patient-primary border-none rounded-md2 cursor-pointer transition-all duration-300 mt-4 shadow-patient-sm hover:bg-patient-hover hover:shadow-patient-md hover:-translate-y-px active:translate-y-0 disabled:opacity-60 disabled:cursor-not-allowed"
@@ -124,12 +117,10 @@ const PatientLogin = () => {
               {mutation.isPending ? "Logging In..." : "Log In"}
             </button>
 
-            {/* Divider */}
             <div className="flex items-center text-center my-4 text-ui-400 text-[0.813rem] font-medium before:content-[''] before:flex-1 before:border-b before:border-ui-200 after:content-[''] after:flex-1 after:border-b after:border-ui-200">
               <span className="px-4">OR</span>
             </div>
 
-            {/* Google */}
             <button
               type="button"
               className="w-full py-[0.875rem] px-6 text-[0.938rem] font-medium font-['DM_Sans',sans-serif] text-ui-900 bg-white border-[1.5px] border-ui-200 rounded-md2 cursor-pointer flex items-center justify-center gap-3 transition-all duration-300 hover:bg-ui-50 hover:border-ui-300 active:scale-[0.98]"

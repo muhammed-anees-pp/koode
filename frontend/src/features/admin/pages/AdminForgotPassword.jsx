@@ -35,9 +35,7 @@ const AdminForgotPassword = () => {
 
   return (
     <div className="bg-admin-gradient min-h-screen flex flex-col items-center justify-center p-5 font-['DM_Sans',sans-serif]">
-      {/* Card */}
       <div className="bg-[rgba(13,17,30,0.92)] border border-slate-800/60 rounded-2xl p-8 w-full max-w-[440px] shadow-[0_24px_80px_rgba(0,0,0,0.5)] animate-fade-in backdrop-blur-sm">
-        {/* Header */}
         <div className="text-center mb-8">
           <div className="flex justify-center mb-8">
             <img src={logo} alt="koode.in" className="w-40 sm:w-52 md:w-60 h-auto scale-125 sm:scale-150" />
@@ -92,7 +90,6 @@ const AdminForgotPassword = () => {
         </div>
       </div>
 
-      {/* Footer — outside card */}
       <div className="mt-6 flex flex-col items-center gap-1.5">
         <div className="flex items-center gap-2 text-slate-500 text-sm">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1.33334L3.33334 3.33334V7.33334C3.33334 10.6667 5.66668 13.7333 8 14.6667C10.3333 13.7333 12.6667 10.6667 12.6667 7.33334V3.33334L8 1.33334Z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" /></svg>

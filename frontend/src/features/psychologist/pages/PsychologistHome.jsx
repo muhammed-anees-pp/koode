@@ -28,7 +28,6 @@ const PsychologistHome = () => {
 
       {/* Hero */}
       <section className="relative pt-20 pb-16 px-6 overflow-hidden">
-        {/* Soft blue accent blobs */}
         <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-psycho-primary/5 rounded-full blur-[160px] pointer-events-none" />
         <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-blue-200/30 rounded-full blur-[120px] pointer-events-none" />
 

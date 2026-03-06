@@ -48,16 +48,13 @@ const PatientForgotPassword = () => {
 
   return (
     <div className="min-h-screen flex flex-col items-center bg-[#f0f2f0] font-['DM_Sans',sans-serif] pb-10">
-      {/* Logo */}
       <div className="w-full px-8 py-6 flex items-center">
         <img src={logo} alt="koode.in" className="h-9 w-auto object-contain scale-[2] origin-left ml-4" />
       </div>
 
-      {/* Card */}
       <div className="w-full max-w-[460px] mx-auto flex flex-col px-4 animate-fade-in">
         <div className="h-[5px] bg-gradient-to-r from-[#2bbfa4] to-[#48d8be] rounded-t-lg" />
         <div className="bg-white rounded-b-2xl shadow-[0_8px_40px_rgba(0,0,0,0.08)] px-12 py-11 flex flex-col items-center text-center">
-          {/* Lock Icon */}
           <div className="w-[60px] h-[60px] rounded-full bg-[#e6f7f4] flex items-center justify-center mb-6 flex-shrink-0">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
               <rect x="5" y="11" width="14" height="10" rx="2" stroke="#2bbfa4" strokeWidth="2" />
@@ -65,7 +62,6 @@ const PatientForgotPassword = () => {
             </svg>
           </div>
 
-          {/* Error Banner */}
           {backendError && !showSuccessMessage && (
             <div className="w-full flex items-start gap-[10px] bg-[#fef2f2] border border-[#fecaca] rounded-[10px] px-[14px] py-3 mb-4 text-left animate-fade-in">
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none" className="flex-shrink-0 mt-px">

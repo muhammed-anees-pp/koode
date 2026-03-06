@@ -41,7 +41,6 @@ export default function Navbar() {
       <div className="flex-1" />
 
       <div className="flex items-center gap-3">
-        {/* Notification bell */}
         <button className="relative bg-transparent border-none text-slate-400 cursor-pointer flex items-center justify-center hover:text-slate-200 transition-colors p-1">
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
             <path d="M15 6.66667C15 5.34058 14.4732 4.06881 13.5355 3.13113C12.5979 2.19345 11.3261 1.66667 10 1.66667C8.67392 1.66667 7.40215 2.19345 6.46447 3.13113C5.52678 4.06881 5 5.34058 5 6.66667C5 12.5 2.5 14.1667 2.5 14.1667H17.5C17.5 14.1667 15 12.5 15 6.66667Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -50,7 +49,6 @@ export default function Navbar() {
           <span className="absolute top-0.5 right-0.5 w-[7px] h-[7px] bg-admin-primary rounded-full" />
         </button>
 
-        {/* User profile */}
         <div className="relative" ref={menuRef}>
           <button
             className="flex items-center cursor-pointer bg-transparent border-none p-1"
@@ -61,7 +59,6 @@ export default function Navbar() {
             </div>
           </button>
 
-          {/* Dropdown */}
           {showUserMenu && (
             <div className="absolute right-0 top-[calc(100%+8px)] w-[160px] bg-[#161b2e] border border-slate-700/60 rounded-[12px] shadow-[0_8px_32px_rgba(0,0,0,0.4)] overflow-hidden z-10 animate-dropdown">
               <button
@@ -91,11 +88,9 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Logout modal — purple icon matching reference */}
       {showLogoutModal && (
         <div className="fixed inset-0 bg-[rgba(0,0,0,0.75)] backdrop-blur-[4px] z-[200] flex items-center justify-center p-5 animate-fade-in">
           <div className="bg-[#141826] border border-slate-700/50 rounded-2xl p-8 w-full max-w-[360px] text-center shadow-[0_24px_80px_rgba(0,0,0,0.6)]">
-            {/* Purple circular icon */}
             <div className="w-16 h-16 bg-[#2d2462] rounded-full flex items-center justify-center mx-auto mb-5 text-admin-primary">
               <svg width="30" height="30" viewBox="0 0 24 24" fill="none">
                 <path d="M16 17L21 12L16 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
