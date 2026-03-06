@@ -35,3 +35,26 @@ export const togglePatientSuspension = async (patientId) => {
   const response = await axiosInstance.post(`admin/patients/${patientId}/suspend/`);
   return response.data;
 };
+
+export const fetchAdminApplications = async ({ search = "", filterStatus = "all", sortBy = "date", sortDir = "desc" } = {}) => {
+  const params = new URLSearchParams({ sort_by: sortBy, sort_dir: sortDir });
+  if (search) params.append("search", search);
+  if (filterStatus !== "all") params.append("status", filterStatus);
+  const response = await axiosInstance.get(`application/admin/application-list/?${params}`);
+  return response.data;
+};
+
+export const fetchApplicationDetail = async (id) => {
+  const response = await axiosInstance.get(`application/admin/application/${id}/`);
+  return response.data;
+};
+
+export const updateApplication = async ({ id, data }) => {
+  const response = await axiosInstance.patch(`application/admin/application/${id}/update/`, data);
+  return response.data;
+};
+
+export const scheduleInterview = async ({ id, interview_date, admin_notes }) => {
+  const response = await axiosInstance.post(`application/admin/application/${id}/schedule-interview/`, { interview_date, admin_notes });
+  return response.data;
+};

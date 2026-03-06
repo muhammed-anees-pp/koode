@@ -37,13 +37,12 @@ export default function PatientHome() {
   const { data } = useQuery({ queryKey: ["patient-home"], queryFn: fetchPatientHome, enabled: isPatient });
   const fullName = authUser?.full_name || data?.patient_email?.split("@")[0] || "there";
 
-  /* AUTHENTICATED: dashboard view */
+  /* Authenticated landing page */
   if (isPatient) {
     return (
       <div className="flex flex-col min-h-screen font-['DM_Sans',sans-serif] antialiased">
         <PatientNavbar />
         <main className="flex-1 max-w-[960px] mx-auto px-8 pt-[5.5rem] pb-12 w-full">
-          {/* Welcome */}
           <div className="mb-10 animate-[phFadeUp_0.5s_ease_both]">
             <h1 className="font-outfit text-[clamp(1.75rem,4vw,2.5rem)] font-extrabold text-[#0f172a] tracking-tight mb-2">
               Welcome back, <span className="text-gradient-patient">{fullName}</span> 👋
@@ -51,7 +50,6 @@ export default function PatientHome() {
             <p className="text-base text-ui-500">What would you like to do today?</p>
           </div>
 
-          {/* Tiles */}
           <div className="grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-5 animate-[phFadeUp_0.5s_ease_0.1s_both]">
             {dashboardTiles.map((tile) => (
               <div key={tile.title} className="bg-white border border-ui-200 rounded-[16px] p-7 flex items-start gap-[1.1rem] cursor-pointer transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_10px_30px_rgba(26,190,170,0.1)] hover:border-[rgba(26,190,170,0.3)]">
@@ -72,7 +70,7 @@ export default function PatientHome() {
     );
   }
 
-  /* UNAUTHENTICATED: public landing page */
+  /* Unauthenticated public landing page */
   return (
     <div className="flex flex-col min-h-screen font-['DM_Sans',sans-serif] antialiased">
       <PatientNavbar />

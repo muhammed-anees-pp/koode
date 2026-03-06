@@ -10,7 +10,7 @@ const Sidebar = () => {
       { name: "Banner Management", path: "#", icon: (<svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M3 7C3 5.89543 3.89543 5 5 5H15C16.1046 5 17 5.89543 17 7V13C17 14.1046 16.1046 15 15 15H5C3.89543 15 3 14.1046 3 13V7Z" stroke="currentColor" strokeWidth="1.5" /><path d="M3 8H17" stroke="currentColor" strokeWidth="1.5" /></svg>) },
       { name: "Patients", path: "/admin/patients", icon: (<svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M16 17V15C16 13.3431 14.6569 12 13 12H7C5.34315 12 4 13.3431 4 15V17" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /><circle cx="10" cy="6" r="3" stroke="currentColor" strokeWidth="1.5" /></svg>) },
       { name: "Psychologists", path: "#", icon: (<svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M10 11C12.7614 11 15 8.76142 15 6C15 3.23858 12.7614 1 10 1C7.23858 1 5 3.23858 5 6C5 8.76142 7.23858 11 10 11Z" stroke="currentColor" strokeWidth="1.5" /><path d="M3.5 18.5C3.5 15.4624 5.96243 13 9 13H11C14.0376 13 16.5 15.4624 16.5 18.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>) },
-      { name: "Applications", path: "#", icon: (<svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M4 4C4 2.89543 4.89543 2 6 2H14C15.1046 2 16 2.89543 16 4V16C16 17.1046 15.1046 18 14 18H6C4.89543 18 4 17.1046 4 16V4Z" stroke="currentColor" strokeWidth="1.5" /><path d="M7 6H13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /><path d="M7 10H13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /><path d="M7 14H10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>) },
+      { name: "Applications", path: "/admin/applications", icon: (<svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M4 4C4 2.89543 4.89543 2 6 2H14C15.1046 2 16 2.89543 16 4V16C16 17.1046 15.1046 18 14 18H6C4.89543 18 4 17.1046 4 16V4Z" stroke="currentColor" strokeWidth="1.5" /><path d="M7 6H13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /><path d="M7 10H13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /><path d="M7 14H10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>) },
     ],
     monitoring: [
       { name: "Appointments", path: "#", icon: (<svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M5 3V1M15 3V1M4 7H16M3 5H17C17.5523 5 18 5.44772 18 6V16C18 16.5523 17.5523 17 17 17H3C2.44772 17 2 16.5523 2 16V6C2 5.44772 2.44772 5 3 5Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>) },
@@ -31,7 +31,7 @@ const Sidebar = () => {
       <div className="text-[10px] font-semibold text-slate-600 uppercase tracking-[0.13em] px-3 py-2">{title}</div>
       <div className="flex flex-col gap-0.5">
         {items.map((item) => {
-          const isActive = location.pathname === item.path;
+          const isActive = item.path !== "#" && location.pathname.startsWith(item.path);
           return (
             <Link
               key={item.name + item.path}
@@ -57,12 +57,10 @@ const Sidebar = () => {
 
   return (
     <aside className="fixed top-0 left-0 h-full w-[220px] bg-[#0B0E14] border-r border-slate-800/40 flex flex-col z-[100]">
-      {/* Logo area — fixed 60px height matches navbar; overflow-hidden so scale doesn't push the border */}
       <div className="h-[60px] flex items-center justify-center px-4 border-b border-slate-800/40 flex-shrink-0 overflow-hidden">
         <img src={logo} alt="koode.in" className="w-28 h-auto scale-[2] origin-center" />
       </div>
 
-      {/* Nav */}
       <nav className="flex-1 overflow-y-auto py-3 scrollbar-thin">
         <NavSection title="Management" items={menuItems.management} />
         <NavSection title="Monitoring" items={menuItems.monitoring} />
