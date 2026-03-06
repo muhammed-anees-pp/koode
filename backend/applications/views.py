@@ -7,6 +7,7 @@ from .services.application_service import ApplicationService
 from .repositories.application_repository import ApplicationRepository
 from django.db import models
 from .models import PsychologistApplication
+from django.shortcuts import get_object_or_404
 
 
 
@@ -117,4 +118,19 @@ class AdminApplicationListView(APIView):
         applications = applications.order_by(db_field)
 
         serializer = PsychologistApplicationSerializer(applications, many=True)
+        return Response(serializer.data)
+
+
+"""
+ADMIN SIDE APPLICATION DETAIL
+"""
+class AdminApplicationDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        application = get_object_or_404(
+            PsychologistApplication.objects.select_related("user").prefetch_related("specializations"),
+            pk=pk
+        )
+        serializer = PsychologistApplicationSerializer(application, context={"request": request})
         return Response(serializer.data)

@@ -43,3 +43,8 @@ export const fetchAdminApplications = async ({ search = "", filterStatus = "all"
   const response = await axiosInstance.get(`application/admin/application-list/?${params}`);
   return response.data;
 };
+
+export const fetchApplicationDetail = async (id) => {
+  const response = await axiosInstance.get(`application/admin/application/${id}/`);
+  return response.data;
+};
