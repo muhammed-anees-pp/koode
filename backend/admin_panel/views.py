@@ -69,13 +69,15 @@ class AdminPatientListView(APIView):
         end = start + page_size
         patients = queryset[start:end]
 
-        BASE_URL = request.build_absolute_uri("/").rstrip("/")
 
         from datetime import date as date_type
         results = []
         for p in patients:
             pic = p.user.profile_picture
-            pic_url = f"{BASE_URL}{pic.url}" if pic else None
+            try:
+                pic_url = request.build_absolute_uri(pic.url) if pic else None
+            except Exception:
+                pic_url = None
             age = None
             if p.date_of_birth:
                 today = date_type.today()
