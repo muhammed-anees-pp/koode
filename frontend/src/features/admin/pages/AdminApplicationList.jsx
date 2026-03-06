@@ -67,14 +67,14 @@ function StatusBadge({ status }) {
 function fmtDate(dateStr) {
     if (!dateStr) return "—";
     const d = new Date(dateStr);
-    return d.toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" });
+    return d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Kolkata" });
 }
 
 function fmtDateTime(dateStr) {
     if (!dateStr) return null;
     const d = new Date(dateStr);
-    const date = d.toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" });
-    const time = d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+    const date = d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Kolkata" });
+    const time = d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kolkata" }).toUpperCase();
     return { date, time };
 }
 
@@ -132,6 +132,97 @@ const NavIconBtn = ({ title, onClick, cls = "", children }) => (
     </button>
 );
 
+function InterviewDetailsModal({ app, onClose, navigate }) {
+    const interviewDT = fmtDateTime(app.interview_date);
+    const specs = (app.specializations || []).map((s) => s.name ?? s);
+    const shortId = String(app.id).slice(0, 8).toUpperCase();
+
+    return (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-sm">
+            <div className="bg-[#0f1320] border border-slate-700/50 rounded-2xl shadow-2xl w-[480px] overflow-hidden">
+                <div className="px-7 pt-7 pb-5">
+                    <div className="flex items-center justify-between mb-6">
+                        <h3 className="font-outfit text-lg font-bold text-slate-100">Admin Interview Details</h3>
+                        <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-800 border border-slate-700 text-slate-400 hover:text-slate-200 cursor-pointer transition-all">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                        </button>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 mb-6">
+                        <div className="flex items-center gap-3 bg-slate-800/50 border border-slate-700/50 rounded-xl px-4 py-3">
+                            <div className="w-9 h-9 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center flex-shrink-0">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#818cf8" strokeWidth="2">
+                                    <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
+                                </svg>
+                            </div>
+                            <div>
+                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5">Date</p>
+                                <p className="text-sm font-semibold text-slate-200">{interviewDT?.date || "—"}</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3 bg-slate-800/50 border border-slate-700/50 rounded-xl px-4 py-3">
+                            <div className="w-9 h-9 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center flex-shrink-0">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#818cf8" strokeWidth="2">
+                                    <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
+                                </svg>
+                            </div>
+                            <div>
+                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5">Time</p>
+                                <p className="text-sm font-semibold text-slate-200">{interviewDT?.time || "—"} IST</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <p className="text-sm font-semibold text-slate-300 mb-3">Candidate Profile Summary</p>
+
+                    <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-4 mb-4">
+                        <div className="flex items-center gap-3 mb-4">
+                            <AppAvatar name={app.full_name} photo={app.profile_picture} size={44} />
+                            <div>
+                                <p className="text-sm font-bold text-slate-200">{app.full_name}</p>
+                                <p className="text-xs text-slate-500">Applicant ID: #{shortId}</p>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="bg-slate-900/60 rounded-lg p-3">
+                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Specialization</p>
+                                <p className="text-sm text-slate-300">{specs[0] || "—"}</p>
+                            </div>
+                            <div className="bg-slate-900/60 rounded-lg p-3">
+                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Experience</p>
+                                <p className="text-sm text-slate-300">{app.years_of_experience ? `${app.years_of_experience} Years` : "—"}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button
+                        onClick={() => { onClose(); navigate(`/admin/applications/${app.id}`); }}
+                        className="w-full flex items-center justify-center gap-2 py-2.5 bg-transparent border border-slate-700 text-slate-300 text-sm font-medium rounded-xl cursor-pointer hover:border-slate-500 hover:text-slate-100 transition-all"
+                    >
+                        Review Full Application
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" />
+                        </svg>
+                    </button>
+                </div>
+
+                <div className="px-7 pb-5">
+                    <button className="w-full flex items-center justify-center gap-3 py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold rounded-xl cursor-pointer border-none transition-all shadow-[0_4px_14px_rgba(99,102,241,0.4)]">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+                            <polygon points="23 7 16 12 23 17 23 7" /><rect x="1" y="5" width="15" height="14" rx="2" />
+                        </svg>
+                        Join Interview Room
+                    </button>
+                    <p className="text-center text-[11px] text-slate-600 mt-2 flex items-center justify-center gap-1">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+                        Session recording is enabled by default.
+                    </p>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 export default function AdminApplicationList() {
     const [search, setSearch] = useState("");
     const [inputVal, setInputVal] = useState("");
@@ -143,6 +234,7 @@ export default function AdminApplicationList() {
     const filterDropdown = useDropdown();
     const sortDropdown = useDropdown();
     const navigate = useNavigate();
+    const [selectedInterview, setSelectedInterview] = useState(null);
 
     const handleSearchChange = useCallback((e) => {
         const val = e.target.value;
@@ -327,17 +419,17 @@ export default function AdminApplicationList() {
                                                             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" />
                                                         </svg>
                                                     </NavIconBtn>
-                                                    <IconBtn title="Schedule Interview" cls="bg-[#1188d8]/10 border-[#1188d8]/20 text-[#63b3ed]">
-                                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                            <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
-                                                        </svg>
-                                                    </IconBtn>
-                                                    <IconBtn title="Approve Application" cls="bg-emerald-500/10 border-emerald-500/20 text-emerald-400">
-                                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12" /></svg>
-                                                    </IconBtn>
-                                                    <IconBtn title="Reject Application" cls="bg-red-500/10 border-red-500/20 text-red-400">
-                                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-                                                    </IconBtn>
+                                                    {app.status === "INTERVIEW_SCHEDULED" && (
+                                                        <NavIconBtn
+                                                            title="Interview Details"
+                                                            onClick={() => setSelectedInterview(app)}
+                                                            cls="bg-[#1188d8]/10 border-[#1188d8]/30 text-[#63b3ed] hover:bg-[#1188d8]/20 hover:border-[#1188d8]"
+                                                        >
+                                                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                                <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
+                                                            </svg>
+                                                        </NavIconBtn>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>
@@ -378,6 +470,14 @@ export default function AdminApplicationList() {
                     </div>
                 </div>
             </div>
+
+            {selectedInterview && (
+                <InterviewDetailsModal
+                    app={selectedInterview}
+                    onClose={() => setSelectedInterview(null)}
+                    navigate={navigate}
+                />
+            )}
         </div>
     );
 }

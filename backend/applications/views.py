@@ -2,7 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
-from .serializers import (PsychologistApplicationSerializer, ApplicationSubmitSerializer)
+from .serializers import (PsychologistApplicationSerializer, ApplicationSubmitSerializer, AdminUpdateApplicationSerializer, AdminScheduleInterviewSerializer,)
 from .services.application_service import ApplicationService
 from .repositories.application_repository import ApplicationRepository
 from django.db import models
@@ -134,3 +134,37 @@ class AdminApplicationDetailView(APIView):
         )
         serializer = PsychologistApplicationSerializer(application, context={"request": request})
         return Response(serializer.data)
+
+
+"""
+ADMIN UPDATE APPLICATION (notes + status)
+"""
+class AdminUpdateApplicationView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, pk):
+        application = get_object_or_404(PsychologistApplication, pk=pk)
+        serializer = AdminUpdateApplicationSerializer(application, data=request.data, partial=True)
+        if serializer.is_valid():
+            updated = serializer.save()
+            return Response(PsychologistApplicationSerializer(updated, context={"request": request}).data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+"""
+ADMIN SCHEDULE INTERVIEW
+"""
+class AdminScheduleInterviewView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        application = get_object_or_404(PsychologistApplication, pk=pk)
+        serializer = AdminScheduleInterviewSerializer(data=request.data)
+        if serializer.is_valid():
+            application.interview_date = serializer.validated_data["interview_date"]
+            application.status = "INTERVIEW_SCHEDULED"
+            if "admin_notes" in serializer.validated_data:
+                application.admin_notes = serializer.validated_data["admin_notes"]
+            application.save()
+            return Response(PsychologistApplicationSerializer(application, context={"request": request}).data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
