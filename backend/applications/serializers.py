@@ -21,10 +21,9 @@ class PsychologistApplicationSerializer(serializers.ModelSerializer):
         fields = [
             "id", "profile_picture", "audio_intro", "full_name", "email", "phone_number", "about", "street_address", "city", "state",
             "pincode", "country", "job_title", "years_of_experience", "highest_education", "certificate_document", "specializations", "consultation_fee",
-            "status", "submitted_at","interview_date",
+            "status", "submitted_at", "interview_date", "admin_notes",
         ]
         read_only_fields = ["status", "submitted_at",]
-
 
 
 """
@@ -139,3 +138,31 @@ class ApplicationSubmitSerializer(serializers.ModelSerializer):
         if not value:
             raise serializers.ValidationError("Please select at least one specialization.")
         return value
+
+
+"""
+ADMIN UPDATE APPLICATION SERIALIZER
+"""
+class AdminUpdateApplicationSerializer(serializers.ModelSerializer):
+    ALLOWED_STATUSES = ["DRAFT", "SUBMITTED", "INTERVIEW_SCHEDULED", "REJECTED"]
+
+    status = serializers.ChoiceField(choices=[(s, s) for s in ALLOWED_STATUSES],required=False,)
+    admin_notes = serializers.CharField(required=False, allow_blank=True)
+
+    class Meta:
+        model = PsychologistApplication
+        fields = ["status", "admin_notes"]
+
+    def update(self, instance, validated_data):
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        return instance
+
+
+"""
+ADMIN SCHEDULE INTERVIEW SERIALIZER
+"""
+class AdminScheduleInterviewSerializer(serializers.Serializer):
+    interview_date = serializers.DateTimeField(required=True)
+    admin_notes = serializers.CharField(required=False, allow_blank=True)

@@ -48,3 +48,13 @@ export const fetchApplicationDetail = async (id) => {
   const response = await axiosInstance.get(`application/admin/application/${id}/`);
   return response.data;
 };
+
+export const updateApplication = async ({ id, data }) => {
+  const response = await axiosInstance.patch(`application/admin/application/${id}/update/`, data);
+  return response.data;
+};
+
+export const scheduleInterview = async ({ id, interview_date, admin_notes }) => {
+  const response = await axiosInstance.post(`application/admin/application/${id}/schedule-interview/`, { interview_date, admin_notes });
+  return response.data;
+};

@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, useRef } from "react";
-import { fetchApplicationDetail } from "../../../api/admin.api";
+import { fetchApplicationDetail, updateApplication, scheduleInterview } from "../../../api/admin.api";
 import Sidebar from "../../../components/admin/Sidebar/AdminSidebar";
 import Navbar from "../../../components/admin/Navbar/AdminNavbar";
 
@@ -30,8 +30,8 @@ function fmtDate(dateStr) {
 function fmtDateTime(dateStr) {
     if (!dateStr) return "—";
     const d = new Date(dateStr);
-    return d.toLocaleDateString("en-US", { month: "long", day: "2-digit", year: "numeric" }) +
-        " at " + d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+    return d.toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric", timeZone: "Asia/Kolkata" }) +
+        " at " + d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kolkata" }).toUpperCase();
 }
 
 function InfoRow({ label, value }) {
@@ -160,14 +160,179 @@ const ICONS = {
     calendar: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>,
 };
 
+function ScheduleModal({ onConfirm, onClose, loading, candidateName, shortId }) {
+    const [date, setDate] = useState("");
+    const [time, setTime] = useState("10:00");
+
+    const todayIST = (() => {
+        const now = new Date();
+        const istOffset = 5.5 * 60 * 60 * 1000;
+        const istDate = new Date(now.getTime() + istOffset);
+        return istDate.toISOString().split("T")[0];
+    })();
+
+    const handleConfirm = () => {
+        if (!date || !time) return;
+        onConfirm(`${date}T${time}:00+05:30`);
+    };
+
+    return (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-sm">
+            <div className="bg-[#0f1320] border border-slate-700/50 rounded-2xl shadow-2xl w-[520px] overflow-hidden">
+                <div className="px-7 pt-7 pb-5">
+                    <h3 className="font-outfit text-xl font-bold text-slate-100 mb-4">Schedule Interview</h3>
+
+                    <div className="flex items-center gap-2 mb-6">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#818cf8" strokeWidth="2">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
+                        </svg>
+                        <span className="text-sm text-slate-400">Candidate:</span>
+                        <span className="text-sm font-semibold text-slate-200">{candidateName}</span>
+                        <span className="text-slate-600">•</span>
+                        <span className="text-sm text-slate-500">ID: <span className="text-indigo-400 font-mono">#{shortId}</span></span>
+                    </div>
+
+                    <div className="w-full h-px bg-slate-800 mb-6" />
+
+                    <div className="grid grid-cols-2 gap-4 mb-6">
+                        <div className="flex flex-col gap-2">
+                            <label className="text-sm text-slate-400">Interview Date</label>
+                            <div className="relative">
+                                <input
+                                    type="date"
+                                    lang="en-IN"
+                                    min={todayIST}
+                                    value={date}
+                                    onChange={(e) => setDate(e.target.value)}
+                                    className="w-full bg-[#161d2f] border border-slate-700/60 rounded-xl px-4 py-3 text-sm text-slate-300 outline-none focus:border-indigo-500 transition-colors [color-scheme:dark] pr-10"
+                                />
+                                <svg className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
+                                </svg>
+                            </div>
+                        </div>
+                        <div className="flex flex-col gap-2">
+                            <label className="text-sm text-slate-400">Interview Time</label>
+                            <div className="relative">
+                                <input
+                                    type="time"
+                                    value={time}
+                                    onChange={(e) => setTime(e.target.value)}
+                                    className="w-full bg-[#161d2f] border border-slate-700/60 rounded-xl px-4 py-3 text-sm text-slate-300 outline-none focus:border-indigo-500 transition-colors [color-scheme:dark] pr-10"
+                                />
+                                <svg className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="px-7 py-4 border-t border-slate-800/80 flex items-center justify-end gap-5">
+                    <button
+                        onClick={onClose}
+                        className="text-sm text-slate-400 hover:text-slate-200 transition-colors cursor-pointer bg-transparent border-none"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        disabled={!date || !time || loading}
+                        onClick={handleConfirm}
+                        className="flex items-center gap-2.5 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-xl cursor-pointer border-none transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_4px_14px_rgba(99,102,241,0.4)]"
+                    >
+                        {loading
+                            ? <svg className="animate-spin" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>
+                            : <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
+                        }
+                        Confirm Schedule
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function DeclineModal({ onConfirm, onClose, loading, candidateName }) {
+    return (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-sm">
+            <div className="bg-[#0f1320] border border-slate-700/50 rounded-2xl shadow-2xl w-[420px] overflow-hidden">
+                <div className="px-7 pt-7 pb-5">
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center flex-shrink-0">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="2">
+                                <circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 className="font-outfit text-base font-bold text-slate-100">Decline Application</h3>
+                            <p className="text-xs text-slate-500 mt-0.5">{candidateName}</p>
+                        </div>
+                    </div>
+                    <div className="w-full h-px bg-slate-800 mb-4" />
+                    <p className="text-sm text-slate-400 leading-relaxed">
+                        Are you sure you want to decline this application? This will set the status to <span className="text-red-400 font-semibold">Rejected</span>. The psychologist will be notified.
+                    </p>
+                </div>
+                <div className="px-7 py-4 border-t border-slate-800/80 flex items-center justify-end gap-4">
+                    <button
+                        onClick={onClose}
+                        className="text-sm text-slate-400 hover:text-slate-200 transition-colors cursor-pointer bg-transparent border-none"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        disabled={loading}
+                        onClick={onConfirm}
+                        className="flex items-center gap-2 px-5 py-2.5 bg-red-600 hover:bg-red-500 text-white text-sm font-semibold rounded-xl cursor-pointer border-none transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_4px_14px_rgba(239,68,68,0.3)]"
+                    >
+                        {loading
+                            ? <svg className="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>
+                            : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" /></svg>
+                        }
+                        {loading ? "Declining…" : "Yes, Decline"}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 export default function AdminApplicationDetail() {
     const { id } = useParams();
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
+
+    const [adminNotes, setAdminNotes] = useState("");
+    const [showScheduleModal, setShowScheduleModal] = useState(false);
+    const [showDeclineModal, setShowDeclineModal] = useState(false);
+    const [declineError, setDeclineError] = useState(null);
+    const [notesSuccess, setNotesSuccess] = useState(false);
 
     const { data: app, isLoading, isError } = useQuery({
         queryKey: ["admin-application-detail", id],
         queryFn: () => fetchApplicationDetail(id),
         enabled: !!id,
+        onSuccess: (data) => {
+            if (data?.admin_notes !== undefined) setAdminNotes(data.admin_notes || "");
+        },
+    });
+
+    const invalidate = () => queryClient.invalidateQueries({ queryKey: ["admin-application-detail", id] });
+
+    const notesMutation = useMutation({
+        mutationFn: (notes) => updateApplication({ id, data: { admin_notes: notes } }),
+        onSuccess: () => { setNotesSuccess(true); setTimeout(() => setNotesSuccess(false), 2500); invalidate(); },
+    });
+
+    const scheduleMutation = useMutation({
+        mutationFn: (datetime) => scheduleInterview({ id, interview_date: datetime, admin_notes: adminNotes }),
+        onSuccess: () => { setShowScheduleModal(false); invalidate(); },
+    });
+
+    const declineMutation = useMutation({
+        mutationFn: () => updateApplication({ id, data: { status: "REJECTED", admin_notes: adminNotes } }),
+        onSuccess: () => { setDeclineError(null); setShowDeclineModal(false); invalidate(); },
+        onError: () => setDeclineError("Failed to decline. Please try again."),
     });
 
     if (isLoading) {
@@ -291,15 +456,15 @@ export default function AdminApplicationDetail() {
                                 </div>
                             </SectionCard>
 
+                            <SectionCard title="Timeline" icon={ICONS.calendar}>
+                                <InfoRow label="Submitted On" value={fmtDate(app.submitted_at)} />
+                            </SectionCard>
+
                             {app.interview_date && (
                                 <SectionCard title="Interview" icon={ICONS.calendar}>
                                     <InfoRow label="Scheduled For" value={fmtDateTime(app.interview_date)} />
                                 </SectionCard>
                             )}
-
-                            <SectionCard title="Timeline" icon={ICONS.calendar}>
-                                <InfoRow label="Submitted On" value={fmtDate(app.submitted_at)} />
-                            </SectionCard>
                         </div>
 
                         <div className="col-span-2 flex flex-col gap-6">
@@ -370,6 +535,77 @@ export default function AdminApplicationDetail() {
                             </SectionCard>
                         </div>
                     </div>
+
+                    {!["INTERVIEW_SCHEDULED", "REJECTED"].includes(app.status) && (
+                        <div className="mt-6 bg-[#141826] border border-slate-700/50 rounded-2xl overflow-hidden">
+                            <div className="flex items-center gap-2.5 px-5 py-4 border-b border-slate-700/40">
+                                <span className="text-admin-primary">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                                    </svg>
+                                </span>
+                                <h3 className="font-outfit text-sm font-semibold text-slate-200 tracking-tight">Admin Decision</h3>
+                            </div>
+                            <div className="px-5 py-5">
+                                <div className="flex gap-6 items-start">
+                                    <div className="flex-1 flex flex-col gap-2">
+                                        <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                                            Admin Notes (Internal Use / Rejection Reason)
+                                        </label>
+                                        <textarea
+                                            rows={5}
+                                            value={adminNotes}
+                                            onChange={(e) => setAdminNotes(e.target.value)}
+                                            placeholder="Enter feedback for the applicant or internal notes regarding this approval…"
+                                            className="w-full bg-[#0B0E14] border border-slate-700/60 rounded-xl px-4 py-3 text-sm text-slate-300 placeholder:text-slate-600 outline-none resize-none focus:border-admin-primary transition-colors"
+                                        />
+                                        {declineError && <span className="text-xs text-red-400">{declineError}</span>}
+                                    </div>
+
+                                    <div className="flex flex-col gap-3 min-w-[200px]">
+                                        <button
+                                            onClick={() => setShowScheduleModal(true)}
+                                            className="flex items-center justify-center gap-2.5 px-5 py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold rounded-xl cursor-pointer border-none transition-all shadow-[0_4px_14px_rgba(16,185,129,0.3)]"
+                                        >
+                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                                <polyline points="20 6 9 17 4 12" />
+                                            </svg>
+                                            Schedule Interview
+                                        </button>
+                                        <button
+                                            onClick={() => setShowDeclineModal(true)}
+                                            disabled={declineMutation.isPending}
+                                            className="flex items-center justify-center gap-2.5 px-5 py-3.5 bg-red-600 hover:bg-red-500 text-white text-sm font-bold rounded-xl cursor-pointer border-none transition-all shadow-[0_4px_14px_rgba(239,68,68,0.3)] disabled:opacity-60"
+                                        >
+                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                                <circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" />
+                                            </svg>
+                                            Decline Application
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {showScheduleModal && (
+                        <ScheduleModal
+                            loading={scheduleMutation.isPending}
+                            onClose={() => setShowScheduleModal(false)}
+                            onConfirm={(datetime) => scheduleMutation.mutate(datetime)}
+                            candidateName={app.full_name}
+                            shortId={String(app.id).slice(0, 8).toUpperCase()}
+                        />
+                    )}
+
+                    {showDeclineModal && (
+                        <DeclineModal
+                            loading={declineMutation.isPending}
+                            onClose={() => setShowDeclineModal(false)}
+                            onConfirm={() => declineMutation.mutate()}
+                            candidateName={app.full_name}
+                        />
+                    )}
                 </div>
             </div>
         </div>

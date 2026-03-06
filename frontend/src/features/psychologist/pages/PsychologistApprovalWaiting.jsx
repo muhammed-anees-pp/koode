@@ -10,19 +10,11 @@ const mediaUrl = (path) => {
     return `${BASE_URL}${path.startsWith('/') ? '' : '/'}${path}`;
 };
 
-
 const STEPS = [
     {
         key: 'SUBMITTED', label: 'Application\nSubmitted', icon: (
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" />
-            </svg>
-        )
-    },
-    {
-        key: 'UNDER_REVIEW', label: 'Under\nReview', icon: (
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
         )
     },
@@ -47,56 +39,15 @@ const STEPS = [
             </svg>
         )
     },
-    {
-        key: 'DECISION', label: 'Decision', icon: (
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><line x1="23" y1="11" x2="17" y2="11" />
-            </svg>
-        )
-    },
 ];
-
-const STATUS_INFO = {
-    SUBMITTED: {
-        title: 'Application Under Review',
-        badge: 'In Progress',
-        badgeColor: 'bg-blue-50 text-psycho-primary border-blue-200',
-        description: "Your application has been received and is currently being reviewed by our team. We'll reach out within 3-5 business days.",
-        accent: 'border-l-psycho-primary',
-    },
-    INTERVIEW_SCHEDULED: {
-        title: 'Interview Scheduled',
-        badge: 'Action Required',
-        badgeColor: 'bg-amber-50 text-amber-700 border-amber-200',
-        description: 'Your clinical interview has been scheduled. Please be prepared with your credentials and case study materials. The interview link will be active 10 minutes before the scheduled time.',
-        accent: 'border-l-psycho-primary',
-        actionLabel: 'View Interview Details',
-    },
-    INTERVIEW_COMPLETED: {
-        title: 'Interview Completed',
-        badge: 'Under Evaluation',
-        badgeColor: 'bg-purple-50 text-purple-700 border-purple-200',
-        description: "Great — your interview is done! Our team is evaluating your application. You'll be notified of the decision soon.",
-        accent: 'border-l-purple-400',
-    },
-    REJECTED: {
-        title: 'Application Not Approved',
-        badge: 'Rejected',
-        badgeColor: 'bg-red-50 text-red-600 border-red-200',
-        description: 'Unfortunately, your application was not approved at this time. Please contact support for more information.',
-        accent: 'border-l-red-400',
-    },
-};
 
 const getStepIndex = (status) => {
     if (!status || status === 'SUBMITTED') return 0;
-    if (status === 'INTERVIEW_SCHEDULED') return 2;
-    if (status === 'INTERVIEW_COMPLETED') return 3;
-    if (status === 'APPROVED') return 4;
-    if (status === 'REJECTED') return 5;
-    return 1;
+    if (status === 'INTERVIEW_SCHEDULED') return 1;
+    if (status === 'INTERVIEW_COMPLETED') return 2;
+    if (status === 'APPROVED') return 3;
+    return 0;
 };
-
 
 const UrlAudioPlayer = ({ url }) => {
     const audioRef = useRef(null);
@@ -146,6 +97,12 @@ const UrlAudioPlayer = ({ url }) => {
     );
 };
 
+const fmtDateTime = (dateStr) => {
+    if (!dateStr) return '—';
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric', timeZone: 'Asia/Kolkata' }) +
+        ' at ' + d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata' }).toUpperCase();
+};
 
 const PsychologistApprovalWaiting = () => {
     const [application, setApplication] = useState(null);
@@ -159,8 +116,8 @@ const PsychologistApprovalWaiting = () => {
     }, []);
 
     const status = application?.status || 'SUBMITTED';
+    const isRejected = status === 'REJECTED';
     const currentStep = getStepIndex(status);
-    const info = STATUS_INFO[status] || STATUS_INFO['SUBMITTED'];
 
     const fullName = application?.full_name || 'Dr. —';
     const email = application?.email || '—';
@@ -181,43 +138,97 @@ const PsychologistApprovalWaiting = () => {
             <PsychologistNavbar />
 
             <div className="max-w-[760px] mx-auto px-4 py-10">
-                {/* Page header */}
                 <div className="mb-8">
                     <h1 className="text-2xl font-bold text-gray-900">Verification Status</h1>
                     <p className="text-gray-500 text-sm mt-1">Track the approval progress of your practitioner profile.</p>
                 </div>
 
-                {/* Step tracker */}
-                <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6 mb-5">
-                    <div className="flex items-start justify-between relative">
-                        <div className="absolute top-[22px] left-[40px] right-[40px] h-0.5 bg-gray-100 z-0" />
-                        {STEPS.map((step, idx) => {
-                            const done = idx < currentStep;
-                            const active = idx === currentStep;
-                            return (
-                                <div key={step.key} className="flex flex-col items-center z-10 flex-1">
-                                    <div className={`w-11 h-11 rounded-full flex items-center justify-center border-2 transition-all ${done ? 'bg-psycho-primary border-psycho-primary text-white'
+                {/* Step tracker — hidden when rejected */}
+                {!isRejected && (
+                    <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6 mb-5">
+                        <div className="flex items-start justify-between relative">
+                            <div className="absolute top-[22px] left-[40px] right-[40px] h-0.5 bg-gray-100 z-0" />
+                            {STEPS.map((step, idx) => {
+                                const done = idx < currentStep;
+                                const active = idx === currentStep;
+                                return (
+                                    <div key={step.key} className="flex flex-col items-center z-10 flex-1">
+                                        <div className={`w-11 h-11 rounded-full flex items-center justify-center border-2 transition-all ${done ? 'bg-psycho-primary border-psycho-primary text-white'
                                             : active ? 'bg-psycho-primary border-psycho-primary text-white shadow-[0_0_0_4px_rgba(17,136,216,0.15)]'
                                                 : 'bg-white border-gray-200 text-gray-400'
-                                        }`}>
-                                        {done ? (
-                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                                                <polyline points="20 6 9 17 4 12" />
-                                            </svg>
-                                        ) : step.icon}
+                                            }`}>
+                                            {done ? (
+                                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                                    <polyline points="20 6 9 17 4 12" />
+                                                </svg>
+                                            ) : step.icon}
+                                        </div>
+                                        <p className={`text-[10px] font-medium mt-2 text-center leading-tight whitespace-pre-line ${done || active ? 'text-psycho-primary' : 'text-gray-400'}`}>
+                                            {step.label}
+                                        </p>
                                     </div>
-                                    <p className={`text-[10px] font-medium mt-2 text-center leading-tight whitespace-pre-line ${done || active ? 'text-psycho-primary' : 'text-gray-400'}`}>
-                                        {step.label}
-                                    </p>
-                                </div>
-                            );
-                        })}
+                                );
+                            })}
+                        </div>
                     </div>
-                </div>
+                )}
 
-                {/* Status card */}
-                {!loading && (
-                    <div className={`bg-white border border-gray-100 rounded-2xl shadow-sm p-6 mb-5 border-l-4 ${info.accent}`}>
+                {/* Rejected state card */}
+                {!loading && isRejected && (
+                    <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6 mb-5 border-l-4 border-l-red-400">
+                        <div className="flex items-start gap-4">
+                            <div className="w-12 h-12 rounded-xl bg-red-50 border border-red-100 flex items-center justify-center text-red-500 flex-shrink-0">
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                                    <circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" />
+                                </svg>
+                            </div>
+                            <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-1.5">
+                                    <h3 className="text-base font-semibold text-gray-900">Application Not Approved</h3>
+                                    <span className="text-[11px] font-medium px-2.5 py-0.5 rounded-full border bg-red-50 text-red-600 border-red-200">Rejected</span>
+                                </div>
+                                <p className="text-sm text-gray-500 leading-relaxed">
+                                    Unfortunately, your application was not approved at this time.
+                                </p>
+                                {application?.admin_notes && (
+                                    <div className="mt-3 p-3 bg-red-50 border border-red-100 rounded-xl">
+                                        <p className="text-xs font-semibold text-red-500 uppercase tracking-wide mb-1">Reason</p>
+                                        <p className="text-sm text-gray-700 leading-relaxed">{application.admin_notes}</p>
+                                    </div>
+                                )}
+                                <p className="text-xs text-gray-400 mt-3">
+                                    Please contact <a href="mailto:support@koode.in" className="text-psycho-primary hover:underline">support@koode.in</a> for further information.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Submitted — pending review card */}
+                {!loading && status === 'SUBMITTED' && (
+                    <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6 mb-5 border-l-4 border-l-psycho-primary">
+                        <div className="flex items-start gap-4">
+                            <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-psycho-primary flex-shrink-0">
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                                    <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
+                                </svg>
+                            </div>
+                            <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-1.5">
+                                    <h3 className="text-base font-semibold text-gray-900">Application Under Review</h3>
+                                    <span className="text-[11px] font-medium px-2.5 py-0.5 rounded-full border bg-blue-50 text-psycho-primary border-blue-200">In Progress</span>
+                                </div>
+                                <p className="text-sm text-gray-500 leading-relaxed">
+                                    Your application has been received and is currently being reviewed by our team. We'll notify you once a decision has been made.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Interview scheduled card — styled from Figma */}
+                {!loading && status === 'INTERVIEW_SCHEDULED' && (
+                    <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6 mb-5 border-l-4 border-l-psycho-primary">
                         <div className="flex items-start gap-4">
                             <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-psycho-primary flex-shrink-0">
                                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -226,28 +237,32 @@ const PsychologistApprovalWaiting = () => {
                             </div>
                             <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-1.5">
-                                    <h3 className="text-base font-semibold text-gray-900">{info.title}</h3>
-                                    <span className={`text-[11px] font-medium px-2.5 py-0.5 rounded-full border ${info.badgeColor}`}>
-                                        {info.badge}
-                                    </span>
+                                    <h3 className="text-base font-semibold text-gray-900">Interview Scheduled</h3>
+                                    <span className="text-[11px] font-medium px-2.5 py-0.5 rounded-full border bg-amber-50 text-amber-700 border-amber-200">Action Required</span>
                                 </div>
-                                <p className="text-sm text-gray-500 leading-relaxed mb-3">{info.description}</p>
-                                {info.actionLabel && (
-                                    <button className="flex items-center gap-2 px-4 py-2 bg-psycho-primary text-white text-sm font-medium rounded-xl border-none cursor-pointer hover:bg-psycho-hover transition-all">
-                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <polygon points="23 7 16 12 23 17 23 7" /><rect x="1" y="5" width="15" height="14" rx="2" />
+                                <p className="text-sm text-gray-500 leading-relaxed mb-3">
+                                    Your clinical interview has been scheduled. Please be prepared with your credentials and case study materials. The interview link will be active 10 minutes before the scheduled time.
+                                </p>
+                                {application?.interview_date && (
+                                    <div className="flex items-center gap-2 mb-4 text-sm text-gray-700 font-medium">
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-psycho-primary">
+                                            <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
                                         </svg>
-                                        {info.actionLabel}
-                                    </button>
+                                        {fmtDateTime(application.interview_date)}
+                                    </div>
                                 )}
-                                {status === 'INTERVIEW_SCHEDULED' && (
-                                    <p className="text-xs text-gray-400 flex items-center gap-1 mt-2">
-                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                                        </svg>
-                                        All interviews are conducted securely within our platform.
-                                    </p>
-                                )}
+                                <button className="flex items-center gap-2 px-4 py-2 bg-psycho-primary text-white text-sm font-medium rounded-xl border-none cursor-pointer hover:bg-psycho-hover transition-all">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <polygon points="23 7 16 12 23 17 23 7" /><rect x="1" y="5" width="15" height="14" rx="2" />
+                                    </svg>
+                                    View Interview Details
+                                </button>
+                                <p className="text-xs text-gray-400 flex items-center gap-1 mt-3">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                                    </svg>
+                                    All interviews are conducted securely within our platform.
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -286,7 +301,6 @@ const PsychologistApprovalWaiting = () => {
                                 </div>
                             </div>
 
-                            {/* Audio intro */}
                             <div>
                                 <p className="text-xs text-gray-400 font-medium uppercase tracking-wide mb-2">Audio Introduction</p>
                                 {audioUrl ? (
@@ -296,32 +310,27 @@ const PsychologistApprovalWaiting = () => {
                                 )}
                             </div>
 
-                            {/* Job title */}
                             <div>
                                 <p className="text-xs text-gray-400 font-medium uppercase tracking-wide mb-1">Job Title</p>
                                 <p className="text-sm text-gray-700">{application.job_title || '—'}</p>
                             </div>
 
-                            {/* Contact */}
                             <div>
                                 <p className="text-xs text-gray-400 font-medium uppercase tracking-wide mb-1">Contact Information</p>
                                 <p className="text-sm text-gray-700">{email}</p>
                                 {application.phone_number && <p className="text-sm text-gray-700">+91 {application.phone_number}</p>}
                             </div>
 
-                            {/* Education */}
                             <div>
                                 <p className="text-xs text-gray-400 font-medium uppercase tracking-wide mb-1">Highest Qualification</p>
                                 <p className="text-sm text-gray-700">{application.highest_education || '—'}</p>
                             </div>
 
-                            {/* Address */}
                             <div>
                                 <p className="text-xs text-gray-400 font-medium uppercase tracking-wide mb-1">Clinic Address</p>
                                 <p className="text-sm text-gray-700">{address || '—'}</p>
                             </div>
 
-                            {/* Experience */}
                             <div>
                                 <p className="text-xs text-gray-400 font-medium uppercase tracking-wide mb-1">Experience</p>
                                 <p className="text-sm text-gray-700">
@@ -329,7 +338,6 @@ const PsychologistApprovalWaiting = () => {
                                 </p>
                             </div>
 
-                            {/* Specializations */}
                             <div>
                                 <p className="text-xs text-gray-400 font-medium uppercase tracking-wide mb-2">Specializations</p>
                                 <div className="flex flex-wrap gap-1.5">
@@ -346,9 +354,15 @@ const PsychologistApprovalWaiting = () => {
                                     }
                                 </div>
                             </div>
+
+                            {application.about && (
+                                <div className="col-span-2">
+                                    <p className="text-xs text-gray-400 font-medium uppercase tracking-wide mb-1">About</p>
+                                    <p className="text-sm text-gray-700 leading-relaxed">{application.about}</p>
+                                </div>
+                            )}
                         </div>
 
-                        {/* Fee banner */}
                         <div className="mt-6 flex items-center justify-between bg-gray-50 border border-gray-100 rounded-xl px-5 py-3.5">
                             <div>
                                 <p className="text-xs text-gray-400 mb-0.5">Consultation Fee</p>
@@ -360,7 +374,6 @@ const PsychologistApprovalWaiting = () => {
                             </div>
                         </div>
 
-                        {/* Footer */}
                         <div className="mt-6 pt-5 border-t border-gray-100 flex justify-between items-center">
                             <p className="text-sm text-gray-500">Need to update your contact details?</p>
                             <a href="mailto:support@koode.in" className="text-sm text-psycho-primary font-medium flex items-center gap-1 hover:underline">
