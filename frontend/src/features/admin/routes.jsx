@@ -5,6 +5,7 @@ import AdminForgotPassword from "./pages/AdminForgotPassword";
 import AdminResetPassword from "./pages/AdminResetPassword";
 import AdminPatientList from "./pages/AdminPatientList";
 import AdminApplicationList from "./pages/AdminApplicationList";
+import AdminApplicationDetail from "./pages/AdminApplicationDetail";
 import { useAuthStore } from "../../store/auth.store";
 
 const AdminRoutes = () => {
@@ -52,6 +53,17 @@ const AdminRoutes = () => {
         element={
           isAuthenticated && role === "ADMIN" ? (
             <AdminApplicationList />
+          ) : (
+            <Navigate to="/admin/login" />
+          )
+        }
+      />
+
+      <Route
+        path="applications/:id"
+        element={
+          isAuthenticated && role === "ADMIN" ? (
+            <AdminApplicationDetail />
           ) : (
             <Navigate to="/admin/login" />
           )

@@ -31,7 +31,7 @@ const Sidebar = () => {
       <div className="text-[10px] font-semibold text-slate-600 uppercase tracking-[0.13em] px-3 py-2">{title}</div>
       <div className="flex flex-col gap-0.5">
         {items.map((item) => {
-          const isActive = location.pathname === item.path;
+          const isActive = item.path !== "#" && location.pathname.startsWith(item.path);
           return (
             <Link
               key={item.name + item.path}

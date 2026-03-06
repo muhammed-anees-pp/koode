@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { fetchAdminApplications } from "../../../api/admin.api";
 import Sidebar from "../../../components/admin/Sidebar/AdminSidebar";
 import Navbar from "../../../components/admin/Navbar/AdminNavbar";
@@ -121,6 +122,16 @@ const IconBtn = ({ title, cls = "", children }) => (
     </button>
 );
 
+const NavIconBtn = ({ title, onClick, cls = "", children }) => (
+    <button
+        title={title}
+        onClick={onClick}
+        className={`w-8 h-8 rounded-lg border flex items-center justify-center cursor-pointer transition-all duration-200 ${cls}`}
+    >
+        {children}
+    </button>
+);
+
 export default function AdminApplicationList() {
     const [search, setSearch] = useState("");
     const [inputVal, setInputVal] = useState("");
@@ -131,6 +142,7 @@ export default function AdminApplicationList() {
     const [pageSize, setPageSize] = useState(10);
     const filterDropdown = useDropdown();
     const sortDropdown = useDropdown();
+    const navigate = useNavigate();
 
     const handleSearchChange = useCallback((e) => {
         const val = e.target.value;
@@ -306,6 +318,15 @@ export default function AdminApplicationList() {
 
                                             <td className={tdCls}>
                                                 <div className="flex items-center gap-1.5">
+                                                    <NavIconBtn
+                                                        title="View Details"
+                                                        onClick={() => navigate(`/admin/applications/${app.id}`)}
+                                                        cls="bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700 hover:text-slate-200 hover:border-admin-primary"
+                                                    >
+                                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" />
+                                                        </svg>
+                                                    </NavIconBtn>
                                                     <IconBtn title="Schedule Interview" cls="bg-[#1188d8]/10 border-[#1188d8]/20 text-[#63b3ed]">
                                                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                                             <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
