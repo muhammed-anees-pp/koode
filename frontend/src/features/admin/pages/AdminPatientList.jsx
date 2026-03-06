@@ -7,13 +7,23 @@ import Navbar from "../../../components/admin/Navbar/AdminNavbar";
 const BASE_URL = "http://localhost:8000";
 
 function PatientAvatar({ name, photo, size = 38 }) {
-    if (photo) {
-        const src = photo.startsWith("http") ? photo : `${BASE_URL}${photo}`;
-        return <img src={src} alt={name} className="rounded-full object-cover flex-shrink-0" style={{ width: size, height: size }} />;
-    }
+    const [imgError, setImgError] = useState(false);
     const initials = name ? name.charAt(0).toUpperCase() : "?";
     const colours = ["#7C3AED", "#0EA5E9", "#10B981", "#F59E0B", "#EF4444", "#EC4899", "#14B8A6", "#6366F1"];
     const colour = colours[(name?.charCodeAt(0) || 0) % colours.length];
+
+    if (photo && !imgError) {
+        const src = photo.startsWith("http") ? photo : `${BASE_URL}${photo.startsWith("/") ? "" : "/"}${photo}`;
+        return (
+            <img
+                src={src}
+                alt={name}
+                className="rounded-full object-cover flex-shrink-0"
+                style={{ width: size, height: size }}
+                onError={() => setImgError(true)}
+            />
+        );
+    }
     return (
         <div className="rounded-full flex items-center justify-center flex-shrink-0 text-white font-bold" style={{ background: colour, width: size, height: size, fontSize: size * 0.37 }}>{initials}</div>
     );
