@@ -8,6 +8,8 @@ from .repositories.application_repository import ApplicationRepository
 from django.db import models
 from .models import PsychologistApplication
 from django.shortcuts import get_object_or_404
+from interviews.services.interview_service import InterviewService
+from interviews.repositories.interview_repository import InterviewRepository
 
 
 
@@ -65,12 +67,18 @@ class ApplicationStatusView(APIView):
                 {"status": "NOT_SUBMITTED"}
             )
 
-        return Response(
-            {
-                "status": application.status,
-                "interview_date": application.interview_date
-            }
-        )
+        response_data = {
+            "status": application.status,
+            "interview_date": application.interview_date,
+        }
+
+        if application.status in ("INTERVIEW_SCHEDULED", "WAITING", "ONGOING"):
+            interview = InterviewRepository.get_by_application(application)
+            if interview:
+                response_data["interview_id"] = str(interview.id)
+                response_data["interview_status"] = interview.status
+
+        return Response(response_data)
 
 
 ############################
@@ -137,7 +145,7 @@ class AdminApplicationDetailView(APIView):
 
 
 """
-ADMIN UPDATE APPLICATION (notes + status)
+ADMIN UPDATE APPLICATION
 """
 class AdminUpdateApplicationView(APIView):
     permission_classes = [IsAuthenticated]
@@ -161,10 +169,17 @@ class AdminScheduleInterviewView(APIView):
         application = get_object_or_404(PsychologistApplication, pk=pk)
         serializer = AdminScheduleInterviewSerializer(data=request.data)
         if serializer.is_valid():
-            application.interview_date = serializer.validated_data["interview_date"]
+            interview_date = serializer.validated_data["interview_date"]
+            application.interview_date = interview_date
             application.status = "INTERVIEW_SCHEDULED"
             if "admin_notes" in serializer.validated_data:
                 application.admin_notes = serializer.validated_data["admin_notes"]
             application.save()
+
+            InterviewService.create_or_update_interview(
+                application=application,
+                admin=request.user,
+                scheduled_at=interview_date,
+            )
             return Response(PsychologistApplicationSerializer(application, context={"request": request}).data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
