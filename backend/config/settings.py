@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     "patients",
     "applications",
     "psychologists",
+    "interviews",
 ]
 
 # -------------------------------------------------
@@ -264,3 +265,7 @@ PSYCHOLOGIST_FRONTEND_URL = os.getenv("PSYCHOLOGIST_FRONTEND_URL")
 # GOOGLE CLIENT ID
 # -------------------------------------------------
 GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID")
+
+
+ZEGO_APP_ID = os.getenv("ZEGO_APP_ID")
+ZEGO_SERVER_SECRET = os.getenv("ZEGO_SERVER_SECRET")
