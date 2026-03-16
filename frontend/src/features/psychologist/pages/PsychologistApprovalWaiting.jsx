@@ -1,6 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import PsychologistNavbar from '../../../components/psychologist/Navbar/PsychologistNavbar';
-import { getMyApplication } from '../../../api/psychologist.api';
+import { getMyApplication, getApplicationStatus, requestJoin, getJoinStatus } from '../../../api/psychologist.api';
 
 const BASE_URL = 'http://localhost:8000';
 
@@ -104,13 +105,351 @@ const fmtDateTime = (dateStr) => {
         ' at ' + d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata' }).toUpperCase();
 };
 
-const PsychologistApprovalWaiting = () => {
-    const [application, setApplication] = useState(null);
-    const [loading, setLoading] = useState(true);
+const fmtDateOnly = (dateStr) => {
+    if (!dateStr) return '—';
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Kolkata' });
+};
+
+const fmtTimeOnly = (dateStr) => {
+    if (!dateStr) return '—';
+    const d = new Date(dateStr);
+    return d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata' }).toUpperCase() + ' (IST)';
+};
+
+const fmtCountdown = (ms) => {
+    if (ms <= 0) return '00:00';
+    const m = Math.floor(ms / 60000);
+    const s = Math.floor((ms % 60000) / 1000);
+    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+};
+
+
+function InterviewDetailsModal({ interviewDate, interviewId, onClose, onEnterWaiting }) {
+    const scheduledAt = interviewDate ? new Date(interviewDate) : null;
+    const now = new Date();
+
+    const canActivate = scheduledAt ? now >= scheduledAt : false;
+
+    const handleJoinClick = () => {
+        onClose();
+        onEnterWaiting();
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[420px] overflow-hidden">
+                <div className="flex items-center justify-between px-6 pt-6 pb-2">
+                    <h2 className="text-lg font-bold text-gray-900">Interview Details</h2>
+                    <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 border-none cursor-pointer hover:bg-gray-200 transition-all text-gray-500">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                    </button>
+                </div>
+
+                <div className="px-6 pb-6">
+                    <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 mb-5 flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-lg bg-psycho-primary/10 border border-psycho-primary/20 flex items-center justify-center text-psycho-primary flex-shrink-0">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
+                            </svg>
+                        </div>
+                        <div>
+                            <p className="text-sm font-semibold text-psycho-primary">Interview Scheduled</p>
+                            <p className="text-xs text-blue-500/80">Video call details below</p>
+                        </div>
+                    </div>
+
+                    <div className="space-y-4 mb-5">
+                        <div className="flex items-start gap-3">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-400 mt-0.5 flex-shrink-0">
+                                <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
+                            </svg>
+                            <div>
+                                <p className="text-xs text-gray-400 mb-0.5">Date</p>
+                                <p className="text-sm font-medium text-gray-800">{fmtDateOnly(interviewDate)}</p>
+                            </div>
+                        </div>
+                        <div className="flex items-start gap-3">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-400 mt-0.5 flex-shrink-0">
+                                <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
+                            </svg>
+                            <div>
+                                <p className="text-xs text-gray-400 mb-0.5">Time</p>
+                                <p className="text-sm font-medium text-gray-800">{fmtTimeOnly(interviewDate)}</p>
+                            </div>
+                        </div>
+                        <div className="flex items-start gap-3">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-400 mt-0.5 flex-shrink-0">
+                                <polygon points="23 7 16 12 23 17 23 7" /><rect x="1" y="5" width="15" height="14" rx="2" />
+                            </svg>
+                            <div>
+                                <p className="text-xs text-gray-400 mb-0.5">Mode</p>
+                                <p className="text-sm font-medium text-gray-800">Secure In-Platform Video Call</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="border-t border-gray-100 pt-4 mb-5">
+                        <p className="text-sm font-semibold text-gray-800 mb-3">Instructions</p>
+                        <ul className="space-y-2.5">
+                            {[
+                                { icon: '🕐', text: 'Please be available 5 minutes before the scheduled time.' },
+                                { icon: '📶', text: 'Ensure you have a stable internet connection and a working camera/microphone.' },
+                                { icon: '🧳', text: 'The interview will be conducted by our Senior Clinical Reviewer.' },
+                            ].map((item, i) => (
+                                <li key={i} className="flex items-start gap-2.5 text-sm text-gray-600">
+                                    <span className="text-base leading-none mt-0.5">{item.icon}</span>
+                                    <span>{item.text}</span>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+
+                    <button
+                        onClick={canActivate ? handleJoinClick : undefined}
+                        disabled={!canActivate}
+                        className={`w-full flex items-center justify-center gap-2.5 py-3.5 rounded-xl text-sm font-bold border-none transition-all ${canActivate
+                            ? 'bg-psycho-primary hover:bg-psycho-hover text-white cursor-pointer shadow-[0_4px_14px_rgba(17,136,216,0.3)]'
+                            : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                            }`}
+                    >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <polygon points="23 7 16 12 23 17 23 7" /><rect x="1" y="5" width="15" height="14" rx="2" />
+                        </svg>
+                        Join Interview Room
+                    </button>
+                    {!canActivate && (
+                        <p className="text-center text-xs text-gray-400 mt-2 flex items-center justify-center gap-1">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
+                            Button will activate at the scheduled interview time.
+                        </p>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+
+function WaitingRoomModal({ interviewDate, interviewId, onClose, onEnterRoom, navigate }) {
+    const scheduledAt = interviewDate ? new Date(interviewDate) : null;
+    const [countdown, setCountdown] = useState(0);
+    const [canJoin, setCanJoin] = useState(false);
+    const [micOn, setMicOn] = useState(true);
+    const [camOn, setCamOn] = useState(true);
+    const [joinRequested, setJoinRequested] = useState(false);
+    const [waitingForAdmin, setWaitingForAdmin] = useState(false);
+    const [error, setError] = useState(null);
+
+    const videoRef = useRef(null);
+    const streamRef = useRef(null);
+    const pollRef = useRef(null);
+    const timerRef = useRef(null);
 
     useEffect(() => {
-        getMyApplication()
-            .then((data) => setApplication(data))
+        const startCamera = async () => {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                streamRef.current = stream;
+                if (videoRef.current) {
+                    videoRef.current.srcObject = stream;
+                }
+            } catch (err) {
+                console.warn('Camera access denied:', err);
+            }
+        };
+        startCamera();
+
+        return () => {
+            if (streamRef.current) {
+                streamRef.current.getTracks().forEach(t => t.stop());
+            }
+            clearInterval(pollRef.current);
+            clearInterval(timerRef.current);
+        };
+    }, []);
+
+    useEffect(() => {
+        const update = () => {
+            if (!scheduledAt) return;
+            const remaining = scheduledAt - Date.now();
+            setCountdown(Math.max(0, remaining));
+            setCanJoin(Date.now() >= scheduledAt.getTime());
+        };
+        update();
+        timerRef.current = setInterval(update, 1000);
+        return () => clearInterval(timerRef.current);
+    }, [scheduledAt]);
+
+    const toggleMic = () => {
+        if (streamRef.current) {
+            streamRef.current.getAudioTracks().forEach(t => { t.enabled = !micOn; });
+        }
+        setMicOn(v => !v);
+    };
+
+    const toggleCam = () => {
+        if (streamRef.current) {
+            streamRef.current.getVideoTracks().forEach(t => { t.enabled = !camOn; });
+        }
+        setCamOn(v => !v);
+    };
+
+    const handleJoinClick = useCallback(async () => {
+        if (!canJoin || joinRequested || waitingForAdmin) return;
+        try {
+            setJoinRequested(true);
+            await requestJoin(interviewId);
+            setWaitingForAdmin(true);
+
+            pollRef.current = setInterval(async () => {
+                try {
+                    const data = await getJoinStatus(interviewId);
+                    if (data.approved) {
+                        clearInterval(pollRef.current);
+                        if (streamRef.current) {
+                            streamRef.current.getTracks().forEach(t => t.stop());
+                            streamRef.current = null;
+                            await new Promise(r => setTimeout(r, 800));
+                        }
+                        onEnterRoom();
+                    }
+                } catch (e) {
+                    console.error('Poll error:', e);
+                }
+            }, 3000);
+        } catch (err) {
+            setError('Failed to send join request. Please try again.');
+            setJoinRequested(false);
+        }
+    }, [canJoin, joinRequested, waitingForAdmin, interviewId, navigate]);
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[440px] overflow-hidden">
+                <div className="flex items-center justify-between px-6 pt-5 pb-1">
+                    <h2 className="text-base font-bold text-gray-900">Interview Session</h2>
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs font-medium bg-amber-50 border border-amber-200 text-amber-700 px-3 py-1 rounded-full">
+                            Waiting Room
+                        </span>
+                        <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-full bg-gray-100 border-none cursor-pointer hover:bg-gray-200 transition-all text-gray-500">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div className="px-6 pb-6">
+                    <div className="text-center py-3">
+                        <p className="text-xs text-gray-400 mb-1">Interview Starts In</p>
+                        <p className="text-4xl font-bold text-psycho-primary font-mono tracking-wide">{fmtCountdown(countdown)}</p>
+                    </div>
+
+                    <div className="relative rounded-xl overflow-hidden bg-gray-900 mb-4" style={{ aspectRatio: '4/3' }}>
+                        <video
+                            ref={videoRef}
+                            autoPlay
+                            muted
+                            playsInline
+                            className="w-full h-full object-cover"
+                        />
+                        <div className="absolute top-2 right-2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                            LIVE PREVIEW
+                        </div>
+                        <div className="absolute bottom-3 left-0 right-0 flex items-center justify-center gap-3">
+                            <button
+                                onClick={toggleMic}
+                                className={`w-11 h-11 rounded-full flex items-center justify-center border-2 cursor-pointer transition-all ${micOn ? 'bg-white/90 border-white/50 text-gray-700' : 'bg-red-500 border-red-400 text-white'}`}
+                            >
+                                {micOn
+                                    ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" /><path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line x1="12" y1="19" x2="12" y2="23" /><line x1="8" y1="23" x2="16" y2="23" /></svg>
+                                    : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="1" y1="1" x2="23" y2="23" /><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6" /><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23" /><line x1="12" y1="19" x2="12" y2="23" /><line x1="8" y1="23" x2="16" y2="23" /></svg>
+                                }
+                            </button>
+                            <button
+                                onClick={toggleCam}
+                                className={`w-11 h-11 rounded-full flex items-center justify-center border-2 cursor-pointer transition-all ${camOn ? 'bg-white/90 border-white/50 text-gray-700' : 'bg-red-500 border-red-400 text-white'}`}
+                            >
+                                {camOn
+                                    ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="23 7 16 12 23 17 23 7" /><rect x="1" y="5" width="15" height="14" rx="2" /></svg>
+                                    : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="1" y1="1" x2="23" y2="23" /><path d="M21 21H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3" /><path d="M10.66 6H14a2 2 0 0 1 2 2S23 7 23 17" /></svg>
+                                }
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="mb-4">
+                        <p className="text-xs font-semibold text-gray-700 mb-2">Preparation Checklist</p>
+                        <ul className="space-y-1.5">
+                            {[
+                                { icon: 'ℹ️', text: 'Please remain on this screen until the timer finishes.' },
+                                { icon: '📶', text: 'Ensure you have a stable internet connection and a quiet environment.' },
+                                { icon: '🧳', text: 'The interview will be conducted by our Senior Clinical Reviewer.' },
+                            ].map((item, i) => (
+                                <li key={i} className="flex items-start gap-2 text-xs text-gray-500">
+                                    <span className="text-sm leading-none mt-0.5">{item.icon}</span>
+                                    <span>{item.text}</span>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+
+                    {error && (
+                        <p className="text-xs text-red-500 text-center mb-3 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{error}</p>
+                    )}
+
+                    {waitingForAdmin ? (
+                        <div className="w-full flex flex-col items-center justify-center gap-2 py-3 bg-amber-50 border border-amber-200 rounded-xl">
+                            <div className="flex items-center gap-2">
+                                <svg className="animate-spin text-amber-600" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                                </svg>
+                                <span className="text-sm font-semibold text-amber-700">Waiting for admin to admit you…</span>
+                            </div>
+                            <p className="text-xs text-amber-600">Please stay on this screen</p>
+                        </div>
+                    ) : (
+                        <button
+                            onClick={handleJoinClick}
+                            disabled={!canJoin}
+                            className={`w-full flex items-center justify-center gap-2.5 py-3.5 rounded-xl text-sm font-bold border-none transition-all ${canJoin
+                                ? 'bg-psycho-primary hover:bg-psycho-hover text-white cursor-pointer shadow-[0_4px_14px_rgba(17,136,216,0.3)]'
+                                : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                }`}
+                        >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" /><polyline points="10 17 15 12 10 7" /><line x1="15" y1="12" x2="3" y2="12" />
+                            </svg>
+                            Join Interview Room
+                        </button>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+
+const PsychologistApprovalWaiting = () => {
+    const navigate = useNavigate();
+    const [application, setApplication] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [interviewId, setInterviewId] = useState(null);
+    const [showInterviewDetails, setShowInterviewDetails] = useState(false);
+    const [showWaitingRoom, setShowWaitingRoom] = useState(false);
+
+    useEffect(() => {
+        Promise.all([
+            getMyApplication(),
+            getApplicationStatus(),
+        ])
+            .then(([appData, statusData]) => {
+                setApplication(appData);
+                if (statusData?.interview_id) {
+                    setInterviewId(statusData.interview_id);
+                }
+            })
             .catch(() => setApplication(null))
             .finally(() => setLoading(false));
     }, []);
@@ -133,6 +472,9 @@ const PsychologistApprovalWaiting = () => {
     const audioUrl = mediaUrl(application?.audio_intro);
     const specs = application?.specializations || [];
 
+    const interviewStatuses = ['INTERVIEW_SCHEDULED', 'WAITING', 'ONGOING'];
+    const showInterviewOption = interviewStatuses.includes(status) && interviewId;
+
     return (
         <div className="min-h-screen bg-[#eef0f5]">
             <PsychologistNavbar />
@@ -143,7 +485,6 @@ const PsychologistApprovalWaiting = () => {
                     <p className="text-gray-500 text-sm mt-1">Track the approval progress of your practitioner profile.</p>
                 </div>
 
-                {/* Step tracker — hidden when rejected */}
                 {!isRejected && (
                     <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6 mb-5">
                         <div className="flex items-start justify-between relative">
@@ -173,7 +514,6 @@ const PsychologistApprovalWaiting = () => {
                     </div>
                 )}
 
-                {/* Rejected state card */}
                 {!loading && isRejected && (
                     <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6 mb-5 border-l-4 border-l-red-400">
                         <div className="flex items-start gap-4">
@@ -204,7 +544,6 @@ const PsychologistApprovalWaiting = () => {
                     </div>
                 )}
 
-                {/* Submitted — pending review card */}
                 {!loading && status === 'SUBMITTED' && (
                     <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6 mb-5 border-l-4 border-l-psycho-primary">
                         <div className="flex items-start gap-4">
@@ -226,8 +565,7 @@ const PsychologistApprovalWaiting = () => {
                     </div>
                 )}
 
-                {/* Interview scheduled card — styled from Figma */}
-                {!loading && status === 'INTERVIEW_SCHEDULED' && (
+                {!loading && showInterviewOption && (
                     <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6 mb-5 border-l-4 border-l-psycho-primary">
                         <div className="flex items-start gap-4">
                             <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-psycho-primary flex-shrink-0">
@@ -237,11 +575,21 @@ const PsychologistApprovalWaiting = () => {
                             </div>
                             <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-1.5">
-                                    <h3 className="text-base font-semibold text-gray-900">Interview Scheduled</h3>
-                                    <span className="text-[11px] font-medium px-2.5 py-0.5 rounded-full border bg-amber-50 text-amber-700 border-amber-200">Action Required</span>
+                                    <h3 className="text-base font-semibold text-gray-900">
+                                        {status === 'ONGOING' ? 'Interview In Progress' : 'Interview Scheduled'}
+                                    </h3>
+                                    <span className={`text-[11px] font-medium px-2.5 py-0.5 rounded-full border ${status === 'ONGOING'
+                                        ? 'bg-green-50 text-green-700 border-green-200'
+                                        : 'bg-amber-50 text-amber-700 border-amber-200'
+                                        }`}>
+                                        {status === 'ONGOING' ? 'Live Now' : 'Action Required'}
+                                    </span>
                                 </div>
                                 <p className="text-sm text-gray-500 leading-relaxed mb-3">
-                                    Your clinical interview has been scheduled. Please be prepared with your credentials and case study materials. The interview link will be active 10 minutes before the scheduled time.
+                                    {status === 'ONGOING'
+                                        ? 'Your interview is currently in progress. You can rejoin if you were disconnected.'
+                                        : 'Your clinical interview has been scheduled. Please be prepared with your credentials and case study materials. The interview link will be active 5 minutes before the scheduled time.'
+                                    }
                                 </p>
                                 {application?.interview_date && (
                                     <div className="flex items-center gap-2 mb-4 text-sm text-gray-700 font-medium">
@@ -251,11 +599,13 @@ const PsychologistApprovalWaiting = () => {
                                         {fmtDateTime(application.interview_date)}
                                     </div>
                                 )}
-                                <button className="flex items-center gap-2 px-4 py-2 bg-psycho-primary text-white text-sm font-medium rounded-xl border-none cursor-pointer hover:bg-psycho-hover transition-all">
+                                <button
+                                    onClick={() => setShowInterviewDetails(true)}
+                                    className="flex items-center gap-2 px-4 py-2 bg-psycho-primary text-white text-sm font-medium rounded-xl border-none cursor-pointer hover:bg-psycho-hover transition-all">
                                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                         <polygon points="23 7 16 12 23 17 23 7" /><rect x="1" y="5" width="15" height="14" rx="2" />
                                     </svg>
-                                    View Interview Details
+                                    {status === 'ONGOING' ? 'Rejoin Interview' : 'View Interview Details'}
                                 </button>
                                 <p className="text-xs text-gray-400 flex items-center gap-1 mt-3">
                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -268,7 +618,6 @@ const PsychologistApprovalWaiting = () => {
                     </div>
                 )}
 
-                {/* Profile summary */}
                 {!loading && application && (
                     <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6">
                         <div className="flex items-center justify-between mb-5">
@@ -397,6 +746,28 @@ const PsychologistApprovalWaiting = () => {
                     </div>
                 )}
             </div>
+
+            {showInterviewDetails && (
+                <InterviewDetailsModal
+                    interviewDate={application?.interview_date}
+                    interviewId={interviewId}
+                    onClose={() => setShowInterviewDetails(false)}
+                    onEnterWaiting={() => setShowWaitingRoom(true)}
+                />
+            )}
+
+            {showWaitingRoom && (
+                <WaitingRoomModal
+                    interviewDate={application?.interview_date}
+                    interviewId={interviewId}
+                    onClose={() => setShowWaitingRoom(false)}
+                    onEnterRoom={() => {
+                        setShowWaitingRoom(false);
+                        navigate(`/psychologist/interview/${interviewId}`);
+                    }}
+                    navigate={navigate}
+                />
+            )}
         </div>
     );
 };
