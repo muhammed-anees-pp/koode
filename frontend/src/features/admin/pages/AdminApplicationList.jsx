@@ -1,10 +1,11 @@
 import { useState, useCallback } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { fetchAdminApplications } from "../../../api/admin.api";
 import Sidebar from "../../../components/admin/Sidebar/AdminSidebar";
 import Navbar from "../../../components/admin/Navbar/AdminNavbar";
 import { useRef, useEffect } from "react";
+import AdminInterviewRoomModal from "./AdminInterviewRoomModal";
 
 const BASE_URL = "http://localhost:8000";
 
@@ -132,7 +133,7 @@ const NavIconBtn = ({ title, onClick, cls = "", children }) => (
     </button>
 );
 
-function InterviewDetailsModal({ app, onClose, navigate }) {
+function InterviewDetailsModal({ app, onClose, navigate, onJoinRoom }) {
     const interviewDT = fmtDateTime(app.interview_date);
     const specs = (app.specializations || []).map((s) => s.name ?? s);
     const shortId = String(app.id).slice(0, 8).toUpperCase();
@@ -207,7 +208,10 @@ function InterviewDetailsModal({ app, onClose, navigate }) {
                 </div>
 
                 <div className="px-7 pb-5">
-                    <button className="w-full flex items-center justify-center gap-3 py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold rounded-xl cursor-pointer border-none transition-all shadow-[0_4px_14px_rgba(99,102,241,0.4)]">
+                    <button
+                        onClick={() => { onClose(); onJoinRoom(app); }}
+                        className="w-full flex items-center justify-center gap-3 py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold rounded-xl cursor-pointer border-none transition-all shadow-[0_4px_14px_rgba(99,102,241,0.4)]"
+                    >
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
                             <polygon points="23 7 16 12 23 17 23 7" /><rect x="1" y="5" width="15" height="14" rx="2" />
                         </svg>
@@ -235,6 +239,7 @@ export default function AdminApplicationList() {
     const sortDropdown = useDropdown();
     const navigate = useNavigate();
     const [selectedInterview, setSelectedInterview] = useState(null);
+    const queryClient = useQueryClient();
 
     const handleSearchChange = useCallback((e) => {
         const val = e.target.value;
@@ -419,7 +424,7 @@ export default function AdminApplicationList() {
                                                             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" />
                                                         </svg>
                                                     </NavIconBtn>
-                                                    {app.status === "INTERVIEW_SCHEDULED" && (
+                                                    {(app.status === "INTERVIEW_SCHEDULED" || app.status === "ONGOING") && (
                                                         <NavIconBtn
                                                             title="Interview Details"
                                                             onClick={() => setSelectedInterview(app)}
@@ -476,6 +481,15 @@ export default function AdminApplicationList() {
                     app={selectedInterview}
                     onClose={() => setSelectedInterview(null)}
                     navigate={navigate}
+                    onJoinRoom={(app) => {
+                        setSelectedInterview(null);
+                        navigate(`/admin/interview/${app.interview_id}`, {
+                            state: {
+                                applicantName: app.full_name,
+                                scheduledAt: app.interview_date,
+                            }
+                        });
+                    }}
                 />
             )}
         </div>
