@@ -102,8 +102,12 @@ ASGI_APPLICATION = "config.asgi.application"
 # --------------------
 DATABASES = {
     "default": {
-        "ENGINE": os.getenv("DB_ENGINE"),
-        "NAME": BASE_DIR / os.getenv("DB_NAME"),
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": os.getenv("DB_NAME"),
+        "USER": os.getenv("DB_USER"),
+        "PASSWORD": os.getenv("DB_PASSWORD"),
+        "HOST": os.getenv("DB_HOST"),
+        "PORT": os.getenv("DB_PORT"),
     }
 }
 
@@ -267,5 +271,8 @@ PSYCHOLOGIST_FRONTEND_URL = os.getenv("PSYCHOLOGIST_FRONTEND_URL")
 GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID")
 
 
+# -------------------------------------------------
+# ZEGO CLOUD
+# -------------------------------------------------
 ZEGO_APP_ID = os.getenv("ZEGO_APP_ID")
 ZEGO_SERVER_SECRET = os.getenv("ZEGO_SERVER_SECRET")
