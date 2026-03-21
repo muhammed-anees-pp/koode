@@ -342,8 +342,8 @@ function ScheduleModal({ onConfirm, onClose, loading, candidateName, shortId }) 
 
 function DeclineModal({ onConfirm, onClose, loading, candidateName }) {
     return (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-sm">
-            <div className="bg-[#0f1320] border border-slate-700/50 rounded-2xl shadow-2xl w-[420px] overflow-hidden">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-sm" onClick={onClose}>
+            <div className="bg-[#0f1320] border border-slate-700/50 rounded-2xl shadow-2xl w-[420px] overflow-hidden" onClick={(e) => e.stopPropagation()}>
                 <div className="px-7 pt-7 pb-5">
                     <div className="flex items-center gap-3 mb-4">
                         <div className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center flex-shrink-0">

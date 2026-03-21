@@ -133,17 +133,22 @@ const NavIconBtn = ({ title, onClick, cls = "", children }) => (
     </button>
 );
 
-function InterviewDetailsModal({ app, onClose, navigate, onJoinRoom }) {
+function isInterviewTimeReached(interviewDate) {
+    if (!interviewDate) return false;
+    return new Date(interviewDate) <= new Date();
+}
+
+function InterviewDetailsModal({ app, onClose, navigate }) {
     const interviewDT = fmtDateTime(app.interview_date);
     const specs = (app.specializations || []).map((s) => s.name ?? s);
     const shortId = String(app.id).slice(0, 8).toUpperCase();
 
     return (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-sm">
-            <div className="bg-[#0f1320] border border-slate-700/50 rounded-2xl shadow-2xl w-[480px] overflow-hidden">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-sm" onClick={onClose}>
+            <div className="bg-[#0f1320] border border-slate-700/50 rounded-2xl shadow-2xl w-[480px] overflow-hidden" onClick={(e) => e.stopPropagation()}>
                 <div className="px-7 pt-7 pb-5">
                     <div className="flex items-center justify-between mb-6">
-                        <h3 className="font-outfit text-lg font-bold text-slate-100">Admin Interview Details</h3>
+                        <h3 className="font-outfit text-lg font-bold text-slate-100">Interview Details</h3>
                         <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-800 border border-slate-700 text-slate-400 hover:text-slate-200 cursor-pointer transition-all">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
                         </button>
@@ -176,7 +181,7 @@ function InterviewDetailsModal({ app, onClose, navigate, onJoinRoom }) {
 
                     <p className="text-sm font-semibold text-slate-300 mb-3">Candidate Profile Summary</p>
 
-                    <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-4 mb-4">
+                    <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-4 mb-5">
                         <div className="flex items-center gap-3 mb-4">
                             <AppAvatar name={app.full_name} photo={app.profile_picture} size={44} />
                             <div>
@@ -196,6 +201,14 @@ function InterviewDetailsModal({ app, onClose, navigate, onJoinRoom }) {
                         </div>
                     </div>
 
+                    {/* Interview not started yet notice */}
+                    <div className="flex items-center gap-2.5 px-4 py-3 bg-amber-500/10 border border-amber-500/25 rounded-xl mb-5">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" className="flex-shrink-0">
+                            <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
+                        </svg>
+                        <p className="text-xs text-amber-400">The interview room will be available when the scheduled time arrives.</p>
+                    </div>
+
                     <button
                         onClick={() => { onClose(); navigate(`/admin/applications/${app.id}`); }}
                         className="w-full flex items-center justify-center gap-2 py-2.5 bg-transparent border border-slate-700 text-slate-300 text-sm font-medium rounded-xl cursor-pointer hover:border-slate-500 hover:text-slate-100 transition-all"
@@ -205,22 +218,6 @@ function InterviewDetailsModal({ app, onClose, navigate, onJoinRoom }) {
                             <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" />
                         </svg>
                     </button>
-                </div>
-
-                <div className="px-7 pb-5">
-                    <button
-                        onClick={() => { onClose(); onJoinRoom(app); }}
-                        className="w-full flex items-center justify-center gap-3 py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold rounded-xl cursor-pointer border-none transition-all shadow-[0_4px_14px_rgba(99,102,241,0.4)]"
-                    >
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
-                            <polygon points="23 7 16 12 23 17 23 7" /><rect x="1" y="5" width="15" height="14" rx="2" />
-                        </svg>
-                        Join Interview Room
-                    </button>
-                    <p className="text-center text-[11px] text-slate-600 mt-2 flex items-center justify-center gap-1">
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
-                        Session recording is enabled by default.
-                    </p>
                 </div>
             </div>
         </div>
@@ -239,6 +236,7 @@ export default function AdminApplicationList() {
     const sortDropdown = useDropdown();
     const navigate = useNavigate();
     const [selectedInterview, setSelectedInterview] = useState(null);
+    const [roomModalApp, setRoomModalApp] = useState(null);
     const queryClient = useQueryClient();
 
     const handleSearchChange = useCallback((e) => {
@@ -426,13 +424,27 @@ export default function AdminApplicationList() {
                                                     </NavIconBtn>
                                                     {(app.status === "INTERVIEW_SCHEDULED" || app.status === "ONGOING") && (
                                                         <NavIconBtn
-                                                            title="Interview Details"
-                                                            onClick={() => setSelectedInterview(app)}
-                                                            cls="bg-[#1188d8]/10 border-[#1188d8]/30 text-[#63b3ed] hover:bg-[#1188d8]/20 hover:border-[#1188d8]"
+                                                            title={isInterviewTimeReached(app.interview_date) ? "Join Interview Room" : "Interview Details"}
+                                                            onClick={() => {
+                                                                if (isInterviewTimeReached(app.interview_date)) {
+                                                                    setRoomModalApp(app);
+                                                                } else {
+                                                                    setSelectedInterview(app);
+                                                                }
+                                                            }}
+                                                            cls={isInterviewTimeReached(app.interview_date)
+                                                                ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20 hover:border-emerald-500"
+                                                                : "bg-[#1188d8]/10 border-[#1188d8]/30 text-[#63b3ed] hover:bg-[#1188d8]/20 hover:border-[#1188d8]"
+                                                            }
                                                         >
-                                                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                                <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
-                                                            </svg>
+                                                            {isInterviewTimeReached(app.interview_date)
+                                                                ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                                    <polygon points="23 7 16 12 23 17 23 7" /><rect x="1" y="5" width="15" height="14" rx="2" />
+                                                                  </svg>
+                                                                : <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                                    <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
+                                                                  </svg>
+                                                            }
                                                         </NavIconBtn>
                                                     )}
                                                 </div>
@@ -476,19 +488,26 @@ export default function AdminApplicationList() {
                 </div>
             </div>
 
+            {/* Before interview time*/}
             {selectedInterview && (
                 <InterviewDetailsModal
                     app={selectedInterview}
                     onClose={() => setSelectedInterview(null)}
                     navigate={navigate}
-                    onJoinRoom={(app) => {
-                        setSelectedInterview(null);
-                        navigate(`/admin/interview/${app.interview_id}`, {
-                            state: {
-                                applicantName: app.full_name,
-                                scheduledAt: app.interview_date,
-                            }
-                        });
+                />
+            )}
+
+            {/* At/after interview time*/}
+            {roomModalApp && (
+                <AdminInterviewRoomModal
+                    interviewId={roomModalApp.interview_id}
+                    applicantName={roomModalApp.full_name}
+                    scheduledAt={roomModalApp.interview_date}
+                    app={roomModalApp}
+                    onClose={() => setRoomModalApp(null)}
+                    onInterviewEnded={() => {
+                        setRoomModalApp(null);
+                        queryClient.invalidateQueries({ queryKey: ["admin-applications"] });
                     }}
                 />
             )}
