@@ -60,6 +60,8 @@ export default function InterviewRoom() {
     const [remoteStream, setRemoteStream] = useState(null);
     const [micOn, setMicOn] = useState(true);
     const [camOn, setCamOn] = useState(true);
+    const initMicOn = useRef(sessionStorage.getItem('interview_micOn') !== '0');
+    const initCamOn = useRef(sessionStorage.getItem('interview_camOn') !== '0');
 
     const [joinPhase, setJoinPhase] = useState("idle");
 
@@ -164,6 +166,18 @@ export default function InterviewRoom() {
             const streamID = `psycho_${user_id}_${Date.now()}`;
             localStreamIdRef.current = streamID;
             await engine.startPublishingStream(streamID, stream);
+            const shouldMuteMic = !initMicOn.current;
+            const shouldMuteCam = !initCamOn.current;
+            if (shouldMuteMic) {
+                engine.mutePublishStreamAudio(stream, true);
+                setMicOn(false);
+            }
+            if (shouldMuteCam) {
+                engine.mutePublishStreamVideo(stream, true);
+                setCamOn(false);
+            }
+            sessionStorage.removeItem('interview_micOn');
+            sessionStorage.removeItem('interview_camOn');
 
             setLocalStream(stream);
             setJoined(true);

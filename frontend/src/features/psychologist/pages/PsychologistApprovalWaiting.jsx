@@ -124,21 +124,23 @@ const fmtCountdown = (ms) => {
     return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 };
 
+const isWithin5Minutes = (interviewDate) => {
+    if (!interviewDate) return false;
+    const remaining = new Date(interviewDate) - Date.now();
+    return remaining <= 5 * 60 * 1000;
+};
 
-function InterviewDetailsModal({ interviewDate, interviewId, onClose, onEnterWaiting }) {
-    const scheduledAt = interviewDate ? new Date(interviewDate) : null;
-    const now = new Date();
 
-    const canActivate = scheduledAt ? now >= scheduledAt : false;
-
-    const handleJoinClick = () => {
-        onClose();
-        onEnterWaiting();
-    };
-
+function InterviewDetailsModal({ interviewDate, onClose, onEnterWaiting }) {
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[420px] overflow-hidden">
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+            onClick={onClose}
+        >
+            <div
+                className="bg-white rounded-2xl shadow-2xl w-full max-w-[420px] overflow-hidden"
+                onClick={(e) => e.stopPropagation()}
+            >
                 <div className="flex items-center justify-between px-6 pt-6 pb-2">
                     <h2 className="text-lg font-bold text-gray-900">Interview Details</h2>
                     <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 border-none cursor-pointer hover:bg-gray-200 transition-all text-gray-500">
@@ -189,41 +191,44 @@ function InterviewDetailsModal({ interviewDate, interviewId, onClose, onEnterWai
                         </div>
                     </div>
 
-                    <div className="border-t border-gray-100 pt-4 mb-5">
+                    <div className="border-t border-gray-100 pt-4">
                         <p className="text-sm font-semibold text-gray-800 mb-3">Instructions</p>
                         <ul className="space-y-2.5">
-                            {[
-                                { icon: '🕐', text: 'Please be available 5 minutes before the scheduled time.' },
-                                { icon: '📶', text: 'Ensure you have a stable internet connection and a working camera/microphone.' },
-                                { icon: '🧳', text: 'The interview will be conducted by our Senior Clinical Reviewer.' },
-                            ].map((item, i) => (
-                                <li key={i} className="flex items-start gap-2.5 text-sm text-gray-600">
-                                    <span className="text-base leading-none mt-0.5">{item.icon}</span>
-                                    <span>{item.text}</span>
-                                </li>
-                            ))}
+                            {
+                                [
+                                    {
+                                        icon: (
+                                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#1188d8" strokeWidth="2" className="flex-shrink-0 mt-0.5">
+                                                <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
+                                            </svg>
+                                        ),
+                                        text: 'Please be available 5 minutes before the scheduled time.',
+                                    },
+                                    {
+                                        icon: (
+                                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#1188d8" strokeWidth="2" className="flex-shrink-0 mt-0.5">
+                                                <path d="M5 12.55a11 11 0 0 1 14.08 0" /><path d="M1.42 9a16 16 0 0 1 21.16 0" /><path d="M8.53 16.11a6 6 0 0 1 6.95 0" /><circle cx="12" cy="20" r="1" fill="#1188d8" />
+                                            </svg>
+                                        ),
+                                        text: 'Ensure you have a stable internet connection and a working camera/microphone.',
+                                    },
+                                    {
+                                        icon: (
+                                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#1188d8" strokeWidth="2" className="flex-shrink-0 mt-0.5">
+                                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
+                                            </svg>
+                                        ),
+                                        text: 'The interview will be conducted by our Senior Clinical Reviewer.',
+                                    },
+                                ].map((item, i) => (
+                                    <li key={i} className="flex items-start gap-2.5 text-sm text-gray-600">
+                                        {item.icon}
+                                        <span>{item.text}</span>
+                                    </li>
+                                ))
+                            }
                         </ul>
                     </div>
-
-                    <button
-                        onClick={canActivate ? handleJoinClick : undefined}
-                        disabled={!canActivate}
-                        className={`w-full flex items-center justify-center gap-2.5 py-3.5 rounded-xl text-sm font-bold border-none transition-all ${canActivate
-                            ? 'bg-psycho-primary hover:bg-psycho-hover text-white cursor-pointer shadow-[0_4px_14px_rgba(17,136,216,0.3)]'
-                            : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                            }`}
-                    >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <polygon points="23 7 16 12 23 17 23 7" /><rect x="1" y="5" width="15" height="14" rx="2" />
-                        </svg>
-                        Join Interview Room
-                    </button>
-                    {!canActivate && (
-                        <p className="text-center text-xs text-gray-400 mt-2 flex items-center justify-center gap-1">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
-                            Button will activate at the scheduled interview time.
-                        </p>
-                    )}
                 </div>
             </div>
         </div>
@@ -231,7 +236,7 @@ function InterviewDetailsModal({ interviewDate, interviewId, onClose, onEnterWai
 }
 
 
-function WaitingRoomModal({ interviewDate, interviewId, onClose, onEnterRoom, navigate }) {
+function WaitingRoomModal({ interviewDate, interviewId, onClose, onEnterRoom, navigate, profileImgUrl, nameInitial }) {
     const scheduledAt = interviewDate ? new Date(interviewDate) : null;
     const [countdown, setCountdown] = useState(0);
     const [canJoin, setCanJoin] = useState(false);
@@ -281,18 +286,51 @@ function WaitingRoomModal({ interviewDate, interviewId, onClose, onEnterRoom, na
         return () => clearInterval(timerRef.current);
     }, [scheduledAt]);
 
+    const applyStream = (s) => {
+        streamRef.current = s;
+        if (videoRef.current) videoRef.current.srcObject = s;
+    };
+
     const toggleMic = () => {
-        if (streamRef.current) {
-            streamRef.current.getAudioTracks().forEach(t => { t.enabled = !micOn; });
+        if (micOn) {
+            if (streamRef.current) {
+                streamRef.current.getAudioTracks().forEach(t => t.stop());
+            }
+            setMicOn(false);
+        } else {
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then((audioStream) => {
+                    const audioTrack = audioStream.getAudioTracks()[0];
+                    if (!audioTrack) return;
+                    const liveVideoTracks = streamRef.current
+                        ? streamRef.current.getVideoTracks().filter(t => t.readyState === 'live')
+                        : [];
+                    applyStream(new MediaStream([audioTrack, ...liveVideoTracks]));
+                    setMicOn(true);
+                })
+                .catch(() => {});
         }
-        setMicOn(v => !v);
     };
 
     const toggleCam = () => {
-        if (streamRef.current) {
-            streamRef.current.getVideoTracks().forEach(t => { t.enabled = !camOn; });
+        if (camOn) {
+            if (streamRef.current) {
+                streamRef.current.getVideoTracks().forEach(t => t.stop());
+            }
+            setCamOn(false);
+        } else {
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then((videoStream) => {
+                    const videoTrack = videoStream.getVideoTracks()[0];
+                    if (!videoTrack) return;
+                    const liveAudioTracks = streamRef.current
+                        ? streamRef.current.getAudioTracks().filter(t => t.readyState === 'live')
+                        : [];
+                    applyStream(new MediaStream([videoTrack, ...liveAudioTracks]));
+                    setCamOn(true);
+                })
+                .catch(() => {});
         }
-        setCamOn(v => !v);
     };
 
     const handleJoinClick = useCallback(async () => {
@@ -312,6 +350,9 @@ function WaitingRoomModal({ interviewDate, interviewId, onClose, onEnterRoom, na
                             streamRef.current = null;
                             await new Promise(r => setTimeout(r, 800));
                         }
+                        // Persist mic/cam state so InterviewRoom can pick it up
+                        sessionStorage.setItem('interview_micOn', micOn ? '1' : '0');
+                        sessionStorage.setItem('interview_camOn', camOn ? '1' : '0');
                         onEnterRoom();
                     }
                 } catch (e) {
@@ -325,10 +366,10 @@ function WaitingRoomModal({ interviewDate, interviewId, onClose, onEnterRoom, na
     }, [canJoin, joinRequested, waitingForAdmin, interviewId, navigate]);
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[440px] overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={onClose}>
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[440px] overflow-hidden" onClick={(e) => e.stopPropagation()}>
                 <div className="flex items-center justify-between px-6 pt-5 pb-1">
-                    <h2 className="text-base font-bold text-gray-900">Interview Session</h2>
+                    <h2 className="text-base font-bold text-gray-900">Interview Waiting Room</h2>
                     <div className="flex items-center gap-2">
                         <span className="text-xs font-medium bg-amber-50 border border-amber-200 text-amber-700 px-3 py-1 rounded-full">
                             Waiting Room
@@ -353,10 +394,23 @@ function WaitingRoomModal({ interviewDate, interviewId, onClose, onEnterRoom, na
                             playsInline
                             className="w-full h-full object-cover"
                         />
-                        <div className="absolute top-2 right-2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                            LIVE PREVIEW
-                        </div>
+                        {/* Camera-off overlay: show profile image or avatar */}
+                        {!camOn && (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900">
+                                {profileImgUrl ? (
+                                    <img
+                                        src={profileImgUrl}
+                                        alt="Profile"
+                                        className="w-20 h-20 rounded-full object-cover border-2 border-psycho-primary/40"
+                                    />
+                                ) : (
+                                    <div className="w-20 h-20 rounded-full bg-psycho-primary/10 border-2 border-psycho-primary/30 flex items-center justify-center">
+                                        <span className="text-3xl font-bold text-psycho-primary">{nameInitial || '?'}</span>
+                                    </div>
+                                )}
+                                <p className="text-xs text-gray-400 mt-3">Camera is off</p>
+                            </div>
+                        )}
                         <div className="absolute bottom-3 left-0 right-0 flex items-center justify-center gap-3">
                             <button
                                 onClick={toggleMic}
@@ -382,16 +436,39 @@ function WaitingRoomModal({ interviewDate, interviewId, onClose, onEnterRoom, na
                     <div className="mb-4">
                         <p className="text-xs font-semibold text-gray-700 mb-2">Preparation Checklist</p>
                         <ul className="space-y-1.5">
-                            {[
-                                { icon: 'ℹ️', text: 'Please remain on this screen until the timer finishes.' },
-                                { icon: '📶', text: 'Ensure you have a stable internet connection and a quiet environment.' },
-                                { icon: '🧳', text: 'The interview will be conducted by our Senior Clinical Reviewer.' },
-                            ].map((item, i) => (
-                                <li key={i} className="flex items-start gap-2 text-xs text-gray-500">
-                                    <span className="text-sm leading-none mt-0.5">{item.icon}</span>
-                                    <span>{item.text}</span>
-                                </li>
-                            ))}
+                            {
+                                [
+                                    {
+                                        icon: (
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1188d8" strokeWidth="2" className="flex-shrink-0 mt-0.5">
+                                                <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
+                                            </svg>
+                                        ),
+                                        text: 'Please remain on this screen until the timer finishes.',
+                                    },
+                                    {
+                                        icon: (
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1188d8" strokeWidth="2" className="flex-shrink-0 mt-0.5">
+                                                <path d="M5 12.55a11 11 0 0 1 14.08 0" /><path d="M1.42 9a16 16 0 0 1 21.16 0" /><path d="M8.53 16.11a6 6 0 0 1 6.95 0" /><circle cx="12" cy="20" r="1" fill="#1188d8" />
+                                            </svg>
+                                        ),
+                                        text: 'Ensure you have a stable internet connection and a quiet environment.',
+                                    },
+                                    {
+                                        icon: (
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1188d8" strokeWidth="2" className="flex-shrink-0 mt-0.5">
+                                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
+                                            </svg>
+                                        ),
+                                        text: 'The interview will be conducted by our Senior Clinical Reviewer.',
+                                    },
+                                ].map((item, i) => (
+                                    <li key={i} className="flex items-start gap-2 text-xs text-gray-500">
+                                        {item.icon}
+                                        <span>{item.text}</span>
+                                    </li>
+                                ))
+                            }
                         </ul>
                     </div>
 
@@ -600,7 +677,13 @@ const PsychologistApprovalWaiting = () => {
                                     </div>
                                 )}
                                 <button
-                                    onClick={() => setShowInterviewDetails(true)}
+                                    onClick={() => {
+                                        if (isWithin5Minutes(application?.interview_date)) {
+                                            setShowWaitingRoom(true);
+                                        } else {
+                                            setShowInterviewDetails(true);
+                                        }
+                                    }}
                                     className="flex items-center gap-2 px-4 py-2 bg-psycho-primary text-white text-sm font-medium rounded-xl border-none cursor-pointer hover:bg-psycho-hover transition-all">
                                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                         <polygon points="23 7 16 12 23 17 23 7" /><rect x="1" y="5" width="15" height="14" rx="2" />
@@ -766,6 +849,8 @@ const PsychologistApprovalWaiting = () => {
                         navigate(`/psychologist/interview/${interviewId}`);
                     }}
                     navigate={navigate}
+                    profileImgUrl={profileImgUrl}
+                    nameInitial={fullName?.charAt(0) || '?'}
                 />
             )}
         </div>
