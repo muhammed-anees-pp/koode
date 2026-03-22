@@ -230,8 +230,6 @@ export default function AdminInterviewRoomModal({ interviewId, applicantName, sc
     const remoteVideoRef = useRef(null);
     const chatInputRef = useRef(null);
     const previewVideoRef = useRef(null);
-    // previewStreamRef mirrors previewStream state so the cleanup effect always
-    // stops the latest stream even after toggles rebuild it (stale closure safety)
     const previewStreamRef = useRef(null);
 
     const specs = (app?.specializations || []).map((s) => s.name ?? s);
@@ -713,11 +711,13 @@ export default function AdminInterviewRoomModal({ interviewId, applicantName, sc
                                         </svg>
                                     </div>
                                 ) : !previewCamOn ? (
-                                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-slate-500">
-                                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                                            <line x1="1" y1="1" x2="23" y2="23" /><path d="M21 21H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3" /><path d="M10.66 6H14a2 2 0 0 1 2 2S23 7 23 17" />
-                                        </svg>
-                                        <p className="text-xs">Camera off</p>
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-slate-900">
+                                        <AppAvatar
+                                            name={tokenData?.user_name || "Admin"}
+                                            photo={tokenData?.user_photo || null}
+                                            size={72}
+                                        />
+                                        <p className="text-xs text-slate-400">Camera off</p>
                                     </div>
                                 ) : null}
                                 <video
@@ -859,7 +859,17 @@ export default function AdminInterviewRoomModal({ interviewId, applicantName, sc
                     )}
 
                     <div className="absolute bottom-20 right-4 w-44 rounded-xl overflow-hidden shadow-2xl border border-white/10 bg-gray-900">
-                        <video ref={localVideoRef} autoPlay muted playsInline className="w-full h-auto object-cover" />
+                        <video ref={localVideoRef} autoPlay muted playsInline className={`w-full h-auto object-cover ${!camOn ? 'opacity-0 absolute' : ''}`} />
+                        {!camOn && (
+                            <div className="flex flex-col items-center justify-center gap-1.5 py-4">
+                                <AppAvatar
+                                    name={tokenData?.user_name || "Admin"}
+                                    photo={tokenData?.user_photo || null}
+                                    size={52}
+                                />
+                                <p className="text-[9px] text-slate-400">Camera off</p>
+                            </div>
+                        )}
                         <div className="absolute bottom-1.5 left-2 bg-black/60 text-white text-[9px] font-medium px-1.5 py-0.5 rounded-full">
                             You
                         </div>
