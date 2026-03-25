@@ -8,6 +8,7 @@ import PsychologistForgotPassword from "./pages/PsychologistForgotPassword";
 import PsychologistResetPassword from "./pages/PsychologistResetPassword";
 import PsychologistApplication from "./pages/PsychologistApplication";
 import PsychologistApprovalWaiting from "./pages/PsychologistApprovalWaiting";
+import PsychologistInterviewRoom from "./pages/PsychologistInterviewRoom";
 import { useAuthStore } from "../../store/auth.store";
 import { getApplicationStatus } from "../../api/psychologist.api";
 
@@ -120,6 +121,10 @@ const PsychologistRoutes = () => {
       <Route
         path="approval-waiting"
         element={<GuardedApprovalWaiting isAuthenticated={isAuthenticated} role={role} />}
+      />
+      <Route
+        path="interview/:interviewId"
+        element={isAuthenticated && role === "PSYCHOLOGIST" ? <PsychologistInterviewRoom /> : <Navigate to="login" replace />}
       />
       <Route path="*" element={<Navigate to="login" />} />
     </Routes>

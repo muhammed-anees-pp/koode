@@ -12,16 +12,32 @@ class PsychologistApplicationSerializer(serializers.ModelSerializer):
     full_name = serializers.CharField(source="user.full_name", read_only=True)
     email = serializers.EmailField(source="user.email", read_only=True)
     specializations = serializers.SerializerMethodField()
+    interview_id = serializers.SerializerMethodField()
+    interview_status = serializers.SerializerMethodField()
 
     def get_specializations(self, obj):
         return [{"id": s.id, "name": s.name} for s in obj.specializations.all()]
+
+    def get_interview_id(self, obj):
+        try:
+            interview = obj.interview
+            return str(interview.id) if interview else None
+        except Exception:
+            return None
+
+    def get_interview_status(self, obj):
+        try:
+            interview = obj.interview
+            return interview.status if interview else None
+        except Exception:
+            return None
 
     class Meta:
         model = PsychologistApplication
         fields = [
             "id", "profile_picture", "audio_intro", "full_name", "email", "phone_number", "about", "street_address", "city", "state",
             "pincode", "country", "job_title", "years_of_experience", "highest_education", "certificate_document", "specializations", "consultation_fee",
-            "status", "submitted_at", "interview_date", "admin_notes",
+            "status", "submitted_at", "interview_date", "interview_id", "interview_status", "admin_notes",
         ]
         read_only_fields = ["status", "submitted_at",]
 
@@ -144,8 +160,7 @@ class ApplicationSubmitSerializer(serializers.ModelSerializer):
 ADMIN UPDATE APPLICATION SERIALIZER
 """
 class AdminUpdateApplicationSerializer(serializers.ModelSerializer):
-    ALLOWED_STATUSES = ["DRAFT", "SUBMITTED", "INTERVIEW_SCHEDULED", "REJECTED"]
-
+    ALLOWED_STATUSES = ["DRAFT", "SUBMITTED", "INTERVIEW_SCHEDULED", "INTERVIEW_COMPLETED", "APPROVED", "REJECTED"]
     status = serializers.ChoiceField(choices=[(s, s) for s in ALLOWED_STATUSES],required=False,)
     admin_notes = serializers.CharField(required=False, allow_blank=True)
 

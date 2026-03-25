@@ -6,6 +6,7 @@ import AdminResetPassword from "./pages/AdminResetPassword";
 import AdminPatientList from "./pages/AdminPatientList";
 import AdminApplicationList from "./pages/AdminApplicationList";
 import AdminApplicationDetail from "./pages/AdminApplicationDetail";
+import AdminInterviewRoom from "./pages/AdminInterviewRoom";
 import { useAuthStore } from "../../store/auth.store";
 
 const AdminRoutes = () => {
@@ -68,6 +69,11 @@ const AdminRoutes = () => {
             <Navigate to="/admin/login" />
           )
         }
+      />
+
+      <Route
+        path="interview/:interviewId"
+        element={isAuthenticated && role === "ADMIN" ? <AdminInterviewRoom /> : <Navigate to="/admin/login" />}
       />
 
       <Route path="*" element={<Navigate to="login" />} />

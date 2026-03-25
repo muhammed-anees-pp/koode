@@ -23,6 +23,7 @@ django_celery_results==2.6.0
 djangorestframework==3.16.1
 djangorestframework_simplejwt==5.5.1
 google-auth==2.48.0
+gunicorn==25.1.0
 idna==3.11
 jmespath==1.1.0
 kombu==5.6.2
@@ -33,10 +34,12 @@ psycopg2-binary==2.9.11
 pyasn1==0.6.2
 pyasn1_modules==0.4.2
 pycparser==3.0
+pycryptodome==3.23.0
 PyJWT==2.11.0
 python-crontab==3.3.0
 python-dateutil==2.9.0.post0
 python-dotenv==1.2.1
+pytz==2026.1.post1
 redis==7.1.0
 requests==2.32.5
 rsa==4.9.1

@@ -55,3 +55,34 @@ export const getSpecializations = async () => {
   const response = await axiosInstance.get("psychologist/specializations/");
   return response.data;
 };
+
+export const getMyInterview = async () => {
+  const response = await axiosInstance.get("interviews/my/");
+  return response.data;
+};
+
+export const getInterviewToken = async (interviewId) => {
+  const response = await axiosInstance.get(`interviews/${interviewId}/token/`);
+  return response.data;
+};
+
+export const requestJoin = async (interviewId) => {
+  const response = await axiosInstance.post(`interviews/${interviewId}/join-request/`);
+  return response.data;
+};
+
+export const getJoinStatus = async (interviewId) => {
+  const response = await axiosInstance.get(`interviews/${interviewId}/join-status/`);
+  return response.data;
+};
+
+export const getChatMessages = async (interviewId, since = null) => {
+  const params = since ? `?since=${encodeURIComponent(since)}` : "";
+  const response = await axiosInstance.get(`interviews/${interviewId}/chat/${params}`);
+  return response.data;
+};
+
+export const sendChatMessage = async (interviewId, text) => {
+  const response = await axiosInstance.post(`interviews/${interviewId}/chat/send/`, { text });
+  return response.data;
+};

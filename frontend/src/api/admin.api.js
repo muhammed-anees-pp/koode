@@ -58,3 +58,39 @@ export const scheduleInterview = async ({ id, interview_date, admin_notes }) => 
   const response = await axiosInstance.post(`application/admin/application/${id}/schedule-interview/`, { interview_date, admin_notes });
   return response.data;
 };
+
+export const getAdminInterviewToken = async (interviewId) => {
+  const response = await axiosInstance.get(`interviews/${interviewId}/admin-token/`);
+  return response.data;
+};
+
+export const approveJoin = async (interviewId) => {
+  const response = await axiosInstance.post(`interviews/${interviewId}/approve-join/`);
+  return response.data;
+};
+
+export const getPendingJoin = async (interviewId) => {
+  const response = await axiosInstance.get(`interviews/${interviewId}/pending-join/`);
+  return response.data;
+};
+
+export const endInterview = async (interviewId, data) => {
+  const response = await axiosInstance.post(`interviews/${interviewId}/end/`, data);
+  return response.data;
+};
+
+export const updateInterviewStatus = async (interviewId, newStatus) => {
+  const response = await axiosInstance.patch(`interviews/${interviewId}/status/`, { status: newStatus });
+  return response.data;
+};
+
+export const getChatMessages = async (interviewId, since = null) => {
+  const params = since ? `?since=${encodeURIComponent(since)}` : "";
+  const response = await axiosInstance.get(`interviews/${interviewId}/chat/${params}`);
+  return response.data;
+};
+
+export const sendChatMessage = async (interviewId, text) => {
+  const response = await axiosInstance.post(`interviews/${interviewId}/chat/send/`, { text });
+  return response.data;
+};
