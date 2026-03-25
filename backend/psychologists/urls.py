@@ -1,5 +1,6 @@
 from django.urls import path
+from .views import PsychologistProfileView
 
 urlpatterns = [
-    path(),
+    path("profile/", PsychologistProfileView.as_view()),
 ]
