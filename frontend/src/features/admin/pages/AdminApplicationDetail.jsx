@@ -162,23 +162,77 @@ const ICONS = {
 
 function ScheduleModal({ onConfirm, onClose, loading, candidateName, shortId }) {
     const [date, setDate] = useState("");
-    const [time, setTime] = useState("10:00");
+    const [time, setTime] = useState("");
+    const [dateError, setDateError] = useState("");
+    const [timeError, setTimeError] = useState("");
+    const dateInputRef = useRef(null);
+    const timeInputRef = useRef(null);
 
-    const todayIST = (() => {
+    const openDatePicker = () => { try { dateInputRef.current?.showPicker(); } catch { dateInputRef.current?.click(); } };
+    const openTimePicker = () => { try { timeInputRef.current?.showPicker(); } catch { timeInputRef.current?.click(); } };
+
+    const getNowIST = () => {
         const now = new Date();
         const istOffset = 5.5 * 60 * 60 * 1000;
-        const istDate = new Date(now.getTime() + istOffset);
-        return istDate.toISOString().split("T")[0];
-    })();
+        return new Date(now.getTime() + istOffset);
+    };
+
+    const todayIST = getNowIST().toISOString().split("T")[0]; 
+
+    const validateDate = (val) => {
+        if (!val) { setDateError(""); return; }
+        if (val < todayIST) {
+            setDateError("Interview date cannot be in the past. Please select today or a future date.");
+        } else {
+            setDateError("");
+        }
+
+        if (time) validateTime(val, time);
+    };
+
+    const validateTime = (d, t) => {
+        if (!d || !t) { setTimeError(""); return; }
+        if (d === todayIST) {
+            const nowIST = getNowIST();
+            const [h, m] = t.split(":").map(Number);
+            const nowH = nowIST.getUTCHours();
+            const nowM = nowIST.getUTCMinutes();
+            if (h < nowH || (h === nowH && m <= nowM)) {
+                const h12 = nowH % 12 || 12;
+                const ampm = nowH >= 12 ? "PM" : "AM";
+                const nowFmt = String(h12).padStart(2, "0") + ":" + String(nowM).padStart(2, "0") + " " + ampm;
+                setTimeError(`For today's interview, please select a time after ${nowFmt} (current IST time).`);
+            } else {
+                setTimeError("");
+            }
+        } else {
+            setTimeError("");
+        }
+    };
+
+    const handleDateChange = (e) => {
+        const val = e.target.value;
+        setDate(val);
+        validateDate(val);
+    };
+
+    const handleTimeChange = (e) => {
+        const val = e.target.value;
+        setTime(val);
+        validateTime(date, val);
+    };
+
+    const hasError = !!dateError || !!timeError;
+    const canConfirm = date && time && !hasError && !loading;
 
     const handleConfirm = () => {
-        if (!date || !time) return;
+        if (!canConfirm) return;
         onConfirm(`${date}T${time}:00+05:30`);
     };
 
     return (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-sm">
-            <div className="bg-[#0f1320] border border-slate-700/50 rounded-2xl shadow-2xl w-[520px] overflow-hidden">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-sm" onClick={onClose}>
+            <div className="bg-[#0f1320] border border-slate-700/50 rounded-2xl shadow-2xl w-[520px] overflow-hidden" onClick={(e) => e.stopPropagation()}>
                 <div className="px-7 pt-7 pb-5">
                     <h3 className="font-outfit text-xl font-bold text-slate-100 mb-4">Schedule Interview</h3>
 
@@ -194,38 +248,71 @@ function ScheduleModal({ onConfirm, onClose, loading, candidateName, shortId }) 
 
                     <div className="w-full h-px bg-slate-800 mb-6" />
 
-                    <div className="grid grid-cols-2 gap-4 mb-6">
+                    <div className="grid grid-cols-2 gap-4 mb-2">
                         <div className="flex flex-col gap-2">
                             <label className="text-sm text-slate-400">Interview Date</label>
-                            <div className="relative">
+                            <div onClick={openDatePicker} className={`relative flex items-center bg-[#161d2f] border rounded-xl px-4 py-3 transition-colors cursor-pointer ${dateError ? "border-red-500/70" : "border-slate-700/60 focus-within:border-indigo-500"}`}>
                                 <input
+                                    ref={dateInputRef}
                                     type="date"
-                                    lang="en-IN"
                                     min={todayIST}
                                     value={date}
-                                    onChange={(e) => setDate(e.target.value)}
-                                    className="w-full bg-[#161d2f] border border-slate-700/60 rounded-xl px-4 py-3 text-sm text-slate-300 outline-none focus:border-indigo-500 transition-colors [color-scheme:dark] pr-10"
+                                    onChange={handleDateChange}
+                                    className="absolute inset-0 opacity-0 w-full h-full pointer-events-none"
+                                    style={{ colorScheme: "dark" }}
                                 />
-                                <svg className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <svg className="mr-2 flex-shrink-0 text-slate-500 pointer-events-none" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                     <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
+                                </svg>
+                                <span className="text-sm pointer-events-none select-none flex-1 tracking-wide" style={{ color: date ? "#cbd5e1" : "#475569" }}>
+                                    {date
+                                        ? `${date.split("-")[2]}/${date.split("-")[1]}/${date.split("-")[0]}`
+                                        : "DD/MM/YYYY"
+                                    }
+                                </span>
+                                <svg className="flex-shrink-0 text-slate-500 pointer-events-none" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <polyline points="6 9 12 15 18 9" />
                                 </svg>
                             </div>
                         </div>
+
                         <div className="flex flex-col gap-2">
                             <label className="text-sm text-slate-400">Interview Time</label>
-                            <div className="relative">
+                            <div onClick={openTimePicker} className={`relative flex items-center bg-[#161d2f] border rounded-xl px-4 py-3 cursor-pointer transition-colors ${timeError ? "border-red-500/70" : "border-slate-700/60 focus-within:border-indigo-500"}`}>
                                 <input
+                                    ref={timeInputRef}
                                     type="time"
                                     value={time}
-                                    onChange={(e) => setTime(e.target.value)}
-                                    className="w-full bg-[#161d2f] border border-slate-700/60 rounded-xl px-4 py-3 text-sm text-slate-300 outline-none focus:border-indigo-500 transition-colors [color-scheme:dark] pr-10"
+                                    onChange={handleTimeChange}
+                                    onClick={(e) => e.stopPropagation()}
+                                    className={`flex-1 bg-transparent text-sm text-slate-300 outline-none [color-scheme:dark] cursor-pointer`}
                                 />
-                                <svg className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <svg className="flex-shrink-0 ml-2 pointer-events-none text-slate-500" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                     <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
                                 </svg>
                             </div>
                         </div>
                     </div>
+
+                    {/* Error messages */}
+                    {dateError && (
+                        <div className="flex items-start gap-2 mt-3 px-3 py-2.5 bg-red-500/10 border border-red-500/25 rounded-xl">
+                            <svg className="flex-shrink-0 mt-0.5" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="2">
+                                <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
+                            </svg>
+                            <span className="text-xs text-red-400 leading-relaxed">{dateError}</span>
+                        </div>
+                    )}
+                    {timeError && !dateError && (
+                        <div className="flex items-start gap-2 mt-3 px-3 py-2.5 bg-red-500/10 border border-red-500/25 rounded-xl">
+                            <svg className="flex-shrink-0 mt-0.5" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="2">
+                                <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
+                            </svg>
+                            <span className="text-xs text-red-400 leading-relaxed">{timeError}</span>
+                        </div>
+                    )}
+
+                    <div className="mt-4" />
                 </div>
 
                 <div className="px-7 py-4 border-t border-slate-800/80 flex items-center justify-end gap-5">
@@ -236,7 +323,7 @@ function ScheduleModal({ onConfirm, onClose, loading, candidateName, shortId }) 
                         Cancel
                     </button>
                     <button
-                        disabled={!date || !time || loading}
+                        disabled={!canConfirm}
                         onClick={handleConfirm}
                         className="flex items-center gap-2.5 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-xl cursor-pointer border-none transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_4px_14px_rgba(99,102,241,0.4)]"
                     >
@@ -252,10 +339,11 @@ function ScheduleModal({ onConfirm, onClose, loading, candidateName, shortId }) 
     );
 }
 
+
 function DeclineModal({ onConfirm, onClose, loading, candidateName }) {
     return (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-sm">
-            <div className="bg-[#0f1320] border border-slate-700/50 rounded-2xl shadow-2xl w-[420px] overflow-hidden">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-sm" onClick={onClose}>
+            <div className="bg-[#0f1320] border border-slate-700/50 rounded-2xl shadow-2xl w-[420px] overflow-hidden" onClick={(e) => e.stopPropagation()}>
                 <div className="px-7 pt-7 pb-5">
                     <div className="flex items-center gap-3 mb-4">
                         <div className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center flex-shrink-0">
@@ -333,6 +421,12 @@ export default function AdminApplicationDetail() {
         mutationFn: () => updateApplication({ id, data: { status: "REJECTED", admin_notes: adminNotes } }),
         onSuccess: () => { setDeclineError(null); setShowDeclineModal(false); invalidate(); },
         onError: () => setDeclineError("Failed to decline. Please try again."),
+    });
+
+    const approvalMutation = useMutation({
+        mutationFn: (outcome) => updateApplication({ id, data: { status: outcome, admin_notes: adminNotes } }),
+        onSuccess: () => { invalidate(); },
+        onError: () => setDeclineError("Action failed. Please try again."),
     });
 
     if (isLoading) {
@@ -536,57 +630,118 @@ export default function AdminApplicationDetail() {
                         </div>
                     </div>
 
-                    {!["INTERVIEW_SCHEDULED", "REJECTED"].includes(app.status) && (
-                        <div className="mt-6 bg-[#141826] border border-slate-700/50 rounded-2xl overflow-hidden">
-                            <div className="flex items-center gap-2.5 px-5 py-4 border-b border-slate-700/40">
-                                <span className="text-admin-primary">
+                    {/* Post-interview Approve / Reject panel */}
+                    {app.interview_status === "COMPLETED" && !["APPROVED", "REJECTED"].includes(app.status) && (
+                        <div className="mt-6 bg-[#141826] border border-purple-500/30 rounded-2xl overflow-hidden">
+                            <div className="flex items-center gap-2.5 px-5 py-4 border-b border-purple-500/20">
+                                <span className="text-purple-400">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                         <path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
                                     </svg>
                                 </span>
-                                <h3 className="font-outfit text-sm font-semibold text-slate-200 tracking-tight">Admin Decision</h3>
+                                <h3 className="font-outfit text-sm font-semibold text-slate-200 tracking-tight">Psychologist Approval</h3>
+                                <span className="ml-auto text-[11px] px-2.5 py-1 rounded-full bg-purple-500/15 text-purple-400 font-semibold border border-purple-500/25">Interview Completed</span>
                             </div>
                             <div className="px-5 py-5">
+                                <p className="text-sm text-slate-400 mb-5 leading-relaxed">
+                                    The interview has been completed. Review the candidate's profile and make your final decision.
+                                </p>
                                 <div className="flex gap-6 items-start">
                                     <div className="flex-1 flex flex-col gap-2">
                                         <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                                            Admin Notes (Internal Use / Rejection Reason)
+                                            Admin Notes (visible in decision record)
                                         </label>
                                         <textarea
-                                            rows={5}
+                                            rows={4}
                                             value={adminNotes}
                                             onChange={(e) => setAdminNotes(e.target.value)}
-                                            placeholder="Enter feedback for the applicant or internal notes regarding this approval…"
+                                            placeholder="Add notes about this candidate's interview performance…"
                                             className="w-full bg-[#0B0E14] border border-slate-700/60 rounded-xl px-4 py-3 text-sm text-slate-300 placeholder:text-slate-600 outline-none resize-none focus:border-admin-primary transition-colors"
                                         />
                                         {declineError && <span className="text-xs text-red-400">{declineError}</span>}
                                     </div>
-
                                     <div className="flex flex-col gap-3 min-w-[200px]">
                                         <button
-                                            onClick={() => setShowScheduleModal(true)}
-                                            className="flex items-center justify-center gap-2.5 px-5 py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold rounded-xl cursor-pointer border-none transition-all shadow-[0_4px_14px_rgba(16,185,129,0.3)]"
+                                            onClick={() => approvalMutation.mutate("APPROVED")}
+                                            disabled={approvalMutation.isPending}
+                                            className="flex items-center justify-center gap-2.5 px-5 py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold rounded-xl cursor-pointer border-none transition-all shadow-[0_4px_14px_rgba(16,185,129,0.3)] disabled:opacity-60"
                                         >
-                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                                                <polyline points="20 6 9 17 4 12" />
-                                            </svg>
-                                            Schedule Interview
+                                            {approvalMutation.isPending && approvalMutation.variables === "APPROVED"
+                                                ? <svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>
+                                                : <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12" /></svg>
+                                            }
+                                            Approve Psychologist
                                         </button>
                                         <button
-                                            onClick={() => setShowDeclineModal(true)}
-                                            disabled={declineMutation.isPending}
+                                            onClick={() => approvalMutation.mutate("REJECTED")}
+                                            disabled={approvalMutation.isPending}
                                             className="flex items-center justify-center gap-2.5 px-5 py-3.5 bg-red-600 hover:bg-red-500 text-white text-sm font-bold rounded-xl cursor-pointer border-none transition-all shadow-[0_4px_14px_rgba(239,68,68,0.3)] disabled:opacity-60"
                                         >
-                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                                                <circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" />
-                                            </svg>
-                                            Decline Application
+                                            {approvalMutation.isPending && approvalMutation.variables === "REJECTED"
+                                                ? <svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>
+                                                : <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" /></svg>
+                                            }
+                                            Reject Application
                                         </button>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     )}
+
+                    {/* Original Schedule / Decline panel — shown only when interview is not yet done */}
+                    {!app.interview_status || (app.interview_status !== "COMPLETED" && !["INTERVIEW_SCHEDULED", "REJECTED", "APPROVED"].includes(app.status)) ? (
+                        !["INTERVIEW_SCHEDULED", "REJECTED", "APPROVED"].includes(app.status) && (
+                            <div className="mt-6 bg-[#141826] border border-slate-700/50 rounded-2xl overflow-hidden">
+                                <div className="flex items-center gap-2.5 px-5 py-4 border-b border-slate-700/40">
+                                    <span className="text-admin-primary">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                                        </svg>
+                                    </span>
+                                    <h3 className="font-outfit text-sm font-semibold text-slate-200 tracking-tight">Admin Decision</h3>
+                                </div>
+                                <div className="px-5 py-5">
+                                    <div className="flex gap-6 items-start">
+                                        <div className="flex-1 flex flex-col gap-2">
+                                            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                                                Admin Notes (Internal Use / Rejection Reason)
+                                            </label>
+                                            <textarea
+                                                rows={5}
+                                                value={adminNotes}
+                                                onChange={(e) => setAdminNotes(e.target.value)}
+                                                placeholder="Enter feedback for the applicant or internal notes regarding this approval…"
+                                                className="w-full bg-[#0B0E14] border border-slate-700/60 rounded-xl px-4 py-3 text-sm text-slate-300 placeholder:text-slate-600 outline-none resize-none focus:border-admin-primary transition-colors"
+                                            />
+                                            {declineError && <span className="text-xs text-red-400">{declineError}</span>}
+                                        </div>
+                                        <div className="flex flex-col gap-3 min-w-[200px]">
+                                            <button
+                                                onClick={() => setShowScheduleModal(true)}
+                                                className="flex items-center justify-center gap-2.5 px-5 py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold rounded-xl cursor-pointer border-none transition-all shadow-[0_4px_14px_rgba(16,185,129,0.3)]"
+                                            >
+                                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                                    <polyline points="20 6 9 17 4 12" />
+                                                </svg>
+                                                Schedule Interview
+                                            </button>
+                                            <button
+                                                onClick={() => setShowDeclineModal(true)}
+                                                disabled={declineMutation.isPending}
+                                                className="flex items-center justify-center gap-2.5 px-5 py-3.5 bg-red-600 hover:bg-red-500 text-white text-sm font-bold rounded-xl cursor-pointer border-none transition-all shadow-[0_4px_14px_rgba(239,68,68,0.3)] disabled:opacity-60"
+                                            >
+                                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                                    <circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" />
+                                                </svg>
+                                                Decline Application
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )
+                    ) : null}
 
                     {showScheduleModal && (
                         <ScheduleModal
