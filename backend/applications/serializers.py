@@ -160,8 +160,7 @@ class ApplicationSubmitSerializer(serializers.ModelSerializer):
 ADMIN UPDATE APPLICATION SERIALIZER
 """
 class AdminUpdateApplicationSerializer(serializers.ModelSerializer):
-    ALLOWED_STATUSES = ["DRAFT", "SUBMITTED", "INTERVIEW_SCHEDULED", "REJECTED"]
-
+    ALLOWED_STATUSES = ["DRAFT", "SUBMITTED", "INTERVIEW_SCHEDULED", "INTERVIEW_COMPLETED", "APPROVED", "REJECTED"]
     status = serializers.ChoiceField(choices=[(s, s) for s in ALLOWED_STATUSES],required=False,)
     admin_notes = serializers.CharField(required=False, allow_blank=True)
 

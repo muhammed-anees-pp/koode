@@ -10,6 +10,7 @@ from .models import PsychologistApplication
 from django.shortcuts import get_object_or_404
 from interviews.services.interview_service import InterviewService
 from interviews.repositories.interview_repository import InterviewRepository
+from psychologists.services.psychologist_service import PsychologistProfileService
 
 
 
@@ -154,7 +155,15 @@ class AdminUpdateApplicationView(APIView):
         application = get_object_or_404(PsychologistApplication, pk=pk)
         serializer = AdminUpdateApplicationSerializer(application, data=request.data, partial=True)
         if serializer.is_valid():
+            new_status = serializer.validated_data.get("status")
             updated = serializer.save()
+
+            if new_status == "APPROVED":
+                user = updated.user
+                user.role = "PSYCHOLOGIST"
+                user.save(update_fields=["role"])
+                PsychologistProfileService.create_from_application(updated, user)
+
             return Response(PsychologistApplicationSerializer(updated, context={"request": request}).data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

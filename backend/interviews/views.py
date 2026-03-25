@@ -11,7 +11,6 @@ from .models import Interview, ChatMessage
 from .serializers import InterviewSerializer
 from .repositories.interview_repository import InterviewRepository
 from video.zego_service import generate_zego_token
-from psychologists.services.psychologist_service import PsychologistProfileService
 
 
 
@@ -109,18 +108,10 @@ class EndInterviewView(APIView):
     def post(self, request, interview_id):
         interview = get_object_or_404(Interview, id=interview_id)
         complete = request.data.get("complete", False)
-        outcome = request.data.get("outcome")
 
         if not complete:
             return Response({"detail": "Interview kept active."})
 
-        if outcome not in ["APPROVED", "REJECTED"]:
-            return Response(
-                {"detail": "outcome must be APPROVED or REJECTED"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        application = interview.application
         interview.status = "COMPLETED"
         interview.psychologist_joined = False
         interview.admin_joined = False
@@ -129,22 +120,9 @@ class EndInterviewView(APIView):
             "status", "psychologist_joined", "admin_joined", "join_requested", "updated_at"
         ])
 
-        if outcome == "APPROVED":
-            application.status = "APPROVED"
-            application.save(update_fields=["status", "updated_at"])
-            user = application.user
-            user.role = "PSYCHOLOGIST"
-            user.save(update_fields=["role"])
-            PsychologistProfileService.create_from_application(application, user)
-
-        elif outcome == "REJECTED":
-            application.status = "REJECTED"
-            application.save(update_fields=["status", "updated_at"])
-
         return Response({
-            "detail": f"Interview completed. Application {outcome.lower()}.",
+            "detail": "Interview marked as completed.",
             "interview_status": interview.status,
-            "application_status": application.status,
         })
 
 
