@@ -24,6 +24,7 @@ class PsychologistProfileService:
             pincode=application.pincode or "",
             country=application.country or "India",
             job_title=application.job_title or "",
+            highest_education=application.highest_education or "",
             years_of_experience=application.years_of_experience or 0,
             consultation_fee=application.consultation_fee or 0,
             verified=True,
