@@ -49,10 +49,26 @@ const STATUS_CONFIG = {
     DRAFT: { label: "Draft", cls: "bg-slate-500/15 text-slate-400", dot: "bg-slate-400", dotted: true },
 };
 
-const INTERVIEW_STATUS = {
-    INTERVIEW_SCHEDULED: { label: "Pending", cls: "text-slate-400" },
-    INTERVIEW_COMPLETED: { label: "Finished", cls: "bg-purple-500/15 text-purple-400 px-3 py-1 rounded-full text-[11px] font-semibold" },
+// Interview model status values
+const INTERVIEW_STATUS_CONFIG = {
+    SCHEDULED: { label: "Scheduled", cls: "inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold bg-[#1188d8]/15 text-[#63b3ed]" },
+    WAITING:   { label: "Waiting Room", cls: "inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold bg-amber-500/15 text-amber-400" },
+    ONGOING:   { label: "Live", cls: "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-500/15 text-emerald-400" },
+    COMPLETED: { label: "Completed", cls: "inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold bg-purple-500/15 text-purple-400" },
+    CANCELLED: { label: "Cancelled", cls: "inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold bg-red-500/15 text-red-400" },
 };
+
+function InterviewStatusBadge({ status }) {
+    if (!status) return <span className="text-slate-600">—</span>;
+    const cfg = INTERVIEW_STATUS_CONFIG[status];
+    if (!cfg) return <span className="text-slate-500 text-[11px]">{status}</span>;
+    return (
+        <span className={cfg.cls}>
+            {status === "ONGOING" && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />}
+            {cfg.label}
+        </span>
+    );
+}
 
 function StatusBadge({ status }) {
     const cfg = STATUS_CONFIG[status] || STATUS_CONFIG["SUBMITTED"];
@@ -347,10 +363,10 @@ export default function AdminApplicationList() {
                         <table className="w-full border-collapse">
                             <thead>
                                 <tr className="border-b border-slate-700/40">
-                                    <th className={thCls}>Name</th>
+                                                                        <th className={thCls}>Name</th>
                                     <th className={thCls}>Email</th>
                                     <th className={thCls}>Submitted Date</th>
-                                    <th className={thCls}>Status</th>
+                                    <th className={thCls}>Application Status</th>
                                     <th className={thCls}>Interview Date</th>
                                     <th className={thCls}>Interview Status</th>
                                     <th className={thCls}>Actions</th>
@@ -372,7 +388,6 @@ export default function AdminApplicationList() {
                                 )}
                                 {paged.map((app) => {
                                     const interviewDT = fmtDateTime(app.interview_date);
-                                    const interviewStatusCfg = INTERVIEW_STATUS[app.status];
 
                                     return (
                                         <tr key={app.id} className="border-b border-slate-700/30 transition-colors hover:bg-slate-800/20">
@@ -404,11 +419,7 @@ export default function AdminApplicationList() {
                                             </td>
 
                                             <td className={tdCls}>
-                                                {interviewStatusCfg ? (
-                                                    <span className={interviewStatusCfg.cls}>{interviewStatusCfg.label}</span>
-                                                ) : (
-                                                    <span className="text-slate-600">—</span>
-                                                )}
+                                                <InterviewStatusBadge status={app.interview_status} />
                                             </td>
 
                                             <td className={tdCls}>
@@ -447,6 +458,7 @@ export default function AdminApplicationList() {
                                                             }
                                                         </NavIconBtn>
                                                     )}
+
                                                 </div>
                                             </td>
                                         </tr>
@@ -506,8 +518,10 @@ export default function AdminApplicationList() {
                     app={roomModalApp}
                     onClose={() => setRoomModalApp(null)}
                     onInterviewEnded={() => {
+                        const appId = roomModalApp.id;
                         setRoomModalApp(null);
                         queryClient.invalidateQueries({ queryKey: ["admin-applications"] });
+                        navigate(`/admin/applications/${appId}`);
                     }}
                 />
             )}

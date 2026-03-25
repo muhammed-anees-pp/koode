@@ -42,11 +42,12 @@ const STEPS = [
     },
 ];
 
-const getStepIndex = (status) => {
-    if (!status || status === 'SUBMITTED') return 0;
-    if (status === 'INTERVIEW_SCHEDULED') return 1;
-    if (status === 'INTERVIEW_COMPLETED') return 2;
+const getStepIndex = (status, interviewStatus) => {
     if (status === 'APPROVED') return 3;
+    if (interviewStatus === 'COMPLETED') return 2;
+    if (status === 'INTERVIEW_COMPLETED') return 2;
+    if (status === 'INTERVIEW_SCHEDULED' || interviewStatus === 'SCHEDULED' || interviewStatus === 'WAITING' || interviewStatus === 'ONGOING') return 1;
+    if (!status || status === 'SUBMITTED') return 0;
     return 0;
 };
 
@@ -515,6 +516,7 @@ const PsychologistApprovalWaiting = () => {
     const [interviewId, setInterviewId] = useState(null);
     const [showInterviewDetails, setShowInterviewDetails] = useState(false);
     const [showWaitingRoom, setShowWaitingRoom] = useState(false);
+    const [interviewStatus, setInterviewStatus] = useState(null);
 
     useEffect(() => {
         Promise.all([
@@ -526,6 +528,11 @@ const PsychologistApprovalWaiting = () => {
                 if (statusData?.interview_id) {
                     setInterviewId(statusData.interview_id);
                 }
+                if (statusData?.interview_status) {
+                    setInterviewStatus(statusData.interview_status);
+                } else if (appData?.interview_status) {
+                    setInterviewStatus(appData.interview_status);
+                }
             })
             .catch(() => setApplication(null))
             .finally(() => setLoading(false));
@@ -533,7 +540,7 @@ const PsychologistApprovalWaiting = () => {
 
     const status = application?.status || 'SUBMITTED';
     const isRejected = status === 'REJECTED';
-    const currentStep = getStepIndex(status);
+    const currentStep = getStepIndex(status, interviewStatus);
 
     const fullName = application?.full_name || 'Dr. —';
     const email = application?.email || '—';
@@ -550,7 +557,8 @@ const PsychologistApprovalWaiting = () => {
     const specs = application?.specializations || [];
 
     const interviewStatuses = ['INTERVIEW_SCHEDULED', 'WAITING', 'ONGOING'];
-    const showInterviewOption = interviewStatuses.includes(status) && interviewId;
+    const showInterviewOption = interviewStatuses.includes(status) && interviewId && interviewStatus !== 'COMPLETED';
+    const interviewCompleted = interviewStatus === 'COMPLETED' && !['APPROVED', 'REJECTED'].includes(status);
 
     return (
         <div className="min-h-screen bg-[#eef0f5]">
@@ -653,17 +661,17 @@ const PsychologistApprovalWaiting = () => {
                             <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-1.5">
                                     <h3 className="text-base font-semibold text-gray-900">
-                                        {status === 'ONGOING' ? 'Interview In Progress' : 'Interview Scheduled'}
+                                        {interviewStatus === 'ONGOING' ? 'Interview In Progress' : 'Interview Scheduled'}
                                     </h3>
-                                    <span className={`text-[11px] font-medium px-2.5 py-0.5 rounded-full border ${status === 'ONGOING'
+                                    <span className={`text-[11px] font-medium px-2.5 py-0.5 rounded-full border ${interviewStatus === 'ONGOING'
                                         ? 'bg-green-50 text-green-700 border-green-200'
                                         : 'bg-amber-50 text-amber-700 border-amber-200'
                                         }`}>
-                                        {status === 'ONGOING' ? 'Live Now' : 'Action Required'}
+                                        {interviewStatus === 'ONGOING' ? 'Live Now' : 'Action Required'}
                                     </span>
                                 </div>
                                 <p className="text-sm text-gray-500 leading-relaxed mb-3">
-                                    {status === 'ONGOING'
+                                    {interviewStatus === 'ONGOING'
                                         ? 'Your interview is currently in progress. You can rejoin if you were disconnected.'
                                         : 'Your clinical interview has been scheduled. Please be prepared with your credentials and case study materials. The interview link will be active 5 minutes before the scheduled time.'
                                     }
@@ -688,7 +696,7 @@ const PsychologistApprovalWaiting = () => {
                                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                         <polygon points="23 7 16 12 23 17 23 7" /><rect x="1" y="5" width="15" height="14" rx="2" />
                                     </svg>
-                                    {status === 'ONGOING' ? 'Rejoin Interview' : 'View Interview Details'}
+                                    {interviewStatus === 'ONGOING' ? 'Rejoin Interview' : 'View Interview Details'}
                                 </button>
                                 <p className="text-xs text-gray-400 flex items-center gap-1 mt-3">
                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -700,6 +708,40 @@ const PsychologistApprovalWaiting = () => {
                         </div>
                     </div>
                 )}
+
+                {/* Interview completed — awaiting admin decision */}
+                {!loading && interviewCompleted && (
+                    <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6 mb-5 border-l-4 border-l-purple-400">
+                        <div className="flex items-start gap-4">
+                            <div className="w-12 h-12 rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-500 flex-shrink-0">
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                                    <path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                                </svg>
+                            </div>
+                            <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-1.5">
+                                    <h3 className="text-base font-semibold text-gray-900">Interview Completed</h3>
+                                    <span className="text-[11px] font-medium px-2.5 py-0.5 rounded-full border bg-purple-50 text-purple-600 border-purple-200">
+                                        Awaiting Decision
+                                    </span>
+                                </div>
+                                <p className="text-sm text-gray-500 leading-relaxed">
+                                    Your clinical interview has been completed successfully. Our team is currently reviewing the session and will make a decision shortly. You'll be notified once a decision has been made.
+                                </p>
+                                {application?.interview_date && (
+                                    <div className="flex items-center gap-2 mt-3 text-xs text-gray-400 font-medium">
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
+                                        </svg>
+                                        Conducted on {fmtDateTime(application.interview_date)}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+
 
                 {!loading && application && (
                     <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6">
