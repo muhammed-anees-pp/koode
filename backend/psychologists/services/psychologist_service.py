@@ -1,4 +1,7 @@
 from psychologists.models import PsychologistProfile, Specialization
+import shutil
+import os
+from django.core.files.base import ContentFile
 
 
 
@@ -35,10 +38,30 @@ class PsychologistProfileService:
 
         profile.save()
 
-
         if hasattr(application, "specializations"):
             for spec in application.specializations.all():
                 spec_obj, _ = Specialization.objects.get_or_create(name=spec.name)
                 profile.specializations.add(spec_obj)
+
+        user_fields_to_update = []
+
+        if application.profile_picture and not user.profile_picture:
+            try:
+                pic_file = application.profile_picture
+                pic_file.open("rb")
+                content = pic_file.read()
+                pic_file.close()
+                filename = os.path.basename(pic_file.name)
+                user.profile_picture.save(filename, ContentFile(content), save=False)
+                user_fields_to_update.append("profile_picture")
+            except Exception:
+                pass
+
+        if application.full_name and not user.full_name:
+            user.full_name = application.full_name
+            user_fields_to_update.append("full_name")
+
+        if user_fields_to_update:
+            user.save(update_fields=user_fields_to_update)
 
         return profile

@@ -126,8 +126,18 @@ class PsychologistLoginSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True)
 
     def validate(self, attrs):
+        from accounts.models import User as UserModel
         email = attrs.get("email").strip().lower()
         password = attrs.get("password")
+
+        try:
+            db_user = UserModel.objects.get(email=email, role="PSYCHOLOGIST")
+            if not db_user.is_active:
+                raise serializers.ValidationError(
+                    {"code": "suspended", "detail": "Your account has been suspended. Please contact support."}
+                )
+        except UserModel.DoesNotExist:
+            pass
 
         user = authenticate(
             request=self.context.get("request"),
@@ -140,9 +150,6 @@ class PsychologistLoginSerializer(serializers.Serializer):
 
         if user.role != "PSYCHOLOGIST":
             raise serializers.ValidationError("Invalid login portal")
-
-        if not user.is_active:
-            raise serializers.ValidationError("Please verify your email first")
 
         self.context["user"] = user
         refresh = RefreshToken.for_user(user)
