@@ -68,6 +68,10 @@ export default function InterviewRoom() {
     const engineRef = useRef(null);
     const localStreamIdRef = useRef(null);
     const pollRef = useRef(null);
+    const statusPollRef = useRef(null);
+    const localStreamRef = useRef(null);  
+    const [interviewEnded, setInterviewEnded] = useState(false);
+    const interviewEndedRef = useRef(false);
 
     useEffect(() => {
         getInterviewToken(interviewId)
@@ -85,6 +89,7 @@ export default function InterviewRoom() {
 
     useEffect(() => () => {
         clearInterval(pollRef.current);
+        clearInterval(statusPollRef.current);
     }, []);
 
     const sendJoinRequest = useCallback(async () => {
@@ -180,6 +185,7 @@ export default function InterviewRoom() {
             sessionStorage.removeItem('interview_camOn');
 
             setLocalStream(stream);
+            localStreamRef.current = stream; 
             setJoined(true);
             setJoinPhase("in_call");
         } catch (err) {
@@ -196,20 +202,64 @@ export default function InterviewRoom() {
         }
     }, [joinPhase, joinRoom]);
 
-    const leaveRoom = useCallback(async () => {
+    const leaveRoom = useCallback(async (navigateTo = -1) => {
+        clearInterval(statusPollRef.current);
         const engine = engineRef.current;
-        if (!engine) return;
-        if (localStreamIdRef.current) {
-            await engine.stopPublishingStream(localStreamIdRef.current);
+        if (!engine) {
+            if (navigateTo === -1) navigate(-1);
+            else navigate(navigateTo);
+            return;
         }
-        if (localStream) {
-            engine.destroyStream(localStream);
-        }
-        await engine.logoutRoom();
-        ZegoExpressEngine.destroyEngine();
         engineRef.current = null;
-        navigate(-1);
-    }, [localStream, navigate]);
+        if (localStreamIdRef.current) {
+            try { await engine.stopPublishingStream(localStreamIdRef.current); } catch (_) {}
+        }
+        if (localStreamRef.current) {
+            try { engine.destroyStream(localStreamRef.current); } catch (_) {}
+        }
+        try { await engine.logoutRoom(); } catch (_) {}
+        try { ZegoExpressEngine.destroyEngine(); } catch (_) {}
+        if (navigateTo === -1) navigate(-1);
+        else navigate(navigateTo);
+    }, [navigate]);
+
+    useEffect(() => {
+        if (!joined) return;
+        const doEnd = async () => {
+            if (interviewEndedRef.current) return;
+            interviewEndedRef.current = true;
+            clearInterval(statusPollRef.current);
+            setInterviewEnded(true);
+            setTimeout(async () => {
+                const engine = engineRef.current;
+                engineRef.current = null;
+                if (engine) {
+                    if (localStreamIdRef.current) {
+                        try { await engine.stopPublishingStream(localStreamIdRef.current); } catch (_) {}
+                    }
+                    if (localStreamRef.current) {
+                        try { engine.destroyStream(localStreamRef.current); } catch (_) {}
+                    }
+                    try { await engine.logoutRoom(); } catch (_) {}
+                    try { ZegoExpressEngine.destroyEngine(); } catch (_) {}
+                }
+                navigate("/psychologist/approval-waiting");
+            }, 2500);
+        };
+
+        statusPollRef.current = setInterval(async () => {
+            try {
+                const data = await getJoinStatus(interviewId);
+                if (data.status === "COMPLETED") {
+                    doEnd();
+                }
+            } catch (e) {
+                console.error("Status poll error:", e);
+            }
+        }, 3000);
+
+        return () => clearInterval(statusPollRef.current);
+    }, [joined]); 
 
     const toggleMic = () => {
         if (!localStream) return;
@@ -268,6 +318,28 @@ export default function InterviewRoom() {
     return (
         <div className="min-h-screen bg-[#eef0f5] flex flex-col">
             <PsychologistNavbar />
+
+            {/* Interview ended by admin — overlay */}
+            {interviewEnded && (
+                <div className="fixed inset-0 z-[500] flex items-center justify-center bg-black/70 backdrop-blur-sm">
+                    <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full text-center">
+                        <div className="w-16 h-16 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center mx-auto mb-4">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#1188d8" strokeWidth="1.8">
+                                <path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                            </svg>
+                        </div>
+                        <h3 className="text-lg font-bold text-gray-900 mb-2">Interview Completed</h3>
+                        <p className="text-sm text-gray-500 leading-relaxed">
+                            The interviewer has ended the session. You'll be redirected to your status page shortly.
+                        </p>
+                        <div className="mt-4 flex justify-center">
+                            <svg className="animate-spin text-psycho-primary" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <div className="flex-1 max-w-5xl mx-auto w-full px-4 py-8">
                 <div className="flex items-center justify-between mb-6">

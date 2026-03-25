@@ -210,7 +210,6 @@ export default function AdminInterviewRoomModal({ interviewId, applicantName, sc
     const [showChat, setShowChat] = useState(false);
     const [chatMessages, setChatMessages] = useState([]);
     const [showEndConfirm, setShowEndConfirm] = useState(false);
-    const [showOutcomeConfirm, setShowOutcomeConfirm] = useState(false);
     const [ending, setEnding] = useState(false);
     const [remoteStreamID, setRemoteStreamID] = useState(null);
 
@@ -536,13 +535,11 @@ export default function AdminInterviewRoomModal({ interviewId, applicantName, sc
         onClose();
     };
 
-    const handleCompleteYes = () => { setShowEndConfirm(false); setShowOutcomeConfirm(true); };
-
-    const handleOutcome = async (outcome) => {
-        setShowOutcomeConfirm(false);
+    const handleCompleteYes = async () => {
+        setShowEndConfirm(false);
         setEnding(true);
         try {
-            await endInterview(interviewId, { complete: true, outcome });
+            await endInterview(interviewId, { complete: true });
             const engine = engineRef.current;
             if (engine) {
                 try {
@@ -554,7 +551,7 @@ export default function AdminInterviewRoomModal({ interviewId, applicantName, sc
                 engineRef.current = null;
             }
             stopChatPoll();
-            onInterviewEnded && onInterviewEnded(outcome);
+            onInterviewEnded && onInterviewEnded();
             onClose();
         } catch (e) {
             console.error("End interview error:", e);
@@ -910,41 +907,13 @@ export default function AdminInterviewRoomModal({ interviewId, applicantName, sc
                 {showEndConfirm && (
                     <ConfirmModal
                         title="End Interview?"
-                        message="Do you want to mark this interview as completed? If not, you can continue using the same room."
-                        primaryLabel="Yes, Mark Completed"
+                        message="Do you want to mark this interview as completed? You can review the application and make your decision afterwards."
+                        primaryLabel={ending ? "Completing…" : "Yes, Mark Completed"}
                         primaryColor="indigo"
                         onPrimary={handleCompleteYes}
                         secondaryLabel="Keep Active"
                         onSecondary={handleNotComplete}
                     />
-                )}
-                {showOutcomeConfirm && (
-                    <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/70 backdrop-blur-sm">
-                        <div className="bg-[#0f1320] border border-slate-700/50 rounded-2xl shadow-2xl w-[400px] p-7">
-                            <h3 className="font-outfit text-lg font-bold text-slate-100 mb-2">Application Outcome</h3>
-                            <p className="text-sm text-slate-400 mb-6">
-                                Based on the interview, what is your decision for <span className="text-slate-200 font-medium">{applicantName}</span>?
-                            </p>
-                            <div className="flex gap-3">
-                                <button
-                                    onClick={() => handleOutcome("APPROVED")}
-                                    disabled={ending}
-                                    className="flex-1 py-3 rounded-xl text-sm font-bold bg-emerald-600 hover:bg-emerald-500 text-white border-none cursor-pointer transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-                                >
-                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12" /></svg>
-                                    Approve
-                                </button>
-                                <button
-                                    onClick={() => handleOutcome("REJECTED")}
-                                    disabled={ending}
-                                    className="flex-1 py-3 rounded-xl text-sm font-bold bg-red-600 hover:bg-red-500 text-white border-none cursor-pointer transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-                                >
-                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-                                    Reject
-                                </button>
-                            </div>
-                        </div>
-                    </div>
                 )}
             </div>
         );
