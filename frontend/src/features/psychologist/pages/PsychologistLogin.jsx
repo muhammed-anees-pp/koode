@@ -98,11 +98,6 @@ const PsychologistLogin = () => {
             {errors.password && <p className={errorMsgCls}>{errors.password.message}</p>}
           </div>
 
-          <label className="flex items-center gap-2 cursor-pointer select-none -mt-1">
-            <input type="checkbox" className="w-4 h-4 accent-psycho-primary rounded" />
-            <span className="text-sm text-gray-600">Remember me</span>
-          </label>
-
           {localError && <p className={errorMsgCls}>{localError}</p>}
 
           <button type="submit" className={submitBtnCls} disabled={mutation.isPending}>
