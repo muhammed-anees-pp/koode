@@ -99,7 +99,7 @@ class AdminPatientListView(APIView):
             "total": total,
             "page": page,
             "page_size": page_size,
-            "total_pages": max(1, -(-total // page_size)),
+            "total_pages": max(1, (total + page_size - 1) // page_size),
         }, status=status.HTTP_200_OK)
 
 
@@ -215,8 +215,69 @@ class AdminPsychologistListView(APIView):
             "total": total,
             "page": page,
             "page_size": page_size,
-            "total_pages": max(1, -(-total // page_size)),
+            "total_pages": max(1, (total + page_size - 1) // page_size),
         }, status=status.HTTP_200_OK)
+
+
+"""
+ADMIN PSYCHOLOGIST DETAIL
+"""
+class AdminPsychologistDetailView(APIView):
+    permission_classes = [IsAuthenticated, IsAdminUserRole]
+
+    def get(self, request, psychologist_id):
+        profile = get_object_or_404(
+            PsychologistProfile.objects.select_related("user").prefetch_related("specializations"),
+            psychologist_id=psychologist_id
+        )
+
+        pic = profile.user.profile_picture
+        pic_url = None
+        if pic:
+            try:
+                pic_url = request.build_absolute_uri(pic.url)
+            except Exception:
+                pass
+        if not pic_url:
+            try:
+                app = profile.user.psychologist_application
+                if app and app.profile_picture:
+                    pic_url = request.build_absolute_uri(app.profile_picture.url)
+            except Exception:
+                pass
+
+        audio_url = None
+        if profile.audio_intro:
+            try:
+                audio_url = request.build_absolute_uri(profile.audio_intro.url)
+            except Exception:
+                pass
+
+        specializations = [s.name for s in profile.specializations.all()]
+
+        data = {
+            "psychologist_id": profile.psychologist_id,
+            "full_name": profile.user.full_name,
+            "email": profile.user.email,
+            "phone_number": profile.phone_number,
+            "profile_picture": pic_url,
+            "is_active": profile.user.is_active,
+            "job_title": profile.job_title,
+            "years_of_experience": profile.years_of_experience,
+            "consultation_fee": str(profile.consultation_fee) if profile.consultation_fee else None,
+            "highest_education": profile.highest_education,
+            "about": profile.about,
+            "street_address": profile.street_address,
+            "city": profile.city,
+            "state": profile.state,
+            "pincode": profile.pincode,
+            "country": profile.country,
+            "audio_intro": audio_url,
+            "specializations": specializations,
+            "joined_date": profile.created_at.strftime("%b %d, %Y") if profile.created_at else None,
+        }
+
+        return Response(data, status=status.HTTP_200_OK)
 
 
 """

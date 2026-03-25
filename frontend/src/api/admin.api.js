@@ -43,6 +43,11 @@ export const fetchAdminPsychologists = async ({ page = 1, pageSize = 10, search 
   return response.data;
 };
 
+export const fetchAdminPsychologistDetail = async (id) => {
+  const response = await axiosInstance.get(`admin/psychologist/${id}/`);
+  return response.data;
+};
+
 export const togglePsychologistSuspension = async (psychologistId) => {
   const response = await axiosInstance.post(`admin/psychologist/${psychologistId}/suspend/`);
   return response.data;
