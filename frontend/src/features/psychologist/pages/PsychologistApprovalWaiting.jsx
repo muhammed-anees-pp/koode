@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PsychologistNavbar from '../../../components/psychologist/Navbar/PsychologistNavbar';
 import { getMyApplication, getApplicationStatus, requestJoin, getJoinStatus } from '../../../api/psychologist.api';
+import { usePsychologistSessionGuard } from '../../../hooks/usePsychologistSessionGuard';
 
 const BASE_URL = 'http://localhost:8000';
 
@@ -511,6 +512,7 @@ function WaitingRoomModal({ interviewDate, interviewId, onClose, onEnterRoom, na
 
 const PsychologistApprovalWaiting = () => {
     const navigate = useNavigate();
+    usePsychologistSessionGuard();
     const [application, setApplication] = useState(null);
     const [loading, setLoading] = useState(true);
     const [interviewId, setInterviewId] = useState(null);
