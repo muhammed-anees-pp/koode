@@ -1,17 +1,40 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../../store/auth.store';
-import { psychologistLogout } from '../../../api/psychologist.api';
+import { psychologistLogout, getMyApplication } from '../../../api/psychologist.api';
+import { useQuery } from '@tanstack/react-query';
 import logo from '../../../assets/psychologist-logo.png';
 
 const PsychologistNavbar = () => {
-    const { user: authUser, logout } = useAuthStore();
+    const { user: authUser, logout, updateUser } = useAuthStore();
     const navigate = useNavigate();
+
+    // Fetch application picture as fallback when the auth store has no picture
+    const { data: appData } = useQuery({
+        queryKey: ['psychologist-my-application-pic'],
+        queryFn: getMyApplication,
+        enabled: !authUser?.profile_picture,
+        staleTime: 10 * 60 * 1000,
+    });
+
+    // Once we have the application picture, persist it into the store so the
+    // navbar no longer needs to re-fetch on subsequent renders.
+    useEffect(() => {
+        if (appData?.profile_picture && !authUser?.profile_picture) {
+            updateUser({ profile_picture: appData.profile_picture });
+        }
+    }, [appData]);
+
+    const resolvedPicture = authUser?.profile_picture || appData?.profile_picture || null;
 
     const user = {
         name: authUser?.full_name || 'Psychologist',
         email: authUser?.email || '',
-        avatar: authUser?.profile_picture ? `http://localhost:8000${authUser.profile_picture}` : null,
+        avatar: resolvedPicture
+            ? resolvedPicture.startsWith('http')
+                ? resolvedPicture
+                : `http://localhost:8000${resolvedPicture}`
+            : null,
     };
 
     const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);

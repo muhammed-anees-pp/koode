@@ -55,7 +55,7 @@ const PsychologistLogin = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [localError, setLocalError] = useState("");
   const mutation = usePsychologistLoginMutation(setError, setLocalError);
-  const googleAuthMutation = useGooglePsychologistAuthMutation();
+  const googleAuthMutation = useGooglePsychologistAuthMutation(setLocalError);
 
   const onSubmit = (data) => { setLocalError(""); mutation.mutate(data); };
 
