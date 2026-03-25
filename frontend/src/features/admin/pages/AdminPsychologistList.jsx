@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchAdminPsychologists, togglePsychologistSuspension } from "../../../api/admin.api";
 import Sidebar from "../../../components/admin/Sidebar/AdminSidebar";
@@ -31,79 +32,7 @@ function PsychologistAvatar({ name, photo, size = 38 }) {
 
 const overlayClasses = "fixed inset-0 bg-[rgba(0,0,0,0.75)] backdrop-blur-[4px] z-[200] flex items-center justify-center p-5 animate-fade-in";
 
-function PsychologistDetailModal({ psychologist: p, onClose }) {
-    useEffect(() => {
-        const handler = (e) => { if (e.key === "Escape") onClose(); };
-        window.addEventListener("keydown", handler);
-        return () => window.removeEventListener("keydown", handler);
-    }, [onClose]);
 
-    if (!p) return null;
-
-    const Field = ({ label, value }) => (
-        <div className="flex flex-col gap-1 py-3 border-b border-slate-800/60 last:border-0">
-            <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-[0.08em]">{label}</span>
-            <span className="text-sm text-slate-200 font-medium">{value || "—"}</span>
-        </div>
-    );
-
-    const specializations = Array.isArray(p.specializations) && p.specializations.length > 0
-        ? p.specializations.join(", ")
-        : null;
-
-    return (
-        <div className={overlayClasses} onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-            <div className="bg-[#141826] border border-slate-700/50 rounded-2xl shadow-[0_24px_80px_rgba(0,0,0,0.6)] w-full max-w-[480px] relative overflow-hidden animate-[pdmSlideUp_0.22s_cubic-bezier(0.22,1,0.36,1)]">
-
-                <button
-                    className="absolute top-3 right-3 w-8 h-8 bg-slate-800/60 hover:bg-slate-700 rounded-full border-none cursor-pointer text-slate-400 hover:text-slate-200 flex items-center justify-center transition-all duration-200 z-10 text-lg font-light"
-                    onClick={onClose}
-                    aria-label="Close"
-                >
-                    ×
-                </button>
-
-                <div className="flex flex-col items-center text-center pt-8 pb-5 px-6">
-                    <div className="relative mb-4">
-                        <div className="w-[96px] h-[96px] rounded-full border-[3px] border-white/80 flex items-center justify-center overflow-hidden">
-                            <PsychologistAvatar name={p.full_name} photo={p.profile_picture} size={88} />
-                        </div>
-                        <span className={`absolute bottom-1 right-1 w-4 h-4 rounded-full border-2 border-[#141826] ${p.is_active ? "bg-emerald-400" : "bg-slate-500"}`} />
-                    </div>
-                    <h2 className="font-outfit text-[1.15rem] font-bold text-slate-100 mb-0.5">{p.full_name}</h2>
-                    {p.job_title && <p className="text-[12px] text-slate-400 mb-1">{p.job_title}</p>}
-                    <p className="text-[12px] text-slate-400 mb-2">{p.email}</p>
-                    <p className="text-[12px] font-medium text-admin-primary mb-3">ID: #{p.psychologist_id}</p>
-                    <span className={`inline-flex items-center gap-1.5 px-4 py-1 text-[12px] font-semibold rounded-full ${p.is_active
-                        ? "bg-emerald-500/15 text-emerald-400"
-                        : "bg-red-500/15 text-red-400"
-                        }`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${p.is_active ? "bg-emerald-400" : "bg-red-400"}`} />
-                        {p.is_active ? "Active" : "Suspended"}
-                    </span>
-                </div>
-
-                <div className="h-px bg-slate-800/60" />
-
-                <div className="grid grid-cols-2 px-6">
-                    <Field label="Experience" value={p.years_of_experience != null ? `${p.years_of_experience} Years` : null} />
-                    <Field label="Consultation Fee" value={p.consultation_fee ? `₹${p.consultation_fee}` : null} />
-                    <Field label="Joined Date" value={p.joined_date} />
-                    <Field label="Specializations" value={specializations} />
-                </div>
-
-                <div className="text-center py-5">
-                    <button
-                        className="text-slate-500 text-sm bg-transparent border-none cursor-pointer hover:text-slate-300 transition-colors"
-                        onClick={onClose}
-                    >
-                        Dismiss View
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-}
 
 function SuspendConfirmModal({ psychologist, onConfirm, onCancel, isLoading }) {
     useEffect(() => {
@@ -185,11 +114,11 @@ export default function AdminPsychologistList() {
     const [sortBy, setSortBy] = useState("joined_date");
     const [sortDir, setSortDir] = useState("desc");
     const [filterStatus, setFilterStatus] = useState("all");
-    const [selectedPsychologist, setSelectedPsychologist] = useState(null);
     const [suspendTarget, setSuspendTarget] = useState(null);
     const filterDropdown = useDropdown();
     const sortDropdown = useDropdown();
     const queryClient = useQueryClient();
+    const navigate = useNavigate();
 
     const handleSearchChange = useCallback((e) => {
         const val = e.target.value;
@@ -328,7 +257,7 @@ export default function AdminPsychologistList() {
                                         <td className={`${tdCls} text-slate-400`}>{p.joined_date}</td>
                                         <td className={tdCls}>
                                             <div className="flex items-center gap-1.5">
-                                                <button className="w-8 h-8 bg-slate-800 border border-slate-700 rounded-lg flex items-center justify-center text-slate-400 cursor-pointer transition-all duration-200 hover:bg-slate-700 hover:text-slate-200" title="View psychologist" onClick={() => setSelectedPsychologist(p)}>
+                                                <button className="w-8 h-8 bg-slate-800 border border-slate-700 rounded-lg flex items-center justify-center text-slate-400 cursor-pointer transition-all duration-200 hover:bg-slate-700 hover:text-slate-200" title="View psychologist" onClick={() => navigate(`/admin/psychologists/${p.psychologist_id}`)}>
                                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
                                                 </button>
                                                 <button
@@ -371,12 +300,7 @@ export default function AdminPsychologistList() {
                 </div>
             </div>
 
-            {selectedPsychologist && (
-                <PsychologistDetailModal
-                    psychologist={selectedPsychologist}
-                    onClose={() => setSelectedPsychologist(null)}
-                />
-            )}
+
             {suspendTarget && (
                 <SuspendConfirmModal
                     psychologist={suspendTarget}
