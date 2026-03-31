@@ -400,10 +400,21 @@ class PsychologistLoginView(APIView):
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
         user = serializer.context.get("user")
+        profile_pic_url = None
+        if user.profile_picture:
+            profile_pic_url = user.profile_picture.url
+        else:
+            try:
+                app = user.psychologist_application
+                if app and app.profile_picture:
+                    profile_pic_url = app.profile_picture.url
+            except Exception:
+                pass
+
         user_data = {
             "email": user.email,
             "full_name": user.full_name,
-            "profile_picture": user.profile_picture.url if user.profile_picture else None,
+            "profile_picture": profile_pic_url,
             "role": user.role
         }
 

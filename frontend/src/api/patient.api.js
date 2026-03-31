@@ -50,3 +50,18 @@ export const updatePatientProfile = async (data) => {
   });
   return response.data;
 };
+
+export const fetchPatientTherapists = async () => {
+  const response = await axiosInstance.get("patient/therapists/");
+  return response.data;
+};
+
+export const fetchPatientTherapistDetail = async (id) => {
+  const response = await axiosInstance.get(`patient/therapists/${id}/`);
+  return response.data;
+};
+
+export const fetchSpecializations = async () => {
+  const response = await axiosInstance.get("psychologist/specializations/");
+  return response.data;
+};

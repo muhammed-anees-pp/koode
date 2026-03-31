@@ -143,7 +143,7 @@ const PatientNavbar = ({ authLink } = {}) => {
                             )}
                         </div>
 
-                        <a href="#therapists" className={navLinkCls}>Therapists</a>
+                        <NavLink to="/patient/therapists" className={({ isActive }) => activeNavCls(isActive)}>Therapists</NavLink>
                     </div>
 
                     {/* Right Actions — right */}
@@ -262,7 +262,7 @@ const PatientNavbar = ({ authLink } = {}) => {
                         <a href="#stress" className={mobileNavItemCls} onClick={() => setIsMobileMenuOpen(false)}>Stress Management</a>
                         <a href="#relationships" className={mobileNavItemCls} onClick={() => setIsMobileMenuOpen(false)}>Relationships</a>
 
-                        <a href="#therapists" className={mobileNavLinkCls} onClick={() => setIsMobileMenuOpen(false)}>Therapists</a>
+                        <Link to="/patient/therapists" className={mobileNavLinkCls} onClick={() => setIsMobileMenuOpen(false)}>Therapists</Link>
 
                         <div className="px-6 pt-4 pb-6 flex flex-col gap-3">
                             <button className="w-full py-3 bg-gradient-to-r from-patient-primary to-patient-hover text-white font-semibold border-none rounded-[10px] cursor-pointer shadow-patient-sm">Book Therapy</button>

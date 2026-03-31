@@ -1,6 +1,7 @@
 import React from 'react';
 import PsychologistNavbar from '../../../components/psychologist/Navbar/PsychologistNavbar';
 import { useAuthStore } from '../../../store/auth.store';
+import { usePsychologistSessionGuard } from '../../../hooks/usePsychologistSessionGuard';
 
 const stats = [
   { value: '10K+', label: 'Patients Helped' },
@@ -21,6 +22,7 @@ const features = [
 const PsychologistHome = () => {
   const { user: authUser } = useAuthStore();
   const firstName = authUser?.full_name?.split(' ')[0] || 'Doctor';
+  usePsychologistSessionGuard();
 
   return (
     <div className="min-h-screen bg-[#eef0f5] text-gray-900">

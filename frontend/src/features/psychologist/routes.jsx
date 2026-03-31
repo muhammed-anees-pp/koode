@@ -9,6 +9,7 @@ import PsychologistResetPassword from "./pages/PsychologistResetPassword";
 import PsychologistApplication from "./pages/PsychologistApplication";
 import PsychologistApprovalWaiting from "./pages/PsychologistApprovalWaiting";
 import PsychologistInterviewRoom from "./pages/PsychologistInterviewRoom";
+import PsychologistProfile from "./pages/PsychologistProfile";
 import { useAuthStore } from "../../store/auth.store";
 import { getApplicationStatus } from "../../api/psychologist.api";
 
@@ -125,6 +126,14 @@ const PsychologistRoutes = () => {
       <Route
         path="interview/:interviewId"
         element={isAuthenticated && role === "PSYCHOLOGIST" ? <PsychologistInterviewRoom /> : <Navigate to="login" replace />}
+      />
+      <Route
+        path="profile"
+        element={
+          isAuthenticated && role === "PSYCHOLOGIST"
+            ? <PsychologistProfile />
+            : <Navigate to="/psychologist/login" replace />
+        }
       />
       <Route path="*" element={<Navigate to="login" />} />
     </Routes>

@@ -5,6 +5,7 @@ import { z } from 'zod';
 import PsychologistNavbar from '../../../components/psychologist/Navbar/PsychologistNavbar';
 import { submitApplication, getSpecializations } from '../../../api/psychologist.api';
 import { useAuthStore } from '../../../store/auth.store';
+import { usePsychologistSessionGuard } from '../../../hooks/usePsychologistSessionGuard';
 
 const COUNTRIES = ['India', 'United States', 'United Kingdom', 'Canada', 'Australia', 'Other'];
 
@@ -247,6 +248,7 @@ const AudioPlayer = ({ file, onRemove }) => {
 const PsychologistApplication = () => {
     const navigate = useNavigate();
     const { user: authUser, updateUser } = useAuthStore();
+    usePsychologistSessionGuard();
 
     const fileInputRef = useRef(null);
     const audioInputRef = useRef(null);

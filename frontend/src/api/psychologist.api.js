@@ -86,3 +86,15 @@ export const sendChatMessage = async (interviewId, text) => {
   const response = await axiosInstance.post(`interviews/${interviewId}/chat/send/`, { text });
   return response.data;
 };
+
+export const fetchPsychologistProfile = async () => {
+  const response = await axiosInstance.get("psychologist/profile/");
+  return response.data;
+};
+
+export const updatePsychologistProfile = async (data) => {
+  const response = await axiosInstance.put("psychologist/profile/", data, {
+    headers: data instanceof FormData ? { "Content-Type": "multipart/form-data" } : {},
+  });
+  return response.data;
+};
