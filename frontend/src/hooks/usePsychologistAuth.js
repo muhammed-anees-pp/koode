@@ -69,33 +69,41 @@ export const usePsychologistLoginMutation = (setFormError, setLocalError) => {
     },
     onError: (error) => {
       const responseData = error.response?.data;
+      const nonFieldArr = responseData?.non_field_errors;
+      const isSuspended =
+        responseData?.code === "suspended" ||
+        (Array.isArray(nonFieldArr) &&
+          nonFieldArr.some(
+            (e) => typeof e === "object" && e?.code === "suspended"
+          ));
+
+      if (isSuspended) {
+        setLocalError("Your account has been suspended. Please contact support.");
+        return;
+      }
 
       if (responseData?.email) {
         setFormError("email", {
           type: "manual",
           message: Array.isArray(responseData.email) ? responseData.email[0] : responseData.email,
         });
-      } 
-      else if (responseData?.password) {
+      } else if (responseData?.password) {
         setFormError("password", {
           type: "manual",
           message: Array.isArray(responseData.password) ? responseData.password[0] : responseData.password,
         });
-      } 
-      else if (responseData?.detail || responseData?.message) {
+      } else if (responseData?.detail || responseData?.message) {
         setLocalError(responseData.detail || responseData.message);
-      } 
-      else if (typeof responseData === "string") {
+      } else if (typeof responseData === "string") {
         setLocalError(responseData);
-      } 
-      else {
+      } else {
         setLocalError("Invalid email or password");
       }
     },
   });
 };
 
-export const useGooglePsychologistAuthMutation = () => {
+export const useGooglePsychologistAuthMutation = (setLocalError) => {
   const navigate = useNavigate();
   const login = useAuthStore((s) => s.login);
 
@@ -105,6 +113,19 @@ export const useGooglePsychologistAuthMutation = () => {
     onSuccess: (data) => {
       login(data, "PSYCHOLOGIST");
       navigate("/psychologist/home");
+    },
+
+    onError: (err) => {
+      const data = err.response?.data;
+      const isSuspended =
+        data?.code === "suspended" ||
+        (Array.isArray(data?.non_field_errors) &&
+          data.non_field_errors.some((e) => typeof e === "object" && e?.code === "suspended"));
+
+      if (isSuspended) {
+        err._handled = true;
+        setLocalError?.("Your account has been suspended. Please contact support.");
+      }
     },
   });
 };

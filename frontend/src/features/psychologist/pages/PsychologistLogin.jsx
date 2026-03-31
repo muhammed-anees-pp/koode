@@ -55,7 +55,7 @@ const PsychologistLogin = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [localError, setLocalError] = useState("");
   const mutation = usePsychologistLoginMutation(setError, setLocalError);
-  const googleAuthMutation = useGooglePsychologistAuthMutation();
+  const googleAuthMutation = useGooglePsychologistAuthMutation(setLocalError);
 
   const onSubmit = (data) => { setLocalError(""); mutation.mutate(data); };
 
@@ -97,11 +97,6 @@ const PsychologistLogin = () => {
             </div>
             {errors.password && <p className={errorMsgCls}>{errors.password.message}</p>}
           </div>
-
-          <label className="flex items-center gap-2 cursor-pointer select-none -mt-1">
-            <input type="checkbox" className="w-4 h-4 accent-psycho-primary rounded" />
-            <span className="text-sm text-gray-600">Remember me</span>
-          </label>
 
           {localError && <p className={errorMsgCls}>{localError}</p>}
 

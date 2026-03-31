@@ -7,6 +7,8 @@ import AdminPatientList from "./pages/AdminPatientList";
 import AdminApplicationList from "./pages/AdminApplicationList";
 import AdminApplicationDetail from "./pages/AdminApplicationDetail";
 import AdminInterviewRoom from "./pages/AdminInterviewRoom";
+import AdminPsychologistList from "./pages/AdminPsychologistList";
+import AdminPsychologistDetail from "./pages/AdminPsychologistDetail";
 import { useAuthStore } from "../../store/auth.store";
 
 const AdminRoutes = () => {
@@ -43,6 +45,28 @@ const AdminRoutes = () => {
         element={
           isAuthenticated && role === "ADMIN" ? (
             <AdminPatientList />
+          ) : (
+            <Navigate to="/admin/login" />
+          )
+        }
+      />
+
+      <Route
+        path="psychologists"
+        element={
+          isAuthenticated && role === "ADMIN" ? (
+            <AdminPsychologistList />
+          ) : (
+            <Navigate to="/admin/login" />
+          )
+        }
+      />
+
+      <Route
+        path="psychologists/:id"
+        element={
+          isAuthenticated && role === "ADMIN" ? (
+            <AdminPsychologistDetail />
           ) : (
             <Navigate to="/admin/login" />
           )

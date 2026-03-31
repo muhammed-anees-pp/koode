@@ -14,7 +14,7 @@ axiosInstance.interceptors.request.use((config) => {
   return config;
 });
 
-// Response interceptor 
+
 axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -22,9 +22,14 @@ axiosInstance.interceptors.response.use(
     const status = error?.response?.status;
 
     if (status === 401 && data?.code === "suspended") {
+      const role = useAuthStore.getState().role;
       useAuthStore.getState().logout();
       localStorage.removeItem("koode-auth-storage");
-      window.location.href = "/patient/login";
+      if (role === "PSYCHOLOGIST") {
+        window.location.href = "/psychologist/login";
+      } else {
+        window.location.href = "/patient/login";
+      }
     }
 
     return Promise.reject(error);

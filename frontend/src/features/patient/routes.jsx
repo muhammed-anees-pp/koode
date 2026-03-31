@@ -6,6 +6,8 @@ import PatientForgotPassword from "./pages/PatientForgotPassword";
 import PatientResetPassword from "./pages/PatientResetPassword";
 import VerificationSent from "./pages/VerificationSent";
 import PatientProfile from "./pages/PatientProfile";
+import PatientTherapistList from "./pages/PatientTherapistList";
+import PatientTherapistDetail from "./pages/PatientTherapistDetail";
 import { useAuthStore } from "../../store/auth.store";
 
 
@@ -36,12 +38,13 @@ const PatientRoutes = () => {
         path="reset-password"
         element={isAuthenticated && role === "PATIENT" ? <Navigate to="/patient/home" replace /> : <PatientResetPassword />}
       />
-      {/* home is open to ALL — PatientHome handles auth-based rendering internally */}
       <Route path="home" element={<PatientHome />} />
       <Route
         path="profile"
         element={isAuthenticated && role === "PATIENT" ? <PatientProfile /> : <Navigate to="/patient/login" replace />}
       />
+      <Route path="therapists" element={<PatientTherapistList />} />
+      <Route path="therapists/:id" element={<PatientTherapistDetail />} />
       <Route path="*" element={<Navigate to="home" />} />
     </Routes>
   );

@@ -31,6 +31,7 @@ class PsychologistProfile(models.Model):
     pincode = models.CharField(max_length=20)
     country = models.CharField(max_length=100)
     job_title = models.CharField(max_length=255)
+    highest_education = models.CharField(max_length=255, blank=True)
     years_of_experience = models.PositiveIntegerField()
     specializations = models.ManyToManyField(Specialization, related_name="psychologists", blank=True)
     consultation_fee = models.DecimalField(max_digits=8, decimal_places=2)
