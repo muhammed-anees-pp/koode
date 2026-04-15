@@ -8,9 +8,10 @@ import PsychologistNavbar from "../../../components/psychologist/Navbar/Psycholo
 import PsychologistSidebar from "../../../components/psychologist/Sidebar/PsychologistSidebar";
 import { usePsychologistSessionGuard } from "../../../hooks/usePsychologistSessionGuard";
 import {
+  getEarliestBookableDateISO,
   formatIndiaDate,
   formatIndiaTime,
-  getIndiaTodayISO,
+  isIndiaSlotBeyondLeadTime,
 } from "../../../utils/indiaDateTime";
 
 const TIME_SLOTS = [
@@ -25,7 +26,7 @@ const TIME_SLOTS = [
   ["17:00", "18:00"],
 ];
 
-const today = getIndiaTodayISO();
+const earliestBookableDate = getEarliestBookableDateISO(TIME_SLOTS, 24);
 const formatDateInputValue = (value) => {
   const [year, month, day] = value.split("-");
   return `${day}/${month}/${year}`;
@@ -36,7 +37,7 @@ const PsychologistAvailability = () => {
 
   const dateInputRef = useRef(null);
   const queryClient = useQueryClient();
-  const [date, setDate] = useState(today);
+  const [date, setDate] = useState(earliestBookableDate);
   const [selectedSlots, setSelectedSlots] = useState([]);
   const [feedback, setFeedback] = useState({ type: "", message: "" });
 
@@ -128,22 +129,12 @@ const PsychologistAvailability = () => {
 
         <main className="min-w-0 flex-1 px-6 py-8">
           <div className="mx-auto max-w-6xl">
-            <section className="relative overflow-hidden rounded-[32px] bg-[#0f172a] px-8 py-10 text-white shadow-[0_20px_60px_rgba(15,23,42,0.18)]">
-              <div className="absolute inset-y-0 right-0 w-1/2 bg-[radial-gradient(circle_at_top_right,_rgba(56,189,248,0.25),_transparent_55%)]" />
-              <div className="relative z-10 max-w-2xl">
-                <span className="inline-flex rounded-full border border-white/15 bg-white/10 px-4 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-sky-100">
-                  Schedule Control
-                </span>
-                <h1 className="mt-5 text-4xl font-bold tracking-tight">
-                  Publish slots patients can actually book.
-                </h1>
-                <p className="mt-4 max-w-xl text-sm leading-7 text-slate-300">
-                  Pick a date, turn on the hours you want to offer, and review
-                  what is already live. Existing slots remain visible below, and
-                  booked slots are clearly marked.
-                </p>
-              </div>
-            </section>
+                      {/* Page heading */}
+            <div className="mb-8">
+              <h1 className="text-2xl font-bold text-slate-900">Availability</h1>
+              <p className="mt-1 text-sm text-slate-500">Pick a date and publish the hours you want to offer to patients.</p>
+              <div className="mt-3 h-1 w-10 rounded-full bg-psycho-primary" />
+            </div>
 
             <section className="mt-8 grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
               <div className="rounded-[28px] border border-white/70 bg-white p-8 shadow-sm">
@@ -196,7 +187,7 @@ const PsychologistAvailability = () => {
                         ref={dateInputRef}
                         type="date"
                         lang="en-GB"
-                        min={today}
+                        min={earliestBookableDate}
                         value={date}
                         onChange={(event) => {
                           setDate(event.target.value);
@@ -208,6 +199,9 @@ const PsychologistAvailability = () => {
                         aria-hidden="true"
                       />
                     </div>
+                    <span className="mt-2 block text-xs text-slate-500">
+                      Slots can only be published more than 24 hours in advance.
+                    </span>
                   </label>
                 </div>
 
@@ -236,6 +230,7 @@ const PsychologistAvailability = () => {
                   <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     {TIME_SLOTS.map((slot) => {
                       const [startTime, endTime] = slot;
+                      const isAllowedByLeadTime = isIndiaSlotBeyondLeadTime(date, startTime, 24);
                       const selected = selectedSlots.some(
                         (item) => item.start_time === startTime
                       );
@@ -250,9 +245,11 @@ const PsychologistAvailability = () => {
                           key={startTime}
                           type="button"
                           onClick={() => toggleSlot(slot)}
-                          disabled={Boolean(existingSlot)}
+                          disabled={Boolean(existingSlot) || !isAllowedByLeadTime}
                           className={`rounded-2xl border px-4 py-4 text-left transition ${
                             existingSlot
+                              ? "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400"
+                              : !isAllowedByLeadTime
                               ? "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400"
                               : selected
                               ? "border-psycho-primary bg-[#e8f4fd] text-psycho-primary shadow-sm"
@@ -267,6 +264,8 @@ const PsychologistAvailability = () => {
                               ? existingSlot.is_booked
                                 ? "Already booked"
                                 : "Already published"
+                              : !isAllowedByLeadTime
+                              ? "Only available 24h in advance"
                               : selected
                               ? "Ready to publish"
                               : "Tap to add"}
