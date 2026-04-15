@@ -15,6 +15,22 @@ const mobileNavLinkCls = "block py-[14px] px-6 text-base font-medium text-ui-700
 const mobileNavItemCls = "block py-[10px] px-8 text-[0.9rem] text-ui-500 no-underline transition-all duration-200 hover:text-patient-primary hover:bg-[rgba(26,190,170,0.05)]";
 const profileMenuItemCls = "w-full flex items-center gap-3 px-5 py-[10px] text-[0.875rem] font-medium text-ui-700 bg-transparent border-none cursor-pointer text-left transition-all duration-200 hover:bg-[rgba(26,190,170,0.06)] hover:text-patient-primary";
 
+const AvatarContent = ({ user, hasCustomAvatar, textSize }) => (
+    <div className="w-full h-full relative">
+        <div className={`w-full h-full bg-gradient-to-br from-patient-primary to-patient-dark text-white font-bold flex items-center justify-center ${textSize}`}>
+            {user.name.charAt(0).toUpperCase()}
+        </div>
+        {hasCustomAvatar && (
+            <img
+                src={user.avatar}
+                alt={user.name}
+                className="absolute inset-0 w-full h-full object-cover"
+                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+            />
+        )}
+    </div>
+);
+
 const PatientNavbar = ({ authLink } = {}) => {
     const { user: authUser, logout, isAuthenticated, role } = useAuthStore();
     const navigate = useNavigate();
@@ -55,42 +71,11 @@ const PatientNavbar = ({ authLink } = {}) => {
             localStorage.removeItem('user_role');
             navigate('/patient/login');
         } else if (action === 'User Profile') { navigate('/patient/profile'); }
+        else if (action === 'Appointment List') { navigate('/patient/appointments'); }
         else if (action === 'Settings') { navigate('#'); }
     };
 
     const hasCustomAvatar = !!user.avatar;
-
-    const AvatarSmall = () => (
-        <div className="w-full h-full relative">
-            <div className="w-full h-full bg-gradient-to-br from-patient-primary to-patient-dark text-white text-sm font-bold flex items-center justify-center">
-                {user.name.charAt(0).toUpperCase()}
-            </div>
-            {hasCustomAvatar && (
-                <img
-                    src={user.avatar}
-                    alt={user.name}
-                    className="absolute inset-0 w-full h-full object-cover"
-                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                />
-            )}
-        </div>
-    );
-
-    const AvatarLarge = () => (
-        <div className="w-full h-full relative">
-            <div className="w-full h-full bg-gradient-to-br from-patient-primary to-patient-dark text-white text-xl font-bold flex items-center justify-center">
-                {user.name.charAt(0).toUpperCase()}
-            </div>
-            {hasCustomAvatar && (
-                <img
-                    src={user.avatar}
-                    alt={user.name}
-                    className="absolute inset-0 w-full h-full object-cover"
-                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                />
-            )}
-        </div>
-    );
 
     return (
         <div className="fixed top-0 left-0 right-0 z-[1000]">
@@ -174,14 +159,16 @@ const PatientNavbar = ({ authLink } = {}) => {
                                 {/* Profile Dropdown */}
                                 <div className="relative" ref={profileDropdownRef}>
                                     <button className="w-10 h-10 rounded-full border-[2px] border-transparent cursor-pointer overflow-hidden transition-all duration-200 hover:border-patient-primary hover:shadow-patient-sm bg-transparent p-0" onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}>
-                                        <AvatarSmall />
+                                        <AvatarContent user={user} hasCustomAvatar={hasCustomAvatar} textSize="text-sm" />
                                     </button>
 
                                     {isProfileDropdownOpen && (
                                         <div className="absolute right-0 top-[calc(100%+12px)] w-[260px] bg-white border border-ui-200 rounded-[16px] shadow-[0_16px_40px_rgba(0,0,0,0.12)] z-50 overflow-hidden animate-dropdown">
                                             {/* Header */}
                                             <div className="flex items-center gap-3 px-5 py-4 bg-[rgba(26,190,170,0.04)]">
-                                                <div className="w-[46px] h-[46px] rounded-full overflow-hidden flex-shrink-0"><AvatarLarge /></div>
+                                                <div className="w-[46px] h-[46px] rounded-full overflow-hidden flex-shrink-0">
+                                                    <AvatarContent user={user} hasCustomAvatar={hasCustomAvatar} textSize="text-xl" />
+                                                </div>
                                                 <div className="min-w-0">
                                                     <h3 className="text-sm font-semibold text-ui-900 truncate">{user.name}</h3>
                                                     <p className="text-xs text-ui-500 truncate">{user.email}</p>
