@@ -9,7 +9,7 @@ from patients.models import PatientProfile
 from patients.permissions import IsPatient
 from psychologists.permissions import IsPsychologist
 from .serializers import (
-    AvailabilitySerializer, BookingSerializer, CancelBookingSerializer, CreateAvailabilitySerializer, CreateBookingSerializer, RescheduleBookingSerializer,
+    AvailabilitySerializer, BookingSerializer, CancelBookingSerializer, CreateAvailabilitySerializer, CreateBookingSerializer, RescheduleBookingSerializer, is_future_slot,
 )
 
 
@@ -43,6 +43,10 @@ class PsychologistAvailabilityListView(APIView):
     def get(self, request):
         psychologist = get_object_or_404(PsychologistProfile, user=request.user)
         qs = Availability.objects.filter(psychologist=psychologist).prefetch_related("slots").order_by("date")
+        qs = [
+            availability for availability in qs
+            if any(is_future_slot(availability.date, slot.start_time) for slot in availability.slots.all())
+        ]
         serializer = AvailabilitySerializer(qs, many=True)
         return Response(serializer.data)
 
@@ -61,6 +65,10 @@ class PsychologistSlotListView(APIView):
             qs = qs.filter(date=date)
 
         qs = qs.prefetch_related("slots").order_by("date")
+        qs = [
+            availability for availability in qs
+            if any(is_future_slot(availability.date, slot.start_time) for slot in availability.slots.all())
+        ]
         serializer = AvailabilitySerializer(qs, many=True)
         return Response(serializer.data)
 
@@ -73,10 +81,7 @@ class CreateBookingView(APIView):
 
     def post(self, request):
         patient = get_object_or_404(PatientProfile, user=request.user)
-        serializer = CreateBookingSerializer(
-            data=request.data,
-            context={"patient": patient},
-        )
+        serializer = CreateBookingSerializer(data=request.data, context={"patient": patient},)
 
         if serializer.is_valid():
             booking = serializer.save()
@@ -114,14 +119,14 @@ class BookingListView(APIView):
         return Response(serializer.data)
 
 
+"""
+BOOKING VIEW
+"""
 class BookingActionBaseView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_booking(self, request, booking_id):
-        booking = get_object_or_404(
-            Booking.objects.select_related("patient__user", "psychologist__user", "slot"),
-            id=booking_id,
-        )
+        booking = get_object_or_404(Booking.objects.select_related("patient__user", "psychologist__user", "slot"),id=booking_id,)
 
         if request.user.role == "PATIENT":
             patient = get_object_or_404(PatientProfile, user=request.user)
@@ -140,6 +145,9 @@ class BookingActionBaseView(APIView):
         return booking.date >= timezone.localdate()
 
 
+"""
+CANCEL BOOKING
+"""
 class CancelBookingView(BookingActionBaseView):
     def post(self, request, booking_id):
         booking = self.get_booking(request, booking_id)
@@ -152,10 +160,7 @@ class CancelBookingView(BookingActionBaseView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        serializer = CancelBookingSerializer(
-            data=request.data,
-            context={"booking": booking},
-        )
+        serializer = CancelBookingSerializer(data=request.data, context={"booking": booking},)
 
         if serializer.is_valid():
             booking = serializer.save()
@@ -164,6 +169,9 @@ class CancelBookingView(BookingActionBaseView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+"""
+RESCHEDULE BOOKING
+"""
 class RescheduleBookingView(BookingActionBaseView):
     permission_classes = [permissions.IsAuthenticated, IsPsychologist]
 
@@ -178,10 +186,7 @@ class RescheduleBookingView(BookingActionBaseView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        serializer = RescheduleBookingSerializer(
-            data=request.data,
-            context={"booking": booking},
-        )
+        serializer = RescheduleBookingSerializer(data=request.data, context={"booking": booking},)
 
         if serializer.is_valid():
             booking = serializer.save()
