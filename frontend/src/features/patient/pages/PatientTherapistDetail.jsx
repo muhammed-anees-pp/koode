@@ -1,9 +1,16 @@
-import React, { useState, useRef } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { fetchPatientTherapistDetail } from "../../../api/patient.api";
+import { fetchPatientTherapistDetail, getPsychologistSlots, bookSlot } from "../../../api/patient.api";
 import PatientNavbar from "../../../components/patient/Navbar/PatientNavbar";
 import PatientFooter from "../../../components/patient/Footer/PatientFooter";
+import {
+  calendarDateToISO,
+  formatIndiaDate,
+  formatIndiaTime,
+  getIndiaTodayISO,
+  isoToCalendarDate,
+} from "../../../utils/indiaDateTime";
 
 const SectionTitle = ({ children }) => (
   <h3 className="font-outfit text-xl font-bold text-slate-900 mt-12 mb-6 tracking-tight">{children}</h3>
@@ -11,6 +18,7 @@ const SectionTitle = ({ children }) => (
 
 export default function PatientTherapistDetail() {
   const { id } = useParams();
+  const bookingPanelRef = useRef(null);
   const { data: therapist, isLoading, isError } = useQuery({
     queryKey: ["patient-therapist-detail", id],
     queryFn: () => fetchPatientTherapistDetail(id),
@@ -19,6 +27,24 @@ export default function PatientTherapistDetail() {
 
   const [isPlaying, setIsPlaying] = useState(false);
   const audioRef = useRef(null);
+
+  const [selectedDate, setSelectedDate] = useState("");
+  const [slots, setSlots] = useState([]);
+  const [isLoadingSlots, setIsLoadingSlots] = useState(false);
+  const [bookingSlotId, setBookingSlotId] = useState(null);
+  const [hasCheckedAvailability, setHasCheckedAvailability] = useState(false);
+  const [bookingMessage, setBookingMessage] = useState({
+    type: "",
+    text: "",
+  });
+
+  const todayIso = useMemo(() => getIndiaTodayISO(), []);
+  const today = useMemo(() => isoToCalendarDate(todayIso), [todayIso]);
+  const waveformBars = useMemo(
+    () =>
+      Array.from({ length: 40 }, () => Math.max(20, Math.random() * 100)),
+    []
+  );
 
   const togglePlay = () => {
     if (!audioRef.current) return;
@@ -29,6 +55,99 @@ export default function PatientTherapistDetail() {
     }
     setIsPlaying(!isPlaying);
   };
+
+  const fetchSlots = async () => {
+    if (!selectedDate) {
+      setBookingMessage({
+        type: "error",
+        text: "Select a date before checking availability.",
+      });
+      return;
+    }
+
+    setIsLoadingSlots(true);
+    setHasCheckedAvailability(true);
+    setBookingMessage({ type: "", text: "" });
+    try {
+      const data = await getPsychologistSlots(id, selectedDate);
+      const matchingAvailability = data.find((entry) => entry.date === selectedDate);
+      setSlots(matchingAvailability?.slots ?? []);
+    } catch (error) {
+      console.error("Error fetching slots:", error);
+      setBookingMessage({
+        type: "error",
+        text: "Unable to load slots for this date.",
+      });
+      setSlots([]);
+    } finally {
+      setIsLoadingSlots(false);
+    }
+  };
+
+  const handleBook = async (slotId) => {
+    setBookingMessage({ type: "", text: "" });
+    setBookingSlotId(slotId);
+    try {
+      await bookSlot(slotId);
+      setBookingMessage({
+        type: "success",
+        text: "Appointment booked successfully.",
+      });
+      await fetchSlots();
+    } catch (error) {
+      console.error("Error booking slot:", error);
+      const apiError = error?.response?.data;
+      const message =
+        apiError?.non_field_errors?.[0] ||
+        apiError?.detail ||
+        "This slot is already booked or unavailable.";
+
+      setBookingMessage({
+        type: "error",
+        text: message,
+      });
+    } finally {
+      setBookingSlotId(null);
+    }
+  };
+
+  const getCurrentMonthDays = () => {
+    const year = today.getFullYear();
+    const month = today.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    const startingDayOfWeek = firstDay.getDay(); // 0 = Sunday
+    
+    const days = [];
+    // Add empty cells for days before month starts (adjust for Monday start)
+    const adjustedStart = startingDayOfWeek === 0 ? 6 : startingDayOfWeek - 1;
+    for (let i = 0; i < adjustedStart; i++) {
+      days.push(null);
+    }
+    // Add actual days
+    for (let i = 1; i <= daysInMonth; i++) {
+      days.push(new Date(year, month, i));
+    }
+    return days;
+  };
+
+  const isDateSelected = (date) => {
+    return selectedDate === calendarDateToISO(date);
+  };
+
+  const handleDateSelect = (date) => {
+    const dateString = calendarDateToISO(date);
+    setSelectedDate(dateString);
+    setSlots([]);
+    setHasCheckedAvailability(false);
+    setBookingMessage({ type: "", text: "" });
+  };
+
+  const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  const currentMonth = monthNames[today.getMonth()];
+  const currentYear = today.getFullYear();
+  const monthDays = getCurrentMonthDays();
 
   if (isLoading) {
     return (
@@ -59,14 +178,13 @@ export default function PatientTherapistDetail() {
 
       <main className="flex-1 max-w-[1240px] w-full mx-auto px-6 md:px-12 pt-[7rem] pb-24 grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-12 items-start">
         
-
+        {/* Left Column - Therapist Info */}
         <div className="w-full">
 
           <div className="bg-[#f0fdf9] rounded-[32px] p-8 md:p-10 relative overflow-hidden">
 
             <div className="flex flex-col md:flex-row gap-8 items-start mb-8 relative z-10">
               
-
               <div className="relative flex-shrink-0">
                 <div className="w-32 h-32 md:w-40 md:h-40 rounded-full p-1.5 border-2 border-patient-primary bg-white">
                   <div className="w-full h-full rounded-full overflow-hidden bg-slate-200">
@@ -79,10 +197,8 @@ export default function PatientTherapistDetail() {
                     )}
                   </div>
                 </div>
-
                 <div className="absolute bottom-4 right-4 w-4 h-4 rounded-full border-2 border-white bg-green-500" />
               </div>
-
 
               <div className="flex-1 pt-2">
                 <h1 className="font-outfit text-2xl md:text-[2rem] font-extrabold text-[#0f172a] tracking-tight mb-2">
@@ -107,7 +223,6 @@ export default function PatientTherapistDetail() {
                   )}
                 </div>
 
-
                 <div className="bg-white rounded-[100px] p-2 pr-6 flex items-center gap-4 mb-6 shadow-sm border border-slate-100 max-w-[400px]">
                   <button onClick={togglePlay} className="w-10 h-10 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-white transition-colors hover:bg-slate-800 flex-shrink-0">
                     {isPlaying ? (
@@ -117,8 +232,8 @@ export default function PatientTherapistDetail() {
                     )}
                   </button>
                   <div className="flex-1 flex items-center gap-0.5 h-6">
-                    {Array.from({ length: 40 }).map((_, i) => (
-                      <div key={i} className="flex-1 rounded-full bg-slate-300" style={{ height: `${Math.max(20, Math.random() * 100)}%`, backgroundColor: isPlaying && i < 20 ? '#1ABEAA' : undefined }} />
+                    {waveformBars.map((height, i) => (
+                      <div key={i} className="flex-1 rounded-full bg-slate-300" style={{ height: `${height}%`, backgroundColor: isPlaying && i < 20 ? '#1ABEAA' : undefined }} />
                     ))}
                   </div>
                   <span className="text-[0.7rem] text-slate-400 font-bold tracking-widest leading-none">0:58</span>
@@ -126,7 +241,6 @@ export default function PatientTherapistDetail() {
                     <audio ref={audioRef} src={therapist.audio_intro} onEnded={() => setIsPlaying(false)} className="hidden" />
                   )}
                 </div>
-
               </div>
             </div>
 
@@ -134,12 +248,19 @@ export default function PatientTherapistDetail() {
               {therapist.about || "I am a dedicated professional providing a safe space to be heard and understood. I help people explore their thoughts and emotions in a respectful, non-judgmental way."}
             </p>
 
-            <button className="bg-slate-900 text-white font-bold text-sm px-6 py-3 rounded-full flex items-center gap-2 hover:bg-slate-800 transition-colors relative z-10">
+            <button
+              onClick={() =>
+                bookingPanelRef.current?.scrollIntoView({
+                  behavior: "smooth",
+                  block: "start",
+                })
+              }
+              className="bg-slate-900 text-white font-bold text-sm px-6 py-3 rounded-full flex items-center gap-2 hover:bg-slate-800 transition-colors relative z-10"
+            >
               Book Now
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
             </button>
             
-
             <div className="absolute -top-32 -left-32 w-64 h-64 border-[40px] border-white/40 rounded-full" />
             <div className="absolute -bottom-32 -right-32 w-96 h-96 border-[40px] border-white/40 rounded-full" />
           </div>
@@ -201,89 +322,166 @@ export default function PatientTherapistDetail() {
                 </details>
              ))}
           </div>
-
         </div>
 
-
-        <div className="w-full flex md:sticky top-[120px] flex-col gap-6">
+        {/* Right Column - Booking Section */}
+        <div ref={bookingPanelRef} className="w-full flex md:sticky top-[120px] flex-col gap-6">
            
-
-           <div className="bg-white border border-slate-200 shadow-xl shadow-slate-200/50 rounded-[32px] p-8">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="font-outfit text-lg font-bold text-slate-900">Book Appointment</h3>
-                <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-0.5 rounded-full">Available</span>
-              </div>
-              
-
+          <div className="bg-white border border-slate-200 shadow-xl shadow-slate-200/50 rounded-[32px] p-8">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="font-outfit text-lg font-bold text-slate-900">Book Appointment</h3>
+              <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-0.5 rounded-full">Available</span>
+            </div>
+            
+            {/* Calendar Section */}
+            <div className="mb-6">
               <div className="flex justify-between items-center mb-4">
-                 <span className="text-sm font-bold text-slate-800">May 2024</span>
-                 <div className="flex gap-2">
-                   <button className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6"/></svg></button>
-                   <button className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg></button>
-                 </div>
+                <span className="text-sm font-bold text-slate-800">{currentMonth} {currentYear}</span>
               </div>
-
 
               <div className="grid grid-cols-7 gap-y-3 mb-6">
-                {['Mo','Tu','We','Th','Fr','Sa','Su'].map(d=><div key={d} className="text-center text-[10px] text-slate-400 font-bold uppercase">{d}</div>)}
-                <div className="text-center text-xs text-slate-300">26</div>
-                <div className="text-center text-xs text-slate-300">27</div>
-                <div className="text-center text-xs text-slate-300">28</div>
-                <div className="text-center text-xs text-slate-300">29</div>
-                <div className="text-center text-xs text-slate-300">30</div>
-                <div className="text-center text-xs font-bold text-white bg-patient-primary rounded-lg py-1 aspect-square flex items-center justify-center cursor-pointer shadow-md">01</div>
-                <div className="text-center text-xs font-bold text-slate-700 py-1 aspect-square flex items-center justify-center cursor-pointer hover:bg-slate-100 rounded-lg">02</div>
-                
-                <div className="text-center text-xs font-bold text-patient-primary bg-patient-primary/10 py-1 aspect-square flex items-center justify-center cursor-pointer rounded-lg">03</div>
-                <div className="text-center text-xs font-bold text-slate-700 py-1 aspect-square flex items-center justify-center cursor-pointer hover:bg-slate-100 rounded-lg">04</div>
-                <div className="text-center text-xs font-bold text-slate-700 py-1 aspect-square flex items-center justify-center cursor-pointer hover:bg-slate-100 rounded-lg">05</div>
-                <div className="text-center text-xs font-bold text-patient-primary bg-patient-primary/10 py-1 aspect-square flex items-center justify-center cursor-pointer rounded-lg">06</div>
-                <div className="text-center text-xs font-bold text-slate-700 py-1 aspect-square flex items-center justify-center cursor-pointer hover:bg-slate-100 rounded-lg">07</div>
+                {['Mo','Tu','We','Th','Fr','Sa','Su'].map(d => (
+                  <div key={d} className="text-center text-[10px] text-slate-400 font-bold uppercase">{d}</div>
+                ))}
+                {monthDays.map((date, index) => (
+                  date ? (
+                    <button
+                      key={index}
+                      onClick={() => handleDateSelect(date)}
+                      className={`text-center text-xs font-bold py-1 aspect-square flex items-center justify-center rounded-lg transition-all ${
+                        isDateSelected(date)
+                          ? 'bg-patient-primary text-white shadow-md'
+                          : date < today
+                          ? 'text-slate-300 cursor-not-allowed'
+                          : 'text-slate-700 hover:bg-slate-100 cursor-pointer'
+                      }`}
+                      disabled={date < today}
+                    >
+                      {date.getDate()}
+                    </button>
+                  ) : (
+                    <div key={index} className="text-center text-xs py-1 aspect-square"></div>
+                  )
+                ))}
               </div>
+            </div>
 
-              <div className="h-px bg-slate-100 mb-6" />
+            {/* Check Availability Button */}
+            <button 
+              onClick={fetchSlots}
+              disabled={!selectedDate || isLoadingSlots}
+              className="w-full bg-patient-primary hover:bg-patient-hover text-white font-bold text-[0.95rem] py-3.5 rounded-2xl flex items-center justify-center gap-2 transition-colors shadow-patient-sm disabled:opacity-50 disabled:cursor-not-allowed mb-6"
+            >
+              {isLoadingSlots ? (
+                <>
+                  <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Loading slots...
+                </>
+              ) : (
+                <>
+                  Check availability
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                </>
+              )}
+            </button>
 
-              <div className="flex justify-between items-center mb-6">
-                 <span className="text-sm font-medium text-slate-600">Consultation Fee</span>
-                 <div className="text-right">
-                    <span className="text-xl font-extrabold text-slate-900">₹ {therapist.consultation_fee || "500"}</span>
-                    <span className="text-xs text-slate-400 font-medium ml-1">/ session</span>
-                 </div>
+            {selectedDate ? (
+              <div className="mb-4 rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                Selected date:{" "}
+                <span className="font-semibold text-slate-900">
+                  {formatIndiaDate(selectedDate)}
+                </span>
               </div>
+            ) : null}
 
-              <div className="flex flex-col gap-3 mb-8 text-[0.8rem] text-slate-500 font-medium">
-                <div className="flex items-center gap-2"><svg className="text-patient-primary" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> 50 Minutes Session</div>
-                <div className="flex items-center gap-2"><svg className="text-patient-primary" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="2" y="7" width="20" height="15" rx="2" ry="2"/><polyline points="17 2 12 7 7 2"/></svg> Online Video Consultation</div>
+            {bookingMessage.text ? (
+              <div
+                className={`mb-4 rounded-2xl border px-4 py-3 text-sm font-medium ${
+                  bookingMessage.type === "success"
+                    ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                    : "border-red-200 bg-red-50 text-red-700"
+                }`}
+              >
+                {bookingMessage.text}
               </div>
+            ) : null}
 
-              <button className="w-full bg-patient-primary hover:bg-patient-hover text-white font-bold text-[0.95rem] py-3.5 rounded-2xl flex items-center justify-center gap-2 transition-colors shadow-patient-sm">
-                Check availability
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-              </button>
-           </div>
+            {/* Available Slots */}
+            {slots.length > 0 && (
+              <div className="mt-4">
+                <h4 className="font-bold text-slate-800 mb-3 text-sm">Available Slots</h4>
+                <div className="grid grid-cols-2 gap-2 max-h-[300px] overflow-y-auto">
+                  {slots.map((slot) => (
+                    <button
+                      key={slot.id}
+                      onClick={() => handleBook(slot.id)}
+                      disabled={slot.is_booked || bookingSlotId === slot.id}
+                      className={`px-3 py-2 rounded-xl text-sm font-medium transition-all ${
+                        slot.is_booked
+                          ? 'bg-slate-100 text-slate-400 cursor-not-allowed line-through'
+                          : 'bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 hover:border-green-300'
+                      }`}
+                    >
+                      {bookingSlotId === slot.id ? (
+                        <svg className="animate-spin h-4 w-4 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                      ) : (
+                        `${formatIndiaTime(slot.start_time)} - ${formatIndiaTime(slot.end_time)}`
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
+            {selectedDate && hasCheckedAvailability && !isLoadingSlots && slots.length === 0 && (
+              <div className="text-center py-4 text-slate-500 text-sm">
+                No slots available for this date
+              </div>
+            )}
 
-           <div>
-             <h4 className="font-outfit font-bold text-slate-900 mb-3 ml-2">Languages</h4>
-             <div className="flex gap-2">
-               <span className="border border-slate-200 text-slate-700 text-sm font-medium py-1.5 px-4 rounded-full shadow-sm bg-white">🇬🇧 English</span>
-               <span className="border border-slate-200 text-slate-700 text-sm font-medium py-1.5 px-4 rounded-full shadow-sm bg-white">🇮🇳 Malayalam</span>
-             </div>
-           </div>
+            <div className="h-px bg-slate-100 my-6" />
 
+            <div className="flex justify-between items-center mb-6">
+              <span className="text-sm font-medium text-slate-600">Consultation Fee</span>
+              <div className="text-right">
+                <span className="text-xl font-extrabold text-slate-900">₹ {therapist.consultation_fee || "500"}</span>
+                <span className="text-xs text-slate-400 font-medium ml-1">/ session</span>
+              </div>
+            </div>
 
+            <div className="flex flex-col gap-3 mb-8 text-[0.8rem] text-slate-500 font-medium">
+              <div className="flex items-center gap-2">
+                <svg className="text-patient-primary" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                50 Minutes Session
+              </div>
+              <div className="flex items-center gap-2">
+                <svg className="text-patient-primary" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="2" y="7" width="20" height="15" rx="2" ry="2"/><polyline points="17 2 12 7 7 2"/></svg>
+                Online Video Consultation
+              </div>
+            </div>
+          </div>
 
-           <div className="bg-[#1f2937] rounded-[24px] p-6 text-white mt-4 relative overflow-hidden shadow-xl shadow-slate-900/20">
-              <h4 className="font-bold text-base mb-2">Need Help?</h4>
-              <p className="text-slate-300 text-[0.85rem] leading-relaxed mb-6">Our support team is available 24/7 to assist you with booking.</p>
-              <button className="text-[0.85rem] font-bold text-white hover:text-slate-200 transition-colors inline-block border-b border-white/30 pb-0.5">Chat with us</button>
-              
+          <div>
+            <h4 className="font-outfit font-bold text-slate-900 mb-3 ml-2">Languages</h4>
+            <div className="flex gap-2">
+              <span className="border border-slate-200 text-slate-700 text-sm font-medium py-1.5 px-4 rounded-full shadow-sm bg-white">🇬🇧 English</span>
+              <span className="border border-slate-200 text-slate-700 text-sm font-medium py-1.5 px-4 rounded-full shadow-sm bg-white">🇮🇳 Malayalam</span>
+            </div>
+          </div>
 
-              <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-bl-full" />
-           </div>
-
+          <div className="bg-[#1f2937] rounded-[24px] p-6 text-white mt-4 relative overflow-hidden shadow-xl shadow-slate-900/20">
+            <h4 className="font-bold text-base mb-2">Need Help?</h4>
+            <p className="text-slate-300 text-[0.85rem] leading-relaxed mb-6">Our support team is available 24/7 to assist you with booking.</p>
+            <button className="text-[0.85rem] font-bold text-white hover:text-slate-200 transition-colors inline-block border-b border-white/30 pb-0.5">Chat with us</button>
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-bl-full" />
+          </div>
         </div>
-
       </main>
       <PatientFooter />
     </div>
