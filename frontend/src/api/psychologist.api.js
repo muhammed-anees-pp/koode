@@ -98,3 +98,19 @@ export const updatePsychologistProfile = async (data) => {
   });
   return response.data;
 };
+
+
+export const createAvailability = async (data) => {
+  const response = await axiosInstance.post(
+    "appointments/availability/create/",
+    data
+  );
+  return response.data;
+};
+
+export const getMyAvailability = async () => {
+  const response = await axiosInstance.get(
+    "appointments/availability/me/"
+  );
+  return response.data;
+};

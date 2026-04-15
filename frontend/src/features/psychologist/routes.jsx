@@ -12,6 +12,7 @@ import PsychologistInterviewRoom from "./pages/PsychologistInterviewRoom";
 import PsychologistProfile from "./pages/PsychologistProfile";
 import { useAuthStore } from "../../store/auth.store";
 import { getApplicationStatus } from "../../api/psychologist.api";
+import PsychologistAvailability from "./pages/PsychologistAvailability";
 
 const useAppStatus = (isAuthenticated, role) => {
   const [appStatus, setAppStatus] = useState(null);
@@ -136,6 +137,14 @@ const PsychologistRoutes = () => {
         }
       />
       <Route path="*" element={<Navigate to="login" />} />
+      <Route
+  path="availability"
+  element={
+    isAuthenticated && role === "PSYCHOLOGIST"
+      ? <PsychologistAvailability />
+      : <Navigate to="/psychologist/login" />
+  }
+/>
     </Routes>
   );
 };
