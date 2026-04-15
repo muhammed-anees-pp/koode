@@ -1,6 +1,30 @@
 from rest_framework import serializers
 from django.db import transaction
+from django.utils import timezone
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 from .models import Availability, AvailableSlot, Booking
+
+INDIA_TZ = ZoneInfo("Asia/Kolkata")
+
+
+def get_india_now():
+    return timezone.now().astimezone(INDIA_TZ)
+
+
+def is_future_slot(date_value, start_time_value):
+    slot_start = datetime.combine(date_value, start_time_value, tzinfo=INDIA_TZ)
+    return slot_start > get_india_now()
+
+
+def is_slot_after_booking(slot, booking):
+    if slot.availability.date > booking.date:
+        return True
+
+    if slot.availability.date < booking.date:
+        return False
+
+    return slot.start_time >= booking.end_time
 
 
 """
@@ -20,7 +44,14 @@ class AvailableSlotSerializer(serializers.ModelSerializer):
 AVAILABILITY SERIALIZER
 """
 class AvailabilitySerializer(serializers.ModelSerializer):
-    slots = AvailableSlotSerializer(many=True, read_only=True)
+    slots = serializers.SerializerMethodField()
+
+    def get_slots(self, obj):
+        future_slots = [
+            slot for slot in obj.slots.all()
+            if is_future_slot(obj.date, slot.start_time)
+        ]
+        return AvailableSlotSerializer(future_slots, many=True).data
 
     class Meta:
         model = Availability
@@ -47,6 +78,24 @@ class CreateAvailabilitySerializer(serializers.Serializer):
                     "Each slot must have start_time and end_time"
                 )
         return value
+
+    def validate(self, attrs):
+        date = attrs["date"]
+        slots = attrs["slots"]
+        cutoff = datetime.now(INDIA_TZ) + timedelta(hours=24)
+
+        for slot in slots:
+            start_time = slot["start_time"]
+            if isinstance(start_time, str):
+                start_time = datetime.strptime(start_time, "%H:%M").time()
+
+            slot_start = datetime.combine(date, start_time, tzinfo=INDIA_TZ)
+            if slot_start <= cutoff:
+                raise serializers.ValidationError(
+                    "Availability can only be added for slots more than 24 hours in advance"
+                )
+
+        return attrs
 
     def create(self, validated_data):
         psychologist = self.context["psychologist"]
@@ -109,6 +158,9 @@ class CreateBookingSerializer(serializers.Serializer):
         if slot.is_booked:
             raise serializers.ValidationError("Slot already booked")
 
+        if not is_future_slot(slot.availability.date, slot.start_time):
+            raise serializers.ValidationError("Past slots cannot be booked")
+
         attrs["slot"] = slot
         return attrs
 
@@ -165,12 +217,14 @@ class CancelBookingSerializer(serializers.Serializer):
             if locked_booking.status == "COMPLETED":
                 raise serializers.ValidationError("Completed booking cannot be cancelled")
 
-            locked_booking.slot.is_booked = False
-            locked_booking.slot.save(update_fields=["is_booked"])
+            if locked_booking.slot_id:
+                locked_booking.slot.is_booked = False
+                locked_booking.slot.save(update_fields=["is_booked"])
 
+            locked_booking.slot = None
             locked_booking.status = "CANCELLED"
             locked_booking.notes = note
-            locked_booking.save(update_fields=["status", "notes"])
+            locked_booking.save(update_fields=["slot", "status", "notes"])
 
         return locked_booking
 
@@ -205,6 +259,14 @@ class RescheduleBookingSerializer(serializers.Serializer):
 
         if slot.is_booked:
             raise serializers.ValidationError("Selected slot is already booked")
+
+        if not is_future_slot(slot.availability.date, slot.start_time):
+            raise serializers.ValidationError("Past slots cannot be selected")
+
+        if not is_slot_after_booking(slot, booking):
+            raise serializers.ValidationError(
+                "Reschedule is only allowed to slots after the current appointment time"
+            )
 
         attrs["slot"] = slot
         return attrs

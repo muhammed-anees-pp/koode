@@ -59,7 +59,7 @@ class Booking(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     patient = models.ForeignKey(PatientProfile, on_delete=models.CASCADE, related_name="bookings")
     psychologist = models.ForeignKey(PsychologistProfile, on_delete=models.CASCADE, related_name="bookings")
-    slot = models.OneToOneField(AvailableSlot, on_delete=models.CASCADE, related_name="booking")
+    slot = models.OneToOneField(AvailableSlot, on_delete=models.SET_NULL, related_name="booking", null=True, blank=True,)
     date = models.DateField()
     start_time = models.TimeField()
     end_time = models.TimeField()
