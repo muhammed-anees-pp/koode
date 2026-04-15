@@ -1,7 +1,7 @@
 import React, { useMemo, useRef, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { fetchPatientTherapistDetail, getPsychologistSlots, bookSlot } from "../../../api/patient.api";
+import { fetchPatientTherapistDetail, getPsychologistSlots } from "../../../api/patient.api";
 import PatientNavbar from "../../../components/patient/Navbar/PatientNavbar";
 import PatientFooter from "../../../components/patient/Footer/PatientFooter";
 import {
@@ -18,6 +18,7 @@ const SectionTitle = ({ children }) => (
 
 export default function PatientTherapistDetail() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const bookingPanelRef = useRef(null);
   const { data: therapist, isLoading, isError } = useQuery({
     queryKey: ["patient-therapist-detail", id],
@@ -31,7 +32,6 @@ export default function PatientTherapistDetail() {
   const [selectedDate, setSelectedDate] = useState("");
   const [slots, setSlots] = useState([]);
   const [isLoadingSlots, setIsLoadingSlots] = useState(false);
-  const [bookingSlotId, setBookingSlotId] = useState(null);
   const [hasCheckedAvailability, setHasCheckedAvailability] = useState(false);
   const [bookingMessage, setBookingMessage] = useState({
     type: "",
@@ -71,7 +71,7 @@ export default function PatientTherapistDetail() {
     try {
       const data = await getPsychologistSlots(id, selectedDate);
       const matchingAvailability = data.find((entry) => entry.date === selectedDate);
-      setSlots(matchingAvailability?.slots ?? []);
+      setSlots((matchingAvailability?.slots ?? []).filter((slot) => !slot.is_booked));
     } catch (error) {
       console.error("Error fetching slots:", error);
       setBookingMessage({
@@ -81,33 +81,6 @@ export default function PatientTherapistDetail() {
       setSlots([]);
     } finally {
       setIsLoadingSlots(false);
-    }
-  };
-
-  const handleBook = async (slotId) => {
-    setBookingMessage({ type: "", text: "" });
-    setBookingSlotId(slotId);
-    try {
-      await bookSlot(slotId);
-      setBookingMessage({
-        type: "success",
-        text: "Appointment booked successfully.",
-      });
-      await fetchSlots();
-    } catch (error) {
-      console.error("Error booking slot:", error);
-      const apiError = error?.response?.data;
-      const message =
-        apiError?.non_field_errors?.[0] ||
-        apiError?.detail ||
-        "This slot is already booked or unavailable.";
-
-      setBookingMessage({
-        type: "error",
-        text: message,
-      });
-    } finally {
-      setBookingSlotId(null);
     }
   };
 
@@ -249,12 +222,7 @@ export default function PatientTherapistDetail() {
             </p>
 
             <button
-              onClick={() =>
-                bookingPanelRef.current?.scrollIntoView({
-                  behavior: "smooth",
-                  block: "start",
-                })
-              }
+              onClick={() => navigate(`/patient/therapists/${id}/book`)}
               className="bg-slate-900 text-white font-bold text-sm px-6 py-3 rounded-full flex items-center gap-2 hover:bg-slate-800 transition-colors relative z-10"
             >
               Book Now
@@ -417,22 +385,15 @@ export default function PatientTherapistDetail() {
                   {slots.map((slot) => (
                     <button
                       key={slot.id}
-                      onClick={() => handleBook(slot.id)}
-                      disabled={slot.is_booked || bookingSlotId === slot.id}
-                      className={`px-3 py-2 rounded-xl text-sm font-medium transition-all ${
-                        slot.is_booked
-                          ? 'bg-slate-100 text-slate-400 cursor-not-allowed line-through'
-                          : 'bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 hover:border-green-300'
-                      }`}
+                      type="button"
+                      onClick={() =>
+                        navigate(
+                          `/patient/therapists/${id}/book?date=${selectedDate}&slot=${slot.id}`
+                        )
+                      }
+                      className="px-3 py-2 rounded-xl text-sm font-medium transition-all bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 hover:border-green-300"
                     >
-                      {bookingSlotId === slot.id ? (
-                        <svg className="animate-spin h-4 w-4 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                      ) : (
-                        `${formatIndiaTime(slot.start_time)} - ${formatIndiaTime(slot.end_time)}`
-                      )}
+                      {`${formatIndiaTime(slot.start_time)} - ${formatIndiaTime(slot.end_time)}`}
                     </button>
                   ))}
                 </div>

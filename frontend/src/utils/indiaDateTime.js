@@ -46,3 +46,62 @@ export const formatIndiaTime = (value) => {
 
   return `${displayHours}:${pad(minutes)} ${meridiem}`;
 };
+
+export const getIndiaNowParts = () => {
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone: INDIA_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  });
+
+  const parts = formatter.formatToParts(new Date());
+  return {
+    year: Number(parts.find((part) => part.type === "year")?.value),
+    month: Number(parts.find((part) => part.type === "month")?.value),
+    day: Number(parts.find((part) => part.type === "day")?.value),
+    hour: Number(parts.find((part) => part.type === "hour")?.value),
+    minute: Number(parts.find((part) => part.type === "minute")?.value),
+  };
+};
+
+export const addDaysToISO = (value, days) => {
+  const [year, month, day] = value.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day, 12));
+  date.setUTCDate(date.getUTCDate() + days);
+  return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}`;
+};
+
+export const getIndiaLeadTimeCutoffTimestamp = (hoursAhead = 24) => {
+  const now = getIndiaNowParts();
+  return Date.UTC(now.year, now.month - 1, now.day, now.hour, now.minute) + hoursAhead * 60 * 60 * 1000;
+};
+
+export const getIndiaSlotTimestamp = (dateISO, timeValue) => {
+  const [year, month, day] = dateISO.split("-").map(Number);
+  const [hours = "00", minutes = "00"] = timeValue.split(":");
+  return Date.UTC(year, month - 1, day, Number(hours), Number(minutes));
+};
+
+export const isIndiaSlotBeyondLeadTime = (dateISO, timeValue, hoursAhead = 24) =>
+  getIndiaSlotTimestamp(dateISO, timeValue) > getIndiaLeadTimeCutoffTimestamp(hoursAhead);
+
+export const getEarliestBookableDateISO = (timeSlots, hoursAhead = 24, searchDays = 30) => {
+  const today = getIndiaTodayISO();
+
+  for (let offset = 0; offset <= searchDays; offset += 1) {
+    const candidateDate = addDaysToISO(today, offset);
+    const hasEligibleSlot = timeSlots.some(([startTime]) =>
+      isIndiaSlotBeyondLeadTime(candidateDate, startTime, hoursAhead)
+    );
+
+    if (hasEligibleSlot) {
+      return candidateDate;
+    }
+  }
+
+  return today;
+};

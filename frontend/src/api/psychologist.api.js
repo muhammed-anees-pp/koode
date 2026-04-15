@@ -114,3 +114,20 @@ export const getMyAvailability = async () => {
   );
   return response.data;
 };
+
+export const getPsychologistBookings = async () => {
+  const response = await axiosInstance.get("appointments/bookings/");
+  return response.data;
+};
+
+export const cancelPsychologistBooking = async (bookingId, note) => {
+  const response = await axiosInstance.post(`appointments/bookings/${bookingId}/cancel/`, {
+    note,
+  });
+  return response.data;
+};
+
+export const reschedulePsychologistBooking = async (bookingId, data) => {
+  const response = await axiosInstance.post(`appointments/bookings/${bookingId}/reschedule/`, data);
+  return response.data;
+};

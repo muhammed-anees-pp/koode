@@ -85,3 +85,10 @@ export const getMyBookings = async () => {
   const response = await axiosInstance.get("appointments/bookings/");
   return response.data;
 };
+
+export const cancelPatientBooking = async (bookingId, note) => {
+  const response = await axiosInstance.post(`appointments/bookings/${bookingId}/cancel/`, {
+    note,
+  });
+  return response.data;
+};
