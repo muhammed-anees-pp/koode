@@ -65,3 +65,30 @@ export const fetchSpecializations = async () => {
   const response = await axiosInstance.get("psychologist/specializations/");
   return response.data;
 };
+
+
+export const getPsychologistSlots = async (psychologistId, date) => {
+  const response = await axiosInstance.get(
+    `appointments/slots/${psychologistId}/?date=${date}`
+  );
+  return response.data;
+};
+
+export const bookSlot = async (slotId) => {
+  const response = await axiosInstance.post("appointments/book/", {
+    slot_id: slotId,
+  });
+  return response.data;
+};
+
+export const getMyBookings = async () => {
+  const response = await axiosInstance.get("appointments/bookings/");
+  return response.data;
+};
+
+export const cancelPatientBooking = async (bookingId, note) => {
+  const response = await axiosInstance.post(`appointments/bookings/${bookingId}/cancel/`, {
+    note,
+  });
+  return response.data;
+};

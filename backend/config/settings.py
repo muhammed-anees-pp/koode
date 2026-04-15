@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     "applications",
     "psychologists",
     "interviews",
+    "appointments",
 ]
 
 # -------------------------------------------------
