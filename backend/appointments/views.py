@@ -2,12 +2,16 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, permissions
 from django.shortcuts import get_object_or_404
-from .models import Availability
+from .models import Availability, Booking
+from django.utils import timezone
 from psychologists.models import PsychologistProfile
+from patients.models import PatientProfile
+from patients.permissions import IsPatient
 from psychologists.permissions import IsPsychologist
 from .serializers import (
-    AvailabilitySerializer, CreateAvailabilitySerializer,
+    AvailabilitySerializer, BookingSerializer, CancelBookingSerializer, CreateAvailabilitySerializer, CreateBookingSerializer, RescheduleBookingSerializer,
 )
+
 
 
 """
@@ -61,3 +65,126 @@ class PsychologistSlotListView(APIView):
         return Response(serializer.data)
 
 
+"""
+CREATE BOOKING
+"""
+class CreateBookingView(APIView):
+    permission_classes = [permissions.IsAuthenticated, IsPatient]
+
+    def post(self, request):
+        patient = get_object_or_404(PatientProfile, user=request.user)
+        serializer = CreateBookingSerializer(
+            data=request.data,
+            context={"patient": patient},
+        )
+
+        if serializer.is_valid():
+            booking = serializer.save()
+            return Response(
+                BookingSerializer(booking).data,
+                status=status.HTTP_201_CREATED,
+            )
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+"""
+LIST BOOKINGS
+"""
+class BookingListView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        if request.user.role == "PATIENT":
+            patient = get_object_or_404(PatientProfile, user=request.user)
+            queryset = Booking.objects.filter(patient=patient)
+        elif request.user.role == "PSYCHOLOGIST":
+            psychologist = get_object_or_404(PsychologistProfile, user=request.user)
+            queryset = Booking.objects.filter(psychologist=psychologist)
+        else:
+            return Response({"detail": "Not allowed"}, status=status.HTTP_403_FORBIDDEN)
+
+        queryset = queryset.select_related(
+            "slot",
+            "psychologist__user",
+            "patient__user",
+        ).order_by("-created_at")
+
+        serializer = BookingSerializer(queryset, many=True)
+        return Response(serializer.data)
+
+
+class BookingActionBaseView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_booking(self, request, booking_id):
+        booking = get_object_or_404(
+            Booking.objects.select_related("patient__user", "psychologist__user", "slot"),
+            id=booking_id,
+        )
+
+        if request.user.role == "PATIENT":
+            patient = get_object_or_404(PatientProfile, user=request.user)
+            if booking.patient_id != patient.patient_id:
+                return None
+        elif request.user.role == "PSYCHOLOGIST":
+            psychologist = get_object_or_404(PsychologistProfile, user=request.user)
+            if booking.psychologist_id != psychologist.psychologist_id:
+                return None
+        else:
+            return None
+
+        return booking
+
+    def ensure_upcoming(self, booking):
+        return booking.date >= timezone.localdate()
+
+
+class CancelBookingView(BookingActionBaseView):
+    def post(self, request, booking_id):
+        booking = self.get_booking(request, booking_id)
+        if booking is None:
+            return Response({"detail": "Not allowed"}, status=status.HTTP_403_FORBIDDEN)
+
+        if not self.ensure_upcoming(booking):
+            return Response(
+                {"detail": "Only upcoming bookings can be cancelled"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        serializer = CancelBookingSerializer(
+            data=request.data,
+            context={"booking": booking},
+        )
+
+        if serializer.is_valid():
+            booking = serializer.save()
+            return Response(BookingSerializer(booking).data)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class RescheduleBookingView(BookingActionBaseView):
+    permission_classes = [permissions.IsAuthenticated, IsPsychologist]
+
+    def post(self, request, booking_id):
+        booking = self.get_booking(request, booking_id)
+        if booking is None:
+            return Response({"detail": "Not allowed"}, status=status.HTTP_403_FORBIDDEN)
+
+        if not self.ensure_upcoming(booking):
+            return Response(
+                {"detail": "Only upcoming bookings can be rescheduled"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        serializer = RescheduleBookingSerializer(
+            data=request.data,
+            context={"booking": booking},
+        )
+
+        if serializer.is_valid():
+            booking = serializer.save()
+            return Response(BookingSerializer(booking).data)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
