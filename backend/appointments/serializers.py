@@ -120,6 +120,32 @@ class BookingSerializer(serializers.ModelSerializer):
     slot = AvailableSlotSerializer(read_only=True)
     patient_name = serializers.CharField(source="patient.user.full_name", read_only=True)
     psychologist_name = serializers.CharField(source="psychologist.user.full_name", read_only=True)
+    psychologist_photo = serializers.SerializerMethodField()
+    psychologist_id = serializers.CharField(source="psychologist.psychologist_id", read_only=True)
+    specialization = serializers.SerializerMethodField()
+    cancellation_note = serializers.CharField(source="notes", read_only=True)
+
+    def get_psychologist_photo(self, obj):
+        request = self.context.get("request")
+        user = obj.psychologist.user
+        photo = user.profile_picture if user.profile_picture else None
+        if not photo:
+            # Fall back to the application photo if user has none
+            app = getattr(user, "application", None)
+            if app and getattr(app, "profile_picture", None):
+                photo = app.profile_picture
+        if photo and request:
+            try:
+                return request.build_absolute_uri(photo.url)
+            except Exception:
+                return None
+        return None
+
+    def get_specialization(self, obj):
+        specs = obj.psychologist.specializations.all()
+        if specs.exists():
+            return specs.first().name
+        return None
 
     class Meta:
         model = Booking
@@ -128,13 +154,17 @@ class BookingSerializer(serializers.ModelSerializer):
             "patient",
             "patient_name",
             "psychologist",
+            "psychologist_id",
             "psychologist_name",
+            "psychologist_photo",
+            "specialization",
             "date",
             "start_time",
             "end_time",
             "status",
             "payment_status",
             "meeting_link",
+            "cancellation_note",
             "slot",
             "created_at",
         ]
