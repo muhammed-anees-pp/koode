@@ -86,7 +86,7 @@ class CreateBookingView(APIView):
         if serializer.is_valid():
             booking = serializer.save()
             return Response(
-                BookingSerializer(booking).data,
+                BookingSerializer(booking, context={"request": request}).data,
                 status=status.HTTP_201_CREATED,
             )
 
@@ -115,7 +115,7 @@ class BookingListView(APIView):
             "patient__user",
         ).order_by("-created_at")
 
-        serializer = BookingSerializer(queryset, many=True)
+        serializer = BookingSerializer(queryset, many=True, context={"request": request})
         return Response(serializer.data)
 
 
@@ -164,7 +164,7 @@ class CancelBookingView(BookingActionBaseView):
 
         if serializer.is_valid():
             booking = serializer.save()
-            return Response(BookingSerializer(booking).data)
+            return Response(BookingSerializer(booking, context={"request": request}).data)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -190,6 +190,6 @@ class RescheduleBookingView(BookingActionBaseView):
 
         if serializer.is_valid():
             booking = serializer.save()
-            return Response(BookingSerializer(booking).data)
+            return Response(BookingSerializer(booking, context={"request": request}).data)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
