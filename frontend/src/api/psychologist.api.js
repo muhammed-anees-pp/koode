@@ -98,3 +98,36 @@ export const updatePsychologistProfile = async (data) => {
   });
   return response.data;
 };
+
+
+export const createAvailability = async (data) => {
+  const response = await axiosInstance.post(
+    "appointments/availability/create/",
+    data
+  );
+  return response.data;
+};
+
+export const getMyAvailability = async () => {
+  const response = await axiosInstance.get(
+    "appointments/availability/me/"
+  );
+  return response.data;
+};
+
+export const getPsychologistBookings = async () => {
+  const response = await axiosInstance.get("appointments/bookings/");
+  return response.data;
+};
+
+export const cancelPsychologistBooking = async (bookingId, note) => {
+  const response = await axiosInstance.post(`appointments/bookings/${bookingId}/cancel/`, {
+    note,
+  });
+  return response.data;
+};
+
+export const reschedulePsychologistBooking = async (bookingId, data) => {
+  const response = await axiosInstance.post(`appointments/bookings/${bookingId}/reschedule/`, data);
+  return response.data;
+};

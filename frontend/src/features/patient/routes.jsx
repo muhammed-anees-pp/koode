@@ -8,6 +8,9 @@ import VerificationSent from "./pages/VerificationSent";
 import PatientProfile from "./pages/PatientProfile";
 import PatientTherapistList from "./pages/PatientTherapistList";
 import PatientTherapistDetail from "./pages/PatientTherapistDetail";
+import PatientBooking from "./pages/PatientBooking";
+import PatientAppointments from "./pages/PatientAppointments";
+import PatientAppointmentDetail from "./pages/PatientAppointmentDetail";
 import { useAuthStore } from "../../store/auth.store";
 
 
@@ -45,6 +48,18 @@ const PatientRoutes = () => {
       />
       <Route path="therapists" element={<PatientTherapistList />} />
       <Route path="therapists/:id" element={<PatientTherapistDetail />} />
+      <Route
+        path="therapists/:id/book"
+        element={isAuthenticated && role === "PATIENT" ? <PatientBooking /> : <Navigate to="/patient/login" replace />}
+      />
+      <Route
+        path="appointments"
+        element={isAuthenticated && role === "PATIENT" ? <PatientAppointments /> : <Navigate to="/patient/login" replace />}
+      />
+      <Route
+        path="appointments/:bookingId"
+        element={isAuthenticated && role === "PATIENT" ? <PatientAppointmentDetail /> : <Navigate to="/patient/login" replace />}
+      />
       <Route path="*" element={<Navigate to="home" />} />
     </Routes>
   );
