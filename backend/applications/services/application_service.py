@@ -1,5 +1,10 @@
+import logging
+
 from django.utils import timezone
 from applications.repositories.application_repository import ApplicationRepository
+
+
+logger = logging.getLogger(__name__)
 
 
 """
@@ -9,6 +14,7 @@ class ApplicationService:
 
     @staticmethod
     def submit_application(user, validated_data):
+        logger.info("Submitting application for user %s", user.id)
         full_name = validated_data.pop("full_name", None)
         if full_name:
             user.full_name = full_name
@@ -30,6 +36,7 @@ class ApplicationService:
         application.status = "SUBMITTED"
         application.submitted_at = timezone.now()
         application.save()
+        logger.info("Application %s saved as SUBMITTED for user %s", application.id, user.id)
         return application
 
 
@@ -38,9 +45,11 @@ class ApplicationService:
         application = ApplicationRepository.get_by_id(application_id)
 
         if not application:
+            logger.warning("Interview scheduling failed because application %s was not found", application_id)
             raise ValueError("Application not found")
 
         application.interview_date = interview_date
         application.status = "INTERVIEW_SCHEDULED"
         application.save()
+        logger.info("Interview scheduled on application %s", application.id)
         return application
