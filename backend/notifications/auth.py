@@ -1,8 +1,12 @@
+import logging
 from urllib.parse import parse_qs
 from channels.auth import AuthMiddlewareStack
 from channels.db import database_sync_to_async
 from channels.middleware import BaseMiddleware
 from rest_framework_simplejwt.authentication import JWTAuthentication
+
+
+logger = logging.getLogger(__name__)
 
 
 @database_sync_to_async
@@ -22,6 +26,7 @@ class JWTAuthMiddleware(BaseMiddleware):
             try:
                 scope["user"] = await get_user_for_token(token)
             except Exception:
+                logger.warning("Invalid notification websocket token", exc_info=True)
                 scope["user"] = None
 
         return await super().__call__(scope, receive, send)
@@ -29,4 +34,3 @@ class JWTAuthMiddleware(BaseMiddleware):
 
 def JWTAuthMiddlewareStack(inner):
     return JWTAuthMiddleware(AuthMiddlewareStack(inner))
-
