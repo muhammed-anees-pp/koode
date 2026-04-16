@@ -29,6 +29,7 @@ urlpatterns = [
     path('api/psychologist/', include('psychologists.urls')),
     path("api/interviews/", include("interviews.urls")),
     path('api/appointments/', include('appointments.urls')),
+    path('api/notifications/', include('notifications.urls')),
 ]
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
