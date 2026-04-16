@@ -12,6 +12,7 @@ from psychologists.models import PsychologistProfile
 from patients.models import PatientProfile
 from patients.permissions import IsPatient
 from psychologists.permissions import IsPsychologist
+from chat.services.chat_service import ensure_chat_room_for_booking, sync_chat_room_for_booking
 from notifications.services import create_notification
 from notifications.time_formatting import format_india_slot
 from .serializers import (
@@ -143,6 +144,7 @@ class CreateBookingView(APIView):
         serializer = CreateBookingSerializer(data=request.data, context={"patient": patient},)
         serializer.is_valid(raise_exception=True)
         booking = serializer.save()
+        ensure_chat_room_for_booking(booking)
 
         send_booking_notification(
             booking.patient.user,
@@ -247,6 +249,7 @@ class CancelBookingView(BookingActionBaseView):
         serializer = CancelBookingSerializer(data=request.data, context={"booking": booking},)
         serializer.is_valid(raise_exception=True)
         booking = serializer.save()
+        sync_chat_room_for_booking(booking)
 
         if request.user.role == "PATIENT":
             send_booking_notification(
@@ -298,6 +301,7 @@ class RescheduleBookingView(BookingActionBaseView):
         serializer = RescheduleBookingSerializer(data=request.data, context={"booking": booking},)
         serializer.is_valid(raise_exception=True)
         booking = serializer.save()
+        sync_chat_room_for_booking(booking)
 
         send_booking_notification(
             booking.psychologist.user,
