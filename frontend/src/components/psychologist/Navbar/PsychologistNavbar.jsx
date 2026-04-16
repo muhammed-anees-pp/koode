@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../../store/auth.store';
 import { psychologistLogout, getMyApplication } from '../../../api/psychologist.api';
 import { useQuery } from '@tanstack/react-query';
+import NotificationBell from '../../notifications/NotificationBell';
 import logo from '../../../assets/psychologist-logo.png';
 
 const PsychologistNavbar = () => {
@@ -89,13 +90,7 @@ const PsychologistNavbar = () => {
                     <div className="flex-1" />
 
                     <div className="flex items-center gap-3">
-                        <button className="relative p-1 text-gray-500 bg-transparent border-none cursor-pointer hover:text-gray-700 transition-all" aria-label="Notifications">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-                            </svg>
-                            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-psycho-primary rounded-full border-2 border-white" />
-                        </button>
+                        <NotificationBell variant="psychologist" />
 
                         {/* Profile dropdown */}
                         <div className="relative" ref={profileDropdownRef}>
