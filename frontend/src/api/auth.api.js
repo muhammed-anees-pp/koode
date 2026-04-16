@@ -1,18 +1,20 @@
 import axiosInstance from "./axios";
 
-let refreshPromise = null;
+const refreshPromises = new Map();
 
-export const refreshAccessToken = async () => {
-  if (refreshPromise) {
-    return refreshPromise;
+export const refreshAccessToken = async (role) => {
+  const key = role || "default";
+  if (refreshPromises.has(key)) {
+    return refreshPromises.get(key);
   }
 
-  refreshPromise = axiosInstance
-    .post("auth/refresh/")
+  const refreshPromise = axiosInstance
+    .post("auth/refresh/", role ? { role } : {})
     .then((response) => response.data)
     .finally(() => {
-      refreshPromise = null;
+      refreshPromises.delete(key);
     });
 
+  refreshPromises.set(key, refreshPromise);
   return refreshPromise;
 };

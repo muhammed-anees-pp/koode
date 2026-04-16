@@ -26,6 +26,11 @@ export const useAuthStore = create(
         }));
       },
 
+      setAccessToken: (accessToken) =>
+        set({
+          accessToken,
+        }),
+
       logout: () =>
         set({
           accessToken: null,
