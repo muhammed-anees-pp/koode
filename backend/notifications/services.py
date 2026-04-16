@@ -1,8 +1,13 @@
+import logging
+
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from django.db import transaction
 from .models import Notification
 from .serializers import NotificationSerializer
+
+
+logger = logging.getLogger(__name__)
 
 
 """
@@ -18,16 +23,20 @@ DISPATCH NOTIFICATION
 def _dispatch_notification(notification):
     channel_layer = get_channel_layer()
     if not channel_layer:
+        logger.warning("No channel layer configured for notification %s", notification.id)
         return
 
     payload = NotificationSerializer(notification).data
-    async_to_sync(channel_layer.group_send)(
-        get_user_notification_group(notification.recipient_id),
-        {
-            "type": "notification.message",
-            "notification": payload,
-        },
-    )
+    try:
+        async_to_sync(channel_layer.group_send)(
+            get_user_notification_group(notification.recipient_id),
+            {
+                "type": "notification.message",
+                "notification": payload,
+            },
+        )
+    except Exception:
+        logger.exception("Failed to dispatch notification %s", notification.id)
 
 
 """
@@ -39,6 +48,7 @@ def create_notification(recipient, message):
         message=message,
     )
     transaction.on_commit(lambda: _dispatch_notification(notification))
+    logger.info("Notification %s created for user %s", notification.id, recipient.id)
     return notification
 
 
@@ -48,6 +58,8 @@ BULK NOTIFICATION
 def notify_many(recipients, message):
     notifications = []
     for recipient in recipients:
-        notifications.append(create_notification(recipient, message))
+        try:
+            notifications.append(create_notification(recipient, message))
+        except Exception:
+            logger.exception("Failed to create bulk notification for user %s", getattr(recipient, "id", None))
     return notifications
-
