@@ -42,7 +42,7 @@ const AdminLogin = () => {
   const navigate = useNavigate();
   const login = useAuthStore((s) => s.login);
   const [formData, setFormData] = useState({ email: "", password: "" });
-  const [validationErrors, setValidationErrors] = useState();
+  const [validationErrors, setValidationErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
 
   const mutation = useMutation({
@@ -75,7 +75,7 @@ const AdminLogin = () => {
       result.error.issues.forEach((issue) => { const f = issue.path[0]; if (!errors[f]) errors[f] = issue.message; });
       setValidationErrors(errors); return;
     }
-    setValidationErrors();
+    setValidationErrors({});
     mutation.mutate(formData);
   };
 
