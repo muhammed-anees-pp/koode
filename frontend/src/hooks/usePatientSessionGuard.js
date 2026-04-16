@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { useAuthStore } from "../store/auth.store";
 import { refreshAccessToken } from "../api/auth.api";
 
-const CHECK_INTERVAL_MS = 15_000; // 15 seconds
+const CHECK_INTERVAL_MS = 15_000; 
 
 export function usePatientSessionGuard() {
     const isAuthenticated = useAuthStore((s) => s.isAuthenticated);

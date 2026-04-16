@@ -58,7 +58,7 @@ const CircleIcon = () => (
   </svg>
 );
 
-// Shared
+
 const pageCls = "min-h-screen flex flex-col items-center bg-[#f0f2f0] font-['DM_Sans',sans-serif] pb-10";
 const topbarCls = "w-full py-[22px] px-8 flex items-center justify-between";
 const logoCls = "h-9 w-auto object-contain scale-[2] origin-left ml-4";

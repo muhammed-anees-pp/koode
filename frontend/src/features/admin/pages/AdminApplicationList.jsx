@@ -4,22 +4,15 @@ import { useNavigate } from "react-router-dom";
 import { fetchAdminApplications } from "../../../api/admin.api";
 import Sidebar from "../../../components/admin/Sidebar/AdminSidebar";
 import Navbar from "../../../components/admin/Navbar/AdminNavbar";
+import { resolveMediaUrl } from "../../../utils/url";
 import { useRef, useEffect } from "react";
 import AdminInterviewRoomModal from "./AdminInterviewRoomModal";
-
-const BASE_URL = "http://localhost:8000";
-
-const mediaUrl = (path) => {
-    if (!path) return null;
-    if (path.startsWith("http")) return path;
-    return `${BASE_URL}${path.startsWith("/") ? "" : "/"}${path}`;
-};
 
 function AppAvatar({ name, photo, size = 38 }) {
     if (photo) {
         return (
             <img
-                src={mediaUrl(photo)}
+                src={resolveMediaUrl(photo)}
                 alt={name}
                 className="rounded-full object-cover flex-shrink-0"
                 style={{ width: size, height: size }}
@@ -49,7 +42,7 @@ const STATUS_CONFIG = {
     DRAFT: { label: "Draft", cls: "bg-slate-500/15 text-slate-400", dot: "bg-slate-400", dotted: true },
 };
 
-// Interview model status values
+
 const INTERVIEW_STATUS_CONFIG = {
     SCHEDULED: { label: "Scheduled", cls: "inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold bg-[#1188d8]/15 text-[#63b3ed]" },
     WAITING:   { label: "Waiting Room", cls: "inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold bg-amber-500/15 text-amber-400" },
@@ -217,7 +210,7 @@ function InterviewDetailsModal({ app, onClose, navigate }) {
                         </div>
                     </div>
 
-                    {/* Interview not started yet notice */}
+                    
                     <div className="flex items-center gap-2.5 px-4 py-3 bg-amber-500/10 border border-amber-500/25 rounded-xl mb-5">
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" className="flex-shrink-0">
                             <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
@@ -500,7 +493,7 @@ export default function AdminApplicationList() {
                 </div>
             </div>
 
-            {/* Before interview time*/}
+            
             {selectedInterview && (
                 <InterviewDetailsModal
                     app={selectedInterview}
@@ -509,7 +502,7 @@ export default function AdminApplicationList() {
                 />
             )}
 
-            {/* At/after interview time*/}
+            
             {roomModalApp && (
                 <AdminInterviewRoomModal
                     interviewId={roomModalApp.interview_id}

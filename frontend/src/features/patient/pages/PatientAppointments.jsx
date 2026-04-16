@@ -17,7 +17,7 @@ const TABS = ["Upcoming", "Past", "Cancelled"];
 const DATE_FILTER_UPCOMING = ["Next 7 Days", "Next 30 Days", "All Upcoming"];
 const DATE_FILTER_PAST = ["Last 7 Days", "Last 30 Days", "All Past"];
 
-// ── Cancel Modal ───────────────────────────────────────────────────────────
+
 function CancelBookingModal({ booking, note, onChange, onClose, onSubmit, isPending, error }) {
   if (!booking) return null;
   return (
@@ -65,7 +65,7 @@ function CancelBookingModal({ booking, note, onChange, onClose, onSubmit, isPend
   );
 }
 
-// ── Status Badge ───────────────────────────────────────────────────────────
+
 function StatusBadge({ status }) {
   const map = {
     CONFIRMED: "bg-emerald-100 text-emerald-700",
@@ -80,7 +80,7 @@ function StatusBadge({ status }) {
   );
 }
 
-// ── Appointment Avatar ─────────────────────────────────────────────────────
+
 function AppointmentAvatar({ booking }) {
   const photo = booking.psychologist_photo;
   if (photo) {
@@ -96,7 +96,7 @@ function AppointmentAvatar({ booking }) {
   );
 }
 
-// ── Upcoming Card ──────────────────────────────────────────────────────────
+
 function UpcomingCard({ booking, onCancel }) {
   const isToday = booking.date === getIndiaTodayISO();
   const canJoin = isToday;
@@ -160,7 +160,7 @@ function UpcomingCard({ booking, onCancel }) {
   );
 }
 
-// ── Past / Completed Card ──────────────────────────────────────────────────
+
 function PastCard({ booking, onBookAgain }) {
   const [rated, setRated] = useState(booking.rating ?? 0);
   const [hovered, setHovered] = useState(0);
@@ -203,7 +203,7 @@ function PastCard({ booking, onBookAgain }) {
             </span>
           </div>
 
-          {/* Star rating */}
+          
           <div className="flex items-center gap-1 mt-3">
             {Array.from({ length: 5 }).map((_, i) => {
               const filled = i < (hovered || rated);
@@ -240,7 +240,7 @@ function PastCard({ booking, onBookAgain }) {
   );
 }
 
-// ── Cancellation Reason Modal ─────────────────────────────────────────────
+
 function CancellationReasonModal({ booking, onClose }) {
   if (!booking) return null;
   return (
@@ -252,7 +252,7 @@ function CancellationReasonModal({ booking, onClose }) {
         className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl animate-[pdmSlideUp_0.22s_cubic-bezier(0.22,1,0.36,1)]"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
+        
         <div className="flex items-start justify-between gap-4 mb-5">
           <div>
             <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 border border-rose-200 px-2.5 py-0.5 text-xs font-bold text-rose-600 uppercase tracking-wider mb-2">
@@ -275,10 +275,10 @@ function CancellationReasonModal({ booking, onClose }) {
           </button>
         </div>
 
-        {/* Divider */}
+        
         <div className="h-px bg-slate-100 mb-5" />
 
-        {/* Reason */}
+        
         <div>
           <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">Cancellation Reason</p>
           <p className="text-sm text-slate-700 leading-relaxed bg-slate-50 rounded-xl px-4 py-3 border border-slate-100">
@@ -286,7 +286,7 @@ function CancellationReasonModal({ booking, onClose }) {
           </p>
         </div>
 
-        {/* Close button */}
+        
         <button
           type="button"
           onClick={onClose}
@@ -299,7 +299,7 @@ function CancellationReasonModal({ booking, onClose }) {
   );
 }
 
-// ── Cancelled Card ──────────────────────────────────────────────────────────
+
 function CancelledCard({ booking, onBookAgain, onViewReason }) {
   return (
     <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -346,7 +346,7 @@ function CancelledCard({ booking, onBookAgain, onViewReason }) {
   );
 }
 
-// ── Main Page ──────────────────────────────────────────────────────────────
+
 export default function PatientAppointments() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -383,7 +383,7 @@ export default function PatientAppointments() {
       );
     }
 
-    // Search filter
+    
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       list = list.filter((b) => b.psychologist_name?.toLowerCase().includes(q));
@@ -447,7 +447,7 @@ export default function PatientAppointments() {
 
       <main className="flex-1 px-6 pt-[7rem] pb-24">
         <div className="mx-auto max-w-[940px]">
-          {/* Header */}
+          
           <div className="mb-2">
             <h1 className="text-3xl font-bold text-slate-900">My Appointments</h1>
             <p className="mt-1 text-sm text-slate-500">
@@ -457,11 +457,11 @@ export default function PatientAppointments() {
                 ? "Manage your journey and session history"
                 : "Manage your journey and session history"}
             </p>
-            {/* Animated underline accent */}
+            
             <div className="mt-3 h-1 w-12 rounded-full bg-patient-primary" />
           </div>
 
-          {/* Tabs */}
+          
           <div className="mt-6 flex items-center gap-2">
             {TABS.map((tab) => (
               <button
@@ -483,10 +483,10 @@ export default function PatientAppointments() {
             ))}
           </div>
 
-          {/* Filters: only for Upcoming and Past */}
+          
           {showFilters && (
             <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Date filter */}
+              
               <div>
                 <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Filter by Date</p>
                 <select
@@ -500,7 +500,7 @@ export default function PatientAppointments() {
                 </select>
               </div>
 
-              {/* Search */}
+              
               <div>
                 <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Search by Psychologist</p>
                 <div className="relative">
@@ -519,22 +519,22 @@ export default function PatientAppointments() {
             </div>
           )}
 
-          {/* Content */}
+          
           <div className="mt-6 space-y-4">
-            {/* Loading skeleton */}
+            
             {bookingsQuery.isLoading &&
               Array.from({ length: 3 }).map((_, i) => (
                 <div key={i} className="h-28 animate-pulse rounded-2xl bg-white" />
               ))}
 
-            {/* Error */}
+            
             {bookingsQuery.isError && (
               <div className="rounded-2xl border border-red-200 bg-red-50 px-6 py-4 text-sm text-red-700">
                 Unable to load your appointments right now.
               </div>
             )}
 
-            {/* Empty */}
+            
             {!bookingsQuery.isLoading && !bookingsQuery.isError && filteredBookings.length === 0 && (
               <div className="rounded-2xl border border-dashed border-slate-200 bg-white px-8 py-16 text-center">
                 <div className="w-14 h-14 mx-auto rounded-full bg-slate-100 flex items-center justify-center mb-4">
@@ -556,7 +556,7 @@ export default function PatientAppointments() {
               </div>
             )}
 
-            {/* Cards */}
+            
             {!bookingsQuery.isLoading && !bookingsQuery.isError &&
               filteredBookings.map((booking) => {
                 if (activeTab === "Upcoming") {
@@ -606,6 +606,7 @@ export default function PatientAppointments() {
         booking={reasonTarget}
         onClose={() => setReasonTarget(null)}
       />
+
     </div>
   );
 }

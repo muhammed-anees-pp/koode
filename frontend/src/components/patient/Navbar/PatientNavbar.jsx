@@ -5,7 +5,7 @@ import { patientLogout } from "../../../api/patient.api";
 import NotificationBell from "../../notifications/NotificationBell";
 import logo from "../../../assets/patient-logo.png";
 
-// Shared
+
 const navLinkCls = "text-[0.938rem] font-medium text-ui-600 no-underline cursor-pointer bg-transparent border-none py-1 px-0 transition-all duration-200 hover:text-patient-primary relative after:content-[''] after:absolute after:-bottom-0.5 after:left-0 after:w-0 after:h-[2px] after:bg-patient-primary after:transition-all after:duration-300 hover:after:w-full";
 const activeNavCls = (isActive) => `text-[0.938rem] font-medium no-underline cursor-pointer bg-transparent border-none py-1 px-0 transition-all duration-200 relative after:content-[''] after:absolute after:-bottom-0.5 after:left-0 after:h-[2px] after:bg-patient-primary after:transition-all after:duration-300 ${isActive
     ? 'text-patient-primary after:w-full'
@@ -71,6 +71,7 @@ const PatientNavbar = ({ authLink } = {}) => {
             navigate('/patient/login');
         } else if (action === 'User Profile') { navigate('/patient/profile'); }
         else if (action === 'Appointment List') { navigate('/patient/appointments'); }
+        else if (action === 'Chat and Messaging') { navigate('/patient/messages'); }
         else if (action === 'Settings') { navigate('#'); }
     };
 
@@ -80,17 +81,17 @@ const PatientNavbar = ({ authLink } = {}) => {
         <div className="fixed top-0 left-0 right-0 z-[1000]">
             <nav className="bg-white/[0.96] backdrop-blur-[16px] border-b border-[rgba(0,0,0,0.06)] shadow-[0_2px_20px_rgba(0,0,0,0.06)]">
                 <div className="w-full pl-0 pr-6 flex items-center h-[66px]">
-                    {/* Logo — left */}
+                    
                     <Link to="/patient/home" className="flex-none flex items-center no-underline -ml-3">
                         <img src={logo} alt="Koode" className="h-11 w-auto scale-[1.6] origin-left" />
                     </Link>
 
-                    {/* Nav Links — center */}
+                    
                     <div className="flex-1 hidden md:flex items-center justify-center gap-8">
                         <NavLink to="/patient/home" className={({ isActive }) => activeNavCls(isActive)}>Home</NavLink>
                         <a href="#about" className={navLinkCls}>About Us</a>
 
-                        {/* Services Dropdown */}
+                        
                         <div className="relative" ref={servicesDropdownRef}>
                             <button className={activeNavCls(isServicesDropdownOpen) + ' flex items-center gap-1'} onClick={() => setIsServicesDropdownOpen(!isServicesDropdownOpen)}>
                                 Services
@@ -108,7 +109,7 @@ const PatientNavbar = ({ authLink } = {}) => {
                             )}
                         </div>
 
-                        {/* Concern Dropdown */}
+                        
                         <div className="relative" ref={concernDropdownRef}>
                             <button className={activeNavCls(isConcernDropdownOpen) + ' flex items-center gap-1'} onClick={() => setIsConcernDropdownOpen(!isConcernDropdownOpen)}>
                                 Concern
@@ -130,7 +131,7 @@ const PatientNavbar = ({ authLink } = {}) => {
                         <NavLink to="/patient/therapists" className={({ isActive }) => activeNavCls(isActive)}>Therapists</NavLink>
                     </div>
 
-                    {/* Right Actions — right */}
+                    
                     <div className="flex-none flex items-center gap-3">
                         <button className="px-5 py-2.5 bg-gradient-to-r from-patient-primary to-patient-hover text-white text-[0.875rem] font-semibold border-none rounded-[10px] cursor-pointer shadow-patient-sm transition-all duration-200 hover:shadow-patient-md hover:-translate-y-px active:translate-y-0">
                             Book Therapy
@@ -145,10 +146,10 @@ const PatientNavbar = ({ authLink } = {}) => {
                             </Link>
                         ) : isLoggedIn ? (
                             <>
-                                {/* Notification Bell */}
+                                
                                 <NotificationBell variant="patient" />
 
-                                {/* Profile Dropdown */}
+                                
                                 <div className="relative" ref={profileDropdownRef}>
                                     <button className="w-10 h-10 rounded-full border-[2px] border-transparent cursor-pointer overflow-hidden transition-all duration-200 hover:border-patient-primary hover:shadow-patient-sm bg-transparent p-0" onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}>
                                         <AvatarContent user={user} hasCustomAvatar={hasCustomAvatar} textSize="text-sm" />
@@ -156,7 +157,7 @@ const PatientNavbar = ({ authLink } = {}) => {
 
                                     {isProfileDropdownOpen && (
                                         <div className="absolute right-0 top-[calc(100%+12px)] w-[260px] bg-white border border-ui-200 rounded-[16px] shadow-[0_16px_40px_rgba(0,0,0,0.12)] z-50 overflow-hidden animate-dropdown">
-                                            {/* Header */}
+                                            
                                             <div className="flex items-center gap-3 px-5 py-4 bg-[rgba(26,190,170,0.04)]">
                                                 <div className="w-[46px] h-[46px] rounded-full overflow-hidden flex-shrink-0">
                                                     <AvatarContent user={user} hasCustomAvatar={hasCustomAvatar} textSize="text-xl" />
@@ -169,7 +170,7 @@ const PatientNavbar = ({ authLink } = {}) => {
 
                                             <div className="h-px bg-ui-100" />
 
-                                            {/* Menu Items */}
+                                            
                                             <div className="py-2">
                                                 {[
                                                     { action: 'User Profile', label: 'User Profile', icon: (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>) },
@@ -189,7 +190,7 @@ const PatientNavbar = ({ authLink } = {}) => {
 
                                             <div className="h-px bg-ui-100" />
 
-                                            {/* Logout */}
+                                            
                                             <button className="w-full flex items-center gap-3 px-5 py-[10px] text-[0.875rem] font-medium text-red-500 bg-transparent border-none cursor-pointer text-left transition-all duration-200 hover:bg-[rgba(239,68,68,0.05)] hover:text-red-600" onClick={() => handleProfileMenuClick('Logout')}>
                                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>
                                                 <span>Logout</span>
@@ -202,7 +203,7 @@ const PatientNavbar = ({ authLink } = {}) => {
                             <Link to="/patient/login" className="text-patient-primary font-semibold no-underline text-[0.938rem] transition-colors duration-200 hover:text-ui-900 relative after:content-[''] after:absolute after:-bottom-0.5 after:left-0 after:w-0 after:h-[2px] after:bg-ui-900 after:transition-all after:duration-300 hover:after:w-full">Login</Link>
                         )}
 
-                        {/* Mobile Toggle */}
+                        
                         <button className="md:hidden w-10 h-10 bg-ui-100 rounded-[10px] border-none cursor-pointer flex items-center justify-center text-ui-700 transition-all duration-200 hover:bg-[rgba(26,190,170,0.1)] hover:text-patient-primary" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
                             {isMobileMenuOpen ? (
                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
@@ -213,10 +214,10 @@ const PatientNavbar = ({ authLink } = {}) => {
                     </div>
                 </div>
 
-                {/* Mobile Menu Overlay */}
+                
                 {isMobileMenuOpen && <div className="fixed inset-0 bg-[rgba(0,0,0,0.5)] z-[998] md:hidden" onClick={() => setIsMobileMenuOpen(false)} />}
 
-                {/* Mobile Menu */}
+                
                 <div className={`fixed top-0 left-0 h-full w-[300px] bg-white shadow-[4px_0_20px_rgba(0,0,0,0.15)] z-[999] flex flex-col transition-transform duration-300 ease-out ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
                     <div className="flex items-center justify-between px-6 py-5 border-b border-ui-100">
                         <img src={logo} alt="Koode" className="h-10 w-auto" />

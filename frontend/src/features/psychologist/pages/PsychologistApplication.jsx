@@ -269,9 +269,9 @@ const PsychologistApplication = () => {
         consultation_fee: '',
     });
 
-    const [touched, setTouched] = useState({});
-    const [fieldErrors, setFieldErrors] = useState({});
-    const [fileErrors, setFileErrors] = useState({});
+    const [touched, setTouched] = useState();
+    const [fieldErrors, setFieldErrors] = useState();
+    const [fileErrors, setFileErrors] = useState();
 
     const [profilePic, setProfilePic] = useState(null);
     const [profilePicPreview, setProfilePicPreview] = useState(null);
@@ -313,7 +313,7 @@ const PsychologistApplication = () => {
 
     const validateAll = useCallback(() => {
         const result = appSchema.safeParse(form);
-        if (result.success) { setFieldErrors({}); return true; }
+        if (result.success) { setFieldErrors(); return true; }
         const errs = result.error.flatten().fieldErrors;
         const mapped = {};
         Object.entries(errs).forEach(([k, v]) => { if (v?.[0]) mapped[k] = v[0]; });
