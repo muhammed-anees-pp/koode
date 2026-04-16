@@ -41,10 +41,10 @@ const VerificationSent = () => {
       <PatientNavbar />
       <main className="flex-1 flex items-center justify-center px-6 py-12 animate-fade-in">
         <div className="bg-white rounded-lg2 shadow-card w-full max-w-[560px] relative overflow-hidden transition-all duration-300 text-center pb-16 hover:shadow-card-hover">
-          {/* Top gradient bar */}
+          
           <div className="h-[6px] bg-gradient-to-r from-patient-primary to-[#20d4bc] animate-shimmer" />
 
-          {/* Icon */}
+          
           <div className="flex justify-center px-8 pt-12 pb-6 animate-icon-bounce">
             <div className="w-[120px] h-[120px] bg-gradient-to-br from-[rgba(26,190,170,0.1)] to-[rgba(32,212,188,0.15)] rounded-full flex items-center justify-center relative transition-all duration-300">
               {status === "success" ? (

@@ -124,6 +124,8 @@ class BookingSerializer(serializers.ModelSerializer):
     psychologist_id = serializers.CharField(source="psychologist.psychologist_id", read_only=True)
     specialization = serializers.SerializerMethodField()
     cancellation_note = serializers.CharField(source="notes", read_only=True)
+    chat_enabled = serializers.SerializerMethodField()
+    chat_room_id = serializers.SerializerMethodField()
 
     def get_psychologist_photo(self, obj):
         request = self.context.get("request")
@@ -146,6 +148,13 @@ class BookingSerializer(serializers.ModelSerializer):
             return specs.first().name
         return None
 
+    def get_chat_enabled(self, obj):
+        return obj.status not in {"COMPLETED", "CANCELLED"}
+
+    def get_chat_room_id(self, obj):
+        room = getattr(obj, "chat_room", None)
+        return str(room.id) if room else None
+
     class Meta:
         model = Booking
         fields = [
@@ -164,6 +173,8 @@ class BookingSerializer(serializers.ModelSerializer):
             "payment_status",
             "meeting_link",
             "cancellation_note",
+            "chat_enabled",
+            "chat_room_id",
             "slot",
             "created_at",
         ]

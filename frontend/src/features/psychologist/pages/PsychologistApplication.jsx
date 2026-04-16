@@ -84,6 +84,34 @@ const validateFile = (file, allowedTypes, maxMB) => {
     return null;
 };
 
+const formatSubmitError = (error) => {
+    const data = error?.response?.data;
+
+    if (!data) {
+        return 'Failed to submit. Please try again.';
+    }
+
+    if (typeof data === 'string') {
+        return data;
+    }
+
+    if (Array.isArray(data)) {
+        return data.join(', ');
+    }
+
+    if (typeof data === 'object') {
+        return Object.entries(data)
+            .map(([key, value]) => {
+                if (Array.isArray(value)) return `${key}: ${value.join(', ')}`;
+                if (value && typeof value === 'object') return `${key}: ${JSON.stringify(value)}`;
+                return `${key}: ${value}`;
+            })
+            .join(' | ');
+    }
+
+    return 'Failed to submit. Please try again.';
+};
+
 
 const ErrorMsg = ({ msg }) =>
     msg ? <p className="text-xs text-red-500 mt-1 flex items-center gap-1"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>{msg}</p> : null;
@@ -313,7 +341,7 @@ const PsychologistApplication = () => {
 
     const validateAll = useCallback(() => {
         const result = appSchema.safeParse(form);
-        if (result.success) { setFieldErrors({}); return true; }
+        if (result.success) { setFieldErrors(); return true; }
         const errs = result.error.flatten().fieldErrors;
         const mapped = {};
         Object.entries(errs).forEach(([k, v]) => { if (v?.[0]) mapped[k] = v[0]; });
@@ -365,7 +393,14 @@ const PsychologistApplication = () => {
         setCertificateDoc(file);
     };
 
-    const toggleSpec = (id) => setSelectedSpecs((prev) => prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]);
+    const toggleSpec = (id) => {
+        setSelectedSpecs((prev) => prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]);
+        setFileErrors((prev) => {
+            const next = { ...prev };
+            delete next.specializations;
+            return next;
+        });
+    };
 
 
     const submitMutation = useMutation({
@@ -427,13 +462,7 @@ const PsychologistApplication = () => {
     };
 
     const submitting = submitMutation.isPending;
-    const serverError = submitMutation.error
-        ? (() => {
-            const d = submitMutation.error?.response?.data;
-            if (typeof d === 'object') return Object.entries(d).map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : v}`).join(' | ');
-            return 'Failed to submit. Please check your details and try again.';
-        })()
-        : null;
+    const serverError = submitMutation.error ? formatSubmitError(submitMutation.error) : null;
 
     return (
         <div className="min-h-screen bg-[#eef0f5]">

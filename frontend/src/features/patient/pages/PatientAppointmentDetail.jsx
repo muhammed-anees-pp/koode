@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, Navigate, useParams } from "react-router-dom";
+import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { cancelPatientBooking, getMyBookings } from "../../../api/patient.api";
 import PatientNavbar from "../../../components/patient/Navbar/PatientNavbar";
@@ -47,6 +47,7 @@ function CancelModal({ booking, note, onChange, onClose, onSubmit, isPending, er
 
 export default function PatientAppointmentDetail() {
   const { bookingId } = useParams();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const role = useAuthStore((s) => s.role);
@@ -55,7 +56,6 @@ export default function PatientAppointmentDetail() {
   const [showCancel, setShowCancel] = useState(false);
   usePatientSessionGuard();
 
-  // Fetch all bookings and find the one matching bookingId
   const bookingsQuery = useQuery({
     queryKey: ["patient-appointments"],
     queryFn: getMyBookings,
@@ -142,7 +142,7 @@ export default function PatientAppointmentDetail() {
 
       <main className="flex-1 px-6 pt-[7rem] pb-24">
         <div className="mx-auto max-w-[1100px]">
-          {/* Breadcrumb */}
+          
           <div className="mb-5 flex items-center gap-2 text-sm text-slate-500">
             <Link to="/patient/appointments" className="flex items-center gap-1 hover:text-patient-primary transition font-medium">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -154,7 +154,7 @@ export default function PatientAppointmentDetail() {
             <span className="text-slate-700 font-medium">Appointment Details</span>
           </div>
 
-          {/* Page header */}
+          
           <div className="flex items-center justify-between mb-6">
             <h1 className="text-3xl font-bold text-slate-900">Appointment Details</h1>
             <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${statusColors[booking.status] || statusColors.PENDING}`}>
@@ -164,9 +164,9 @@ export default function PatientAppointmentDetail() {
           </div>
 
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_340px]">
-            {/* Left column */}
+            
             <div className="space-y-5">
-              {/* Therapist Card */}
+              
               <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                 <div className="flex items-center gap-4">
                   <div className="relative">
@@ -205,7 +205,7 @@ export default function PatientAppointmentDetail() {
                 </div>
               </div>
 
-              {/* Appointment Summary */}
+              
               <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                 <div className="flex items-center gap-2 mb-5">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1ABEAA" strokeWidth="2">
@@ -256,7 +256,7 @@ export default function PatientAppointmentDetail() {
                 </div>
               </div>
 
-              {/* Consultation Support */}
+              
               <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                 <div className="flex items-start gap-4">
                   <div className="w-10 h-10 rounded-full bg-patient-light flex items-center justify-center flex-shrink-0">
@@ -274,11 +274,11 @@ export default function PatientAppointmentDetail() {
               </div>
             </div>
 
-            {/* Right column */}
+            
             <div className="space-y-5">
-              {/* Join Consultation Card */}
+              
               <div className="rounded-2xl bg-patient-primary p-6 text-white shadow-patient-lg relative overflow-hidden">
-                {/* Decorative circle */}
+                
                 <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-white/10" />
                 <div className="absolute -bottom-4 -left-4 w-16 h-16 rounded-full bg-white/10" />
 
@@ -315,7 +315,7 @@ export default function PatientAppointmentDetail() {
                 </div>
               </div>
 
-              {/* Message Therapist */}
+              
               <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                 <div className="flex items-center gap-2 mb-2">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2">
@@ -328,6 +328,7 @@ export default function PatientAppointmentDetail() {
                 </p>
                 <button
                   type="button"
+                  onClick={() => navigate(`/patient/messages?appointment=${booking.id}`)}
                   className="w-full rounded-xl border border-slate-200 py-3 text-sm font-semibold text-slate-700 hover:border-patient-primary hover:text-patient-primary transition"
                 >
                   Open Chat

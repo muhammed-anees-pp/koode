@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import PsychologistNavbar from "../../../components/psychologist/Navbar/PsychologistNavbar";
 import PsychologistSidebar from "../../../components/psychologist/Sidebar/PsychologistSidebar";
 import {
@@ -301,6 +302,7 @@ function RescheduleBookingModal({
 
 export default function PsychologistAppointments() {
   usePsychologistSessionGuard();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const dateInputRef = useRef(null);
   const [activeFilter, setActiveFilter] = useState("Upcoming");
@@ -450,7 +452,7 @@ export default function PsychologistAppointments() {
 
         <main className="min-w-0 flex-1 px-6 py-8">
           <div className="mx-auto max-w-6xl">
-                        {/* Page heading */}
+                        
             <div className="mb-8">
               <h1 className="text-2xl font-bold text-slate-900">Appointments</h1>
               <p className="mt-1 text-sm text-slate-500">Review and manage your patient sessions.</p>
@@ -458,7 +460,7 @@ export default function PsychologistAppointments() {
             </div>
 
                         <section className="mt-0">
-              {/* Status tabs */}
+              
               <div className="mb-5 flex flex-wrap gap-3">
                 {FILTER_OPTIONS.map((option) => {
                   const active = option === activeFilter;
@@ -484,9 +486,7 @@ export default function PsychologistAppointments() {
                 })}
               </div>
 
-              {/* Search & date filter row */}
               <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Search */}
                 <div className="relative">
                   <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
@@ -500,7 +500,6 @@ export default function PsychologistAppointments() {
                   />
                 </div>
 
-                {/* Date filter */}
                 <div className="relative">
                   <button
                     type="button"
@@ -591,6 +590,15 @@ export default function PsychologistAppointments() {
                           <div className="mt-4 flex flex-wrap gap-3">
                             <button
                               type="button"
+                              onClick={() =>
+                                navigate(`/psychologist/messages?appointment=${booking.id}`)
+                              }
+                              className="rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100"
+                            >
+                              Open chat
+                            </button>
+                            <button
+                              type="button"
                               onClick={() => openRescheduleModal(booking)}
                               className="rounded-full border border-sky-200 bg-sky-50 px-4 py-2 text-sm font-semibold text-sky-700 transition hover:bg-sky-100"
                             >
@@ -624,7 +632,6 @@ export default function PsychologistAppointments() {
                 ))}
               </div>
 
-              {/* Pagination */}
               {!bookingsQuery.isLoading && !bookingsQuery.isError && totalPages > 1 && (
                 <div className="mt-6 flex items-center justify-between gap-4">
                   <p className="text-sm text-slate-500">
@@ -637,7 +644,6 @@ export default function PsychologistAppointments() {
                   </p>
 
                   <div className="flex items-center gap-1.5">
-                    {/* Prev */}
                     <button
                       type="button"
                       disabled={currentPage === 1}
@@ -649,7 +655,6 @@ export default function PsychologistAppointments() {
                       </svg>
                     </button>
 
-                    {/* Page numbers */}
                     {Array.from({ length: totalPages }, (_, i) => i + 1)
                       .filter((p) => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1)
                       .reduce((acc, p, idx, arr) => {
@@ -676,7 +681,7 @@ export default function PsychologistAppointments() {
                         )
                       )}
 
-                    {/* Next */}
+                    
                     <button
                       type="button"
                       disabled={currentPage === totalPages}
@@ -734,6 +739,7 @@ export default function PsychologistAppointments() {
         isPending={rescheduleMutation.isPending}
         error={rescheduleError}
       />
+
     </div>
   );
 }

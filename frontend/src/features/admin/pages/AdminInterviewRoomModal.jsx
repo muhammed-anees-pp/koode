@@ -8,19 +8,13 @@ import {
     getChatMessages,
     sendChatMessage,
 } from "../../../api/admin.api";
-
-const BASE_URL = "http://localhost:8000";
-const mediaUrl = (path) => {
-    if (!path) return null;
-    if (path.startsWith("http")) return path;
-    return `${BASE_URL}${path.startsWith("/") ? "" : "/"}${path}`;
-};
+import { resolveMediaUrl } from "../../../utils/url";
 
 function AppAvatar({ name, photo, size = 44 }) {
     if (photo) {
         return (
             <img
-                src={mediaUrl(photo)} alt={name}
+                src={resolveMediaUrl(photo)} alt={name}
                 className="rounded-full object-cover flex-shrink-0"
                 style={{ width: size, height: size }}
                 onError={(e) => { e.target.style.display = "none"; }}
@@ -261,7 +255,7 @@ export default function AdminInterviewRoomModal({ interviewId, applicantName, sc
             setPreviewStream(null);
         };
     }, [phase]);
-    // Attach preview stream to video element
+    
     useEffect(() => {
         if (previewStream && previewVideoRef.current) {
             previewVideoRef.current.srcObject = previewStream;
@@ -397,7 +391,7 @@ export default function AdminInterviewRoomModal({ interviewId, applicantName, sc
                     lastMsgRef.current = msgs[msgs.length - 1].sent_at;
                     setChatMessages((prev) => [...prev, ...msgs]);
                 }
-            } catch { }
+            } catch (error) {}
         }, 2500);
     }, [interviewId]);
 
@@ -431,7 +425,7 @@ export default function AdminInterviewRoomModal({ interviewId, applicantName, sc
             tempStream.getTracks().forEach((t) => t.stop());
 
             if (engineRef.current) {
-                try { engineRef.current.destroyEngine(); } catch (_) { }
+                try { engineRef.current.destroyEngine(); } catch (_) {}
                 engineRef.current = null;
             }
 
@@ -493,7 +487,7 @@ export default function AdminInterviewRoomModal({ interviewId, applicantName, sc
         } catch (err) {
             console.error("Admin join room error:", err);
             if (engineRef.current) {
-                try { engineRef.current.destroyEngine(); } catch (_) { }
+                try { engineRef.current.destroyEngine(); } catch (_) {}
                 engineRef.current = null;
             }
             setError("Failed to connect: " + (err?.message || "Unknown error") + ". Please try again.");
@@ -515,8 +509,8 @@ export default function AdminInterviewRoomModal({ interviewId, applicantName, sc
                 if (localStreamIdRef.current) await engine.stopPublishingStream(localStreamIdRef.current);
                 if (localStream) engine.destroyStream(localStream);
                 await engine.logoutRoom();
-            } catch (_) { }
-            try { engine.destroyEngine(); } catch (_) { }
+            } catch (_) {}
+            try { engine.destroyEngine(); } catch (_) {}
             engineRef.current = null;
         }
         setJoined(false);
@@ -546,8 +540,8 @@ export default function AdminInterviewRoomModal({ interviewId, applicantName, sc
                     if (localStreamIdRef.current) await engine.stopPublishingStream(localStreamIdRef.current);
                     if (localStream) engine.destroyStream(localStream);
                     await engine.logoutRoom();
-                } catch (_) { }
-                try { engine.destroyEngine(); } catch (_) { }
+                } catch (_) {}
+                try { engine.destroyEngine(); } catch (_) {}
                 engineRef.current = null;
             }
             stopChatPoll();
@@ -580,7 +574,7 @@ export default function AdminInterviewRoomModal({ interviewId, applicantName, sc
         } catch (e) { console.error("Chat send error:", e); }
     };
 
-    // Backdrop click handler
+    
     const handleBackdropClick = () => {
         if (phase === "in_call") return; 
         onClose();
