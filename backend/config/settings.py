@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     "interviews",
     "appointments",
     "notifications",
+    "chat",
 ]
 
 # -------------------------------------------------
@@ -227,6 +228,11 @@ LOGGING = {
             "propagate": False,
         },
         "notifications": {
+            "handlers": ["console", "file"],
+            "level": os.getenv("APP_LOG_LEVEL", "INFO"),
+            "propagate": False,
+        },
+        "chat": {
             "handlers": ["console", "file"],
             "level": os.getenv("APP_LOG_LEVEL", "INFO"),
             "propagate": False,
