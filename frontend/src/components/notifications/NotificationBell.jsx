@@ -62,7 +62,7 @@ const NotificationBell = ({ variant = "patient" }) => {
   const styles = STYLES[variant];
   const ref = useRef(null);
   const [isOpen, setIsOpen] = useState(false);
-  const [activeFilter, setActiveFilter] = useState("All");
+  const [activeFilter, setActiveFilter] = useState("Unread");
   const items = useNotificationsStore((state) => state.items);
   const unreadCount = useNotificationsStore((state) => state.unreadCount);
   const isConnected = useNotificationsStore((state) => state.isConnected);

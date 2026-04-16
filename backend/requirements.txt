@@ -15,6 +15,7 @@ click-plugins==1.1.1.2
 click-repl==0.3.0
 cron_descriptor==2.0.6
 cryptography==46.0.5
+daphne>=4.1,<5
 Django==5.2.11
 django-celery-beat==2.8.1
 django-cors-headers==4.9.0

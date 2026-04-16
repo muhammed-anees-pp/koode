@@ -14,6 +14,11 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from .serializers import (PsychologistApplicationSerializer, ApplicationSubmitSerializer, AdminUpdateApplicationSerializer, AdminScheduleInterviewSerializer,)
 from .services.application_service import ApplicationService
+from .services.notification_service import (
+    notify_admins_application_submitted,
+    notify_applicant_interview_scheduled,
+    notify_applicant_status_changed,
+)
 from .repositories.application_repository import ApplicationRepository
 from .models import PsychologistApplication
 
@@ -54,6 +59,7 @@ class SubmitApplicationView(APIView):
         serializer.is_valid(raise_exception=True)
 
         application = ApplicationService.submit_application(request.user, serializer.validated_data)
+        notify_admins_application_submitted(application)
         logger.info("Application %s submitted by user %s", application.id, request.user.id)
 
         return Response(
@@ -190,6 +196,7 @@ class AdminUpdateApplicationView(APIView):
     @log_unexpected_errors("updating admin application")
     def patch(self, request, pk):
         application = get_object_or_404(PsychologistApplication, pk=pk)
+        old_status = application.status
         serializer = AdminUpdateApplicationSerializer(application, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
 
@@ -203,6 +210,7 @@ class AdminUpdateApplicationView(APIView):
                 user.save(update_fields=["role"])
                 PsychologistProfileService.create_from_application(updated, user)
 
+        notify_applicant_status_changed(updated, old_status, new_status)
         logger.info("Application %s updated by admin user %s", updated.id, request.user.id)
         return Response(PsychologistApplicationSerializer(updated, context={"request": request}).data)
 
@@ -233,5 +241,6 @@ class AdminScheduleInterviewView(APIView):
                 scheduled_at=interview_date,
             )
 
+        notify_applicant_interview_scheduled(application)
         logger.info("Interview scheduled for application %s by admin user %s", application.id, request.user.id)
         return Response(PsychologistApplicationSerializer(application, context={"request": request}).data)

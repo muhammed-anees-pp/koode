@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchNotifications } from "../api/notifications.api";
 import { useAuthStore } from "../store/auth.store";
@@ -22,29 +22,53 @@ const buildNotificationWebSocketUrl = (token) => {
   return `${getNotificationSocketBaseUrl()}/ws/notifications/?token=${encodeURIComponent(token)}`;
 };
 
+const getUserIdFromToken = (token) => {
+  if (!token) {
+    return null;
+  }
+
+  try {
+    const base64Payload = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+    const payload = JSON.parse(atob(base64Payload));
+    return payload.user_id || null;
+  } catch {
+    return null;
+  }
+};
+
 const NotificationInitializer = () => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const accessToken = useAuthStore((state) => state.accessToken);
-  const mergeNotifications = useNotificationsStore((state) => state.mergeNotifications);
+  const user = useAuthStore((state) => state.user);
+  const currentUserId = user?.id || getUserIdFromToken(accessToken);
+  const setNotifications = useNotificationsStore((state) => state.setNotifications);
   const prependNotification = useNotificationsStore((state) => state.prependNotification);
   const setConnected = useNotificationsStore((state) => state.setConnected);
   const resetNotifications = useNotificationsStore((state) => state.reset);
+  const previousUserIdRef = useRef(currentUserId);
 
   const notificationsQuery = useQuery({
-    queryKey: ["notifications"],
+    queryKey: ["notifications", currentUserId],
     queryFn: fetchNotifications,
-    enabled: isAuthenticated,
+    enabled: isAuthenticated && Boolean(accessToken),
     staleTime: 60 * 1000,
   });
 
   useEffect(() => {
+    if (previousUserIdRef.current !== currentUserId) {
+      resetNotifications();
+      previousUserIdRef.current = currentUserId;
+    }
+  }, [currentUserId, resetNotifications]);
+
+  useEffect(() => {
     if (notificationsQuery.data) {
-      mergeNotifications(
+      setNotifications(
         notificationsQuery.data.results ?? [],
         notificationsQuery.data.unread_count ?? 0
       );
     }
-  }, [mergeNotifications, notificationsQuery.data]);
+  }, [setNotifications, notificationsQuery.data]);
 
   useEffect(() => {
     if (!isAuthenticated || !accessToken) {
@@ -69,6 +93,13 @@ const NotificationInitializer = () => {
         try {
           const payload = JSON.parse(event.data);
           if (payload.type === "notification" && payload.notification) {
+            if (
+              payload.notification.recipient &&
+              currentUserId &&
+              String(payload.notification.recipient) !== String(currentUserId)
+            ) {
+              return;
+            }
             prependNotification(payload.notification);
           }
         } catch {
@@ -111,6 +142,7 @@ const NotificationInitializer = () => {
     };
   }, [
     accessToken,
+    currentUserId,
     isAuthenticated,
     prependNotification,
     resetNotifications,
