@@ -6,6 +6,7 @@ import { fetchPsychologistProfile, updatePsychologistProfile, getSpecializations
 import { useAuthStore } from "../../../store/auth.store";
 import { usePsychologistSessionGuard } from "../../../hooks/usePsychologistSessionGuard";
 import PsychologistNavbar from "../../../components/psychologist/Navbar/PsychologistNavbar";
+import { resolveMediaUrl } from "../../../utils/url";
 
 const profileSchema = z.object({
     full_name: z.string()
@@ -155,7 +156,7 @@ function AudioPlayer({ src, label = "Audio Introduction" }) {
     const [progress, setProgress] = useState(0);
     const [duration, setDuration] = useState(0);
     const [loaded, setLoaded] = useState(false);
-    const resolvedSrc = src && !src.startsWith("http") ? `http://localhost:8000${src}` : src;
+    const resolvedSrc = resolveMediaUrl(src);
     const toggle = () => { const a = audioRef.current; if (!a) return; playing ? a.pause() : a.play(); setPlaying(!playing); };
     const fmt    = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
     useEffect(() => { const a = audioRef.current; if (!a) return; const onEnd = () => setPlaying(false); a.addEventListener("ended", onEnd); return () => a.removeEventListener("ended", onEnd); }, []);
@@ -232,9 +233,9 @@ export default function PsychologistProfile() {
     const [newAudioFile,   setNewAudioFile]   = useState(null);
     const [toast,          setToast]          = useState(null);
     const [editSpecIds,    setEditSpecIds]    = useState([]);
-    const [errors,         setErrors]         = useState({});
-    const [touched,        setTouched]        = useState({});
-    const [fileErrors,     setFileErrors]     = useState({});
+    const [errors,         setErrors]         = useState();
+    const [touched,        setTouched]        = useState();
+    const [fileErrors,     setFileErrors]     = useState();
 
     const EMPTY_FORM = { full_name: "", phone_number: "", about: "", street_address: "", city: "", state: "", pincode: "", country: "", job_title: "", highest_education: "", years_of_experience: "" };
     const [form, setForm] = useState(EMPTY_FORM);
@@ -283,7 +284,7 @@ export default function PsychologistProfile() {
 
     const validateAll = () => {
         const result = profileSchema.safeParse(form);
-        if (result.success) { setErrors({}); return true; }
+        if (result.success) { setErrors(); return true; }
         const mapped = {};
         Object.entries(result.error.flatten().fieldErrors).forEach(([k, v]) => { if (v?.[0]) mapped[k] = v[0]; });
         setErrors(mapped);
@@ -310,7 +311,7 @@ export default function PsychologistProfile() {
             queryClient.setQueryData(["psychologist-profile"], data);
             updateUser({ full_name: data.user?.full_name, profile_picture: data.user?.profile_picture ?? null });
             clearPendingPhoto(); setIsEditing(false); setNewAudioFile(null);
-            setErrors({}); setTouched({}); setFileErrors({});
+            setErrors(); setTouched(); setFileErrors();
             showToast("Profile updated successfully!");
         },
         onError: (err) => {
@@ -360,7 +361,7 @@ export default function PsychologistProfile() {
             setEditSpecIds((profile.specializations || []).map((s) => s.id));
         }
         clearPendingPhoto(); setIsEditing(false); setNewAudioFile(null);
-        setErrors({}); setTouched({}); setFileErrors({});
+        setErrors(); setTouched(); setFileErrors();
     };
 
     const toggleEditSpec = (id) => {
@@ -446,8 +447,7 @@ export default function PsychologistProfile() {
     const userName    = profile?.user?.full_name || "Psychologist";
     const userEmail   = profile?.user?.email     || "";
     const rawAvatar   = profile?.user?.profile_picture || authUser?.profile_picture || null;
-    const resolveUrl  = (url) => !url ? null : (url.startsWith("http") ? url : `http://localhost:8000${url}`);
-    const userAvatar  = resolveUrl(rawAvatar);
+    const userAvatar  = resolveMediaUrl(rawAvatar);
     const avatarSrc   = pendingRemove ? null : (pendingPreview || userAvatar || null);
     const avatarInit  = userName.charAt(0).toUpperCase();
     const formatDate  = (d) => !d ? null : new Date(d).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });

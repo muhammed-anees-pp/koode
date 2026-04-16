@@ -27,17 +27,17 @@ const PsychologistHome = () => {
 
   return (
     <div className="min-h-screen bg-[#eef0f5] text-gray-900 flex flex-col">
-      {/* Top Navbar - full width */}
+      
       <PsychologistNavbar />
 
-      {/* Dashboard layout: sidebar + main content */}
+      
       <div className="flex flex-1">
-        {/* Left Sidebar */}
+        
         <PsychologistSidebar />
 
-        {/* Main scrollable content */}
+        
         <main className="min-w-0 flex-1">
-          {/* Hero */}
+          
           <section className="relative pt-20 pb-16 px-6 overflow-hidden">
             <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-psycho-primary/5 rounded-full blur-[160px] pointer-events-none" />
             <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-blue-200/30 rounded-full blur-[120px] pointer-events-none" />
@@ -66,7 +66,7 @@ const PsychologistHome = () => {
               </div>
             </div>
 
-            {/* Stats row */}
+            
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-[700px] mx-auto mt-14">
               {stats.map((s) => (
                 <div key={s.label} className="bg-white border border-gray-100 rounded-2xl p-5 text-center shadow-sm hover:shadow-md hover:border-blue-100 transition-all">
@@ -77,7 +77,7 @@ const PsychologistHome = () => {
             </div>
           </section>
 
-          {/* Features */}
+          
           <section className="py-16 px-6">
             <div className="max-w-[1000px] mx-auto">
               <div className="text-center mb-12">
@@ -97,7 +97,7 @@ const PsychologistHome = () => {
             </div>
           </section>
 
-          {/* CTA Banner */}
+          
           <section className="py-16 px-6">
             <div className="max-w-[700px] mx-auto text-center bg-white border border-blue-100 rounded-3xl px-10 py-14 shadow-sm">
               <h2 className="text-3xl font-bold text-gray-900 mb-3">Ready to transform your practice?</h2>

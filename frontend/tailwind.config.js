@@ -94,6 +94,7 @@ export default {
         'apl-dd-fade': 'aplDdFade 0.15s ease',
         'pdm-fade-in': 'pdmFadeIn 0.18s ease',
         'pdm-slide-up': 'pdmSlideUp 0.22s cubic-bezier(0.22, 1, 0.36, 1)',
+        'typing-dot': 'typingDot 1.2s ease-in-out infinite',
       },
       keyframes: {
         fadeIn: {
@@ -157,6 +158,10 @@ export default {
         pdmSlideUp: {
           'from': { opacity: '0', transform: 'translateY(20px) scale(0.97)' },
           'to': { opacity: '1', transform: 'translateY(0) scale(1)' },
+        },
+        typingDot: {
+          '0%, 60%, 100%': { transform: 'translateY(0)', opacity: '0.4' },
+          '30%': { transform: 'translateY(-4px)', opacity: '1' },
         },
       },
     },

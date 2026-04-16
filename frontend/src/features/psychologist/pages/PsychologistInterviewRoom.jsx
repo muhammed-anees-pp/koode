@@ -139,7 +139,7 @@ export default function PsychologistInterviewRoom() {
                     lastMsgRef.current = msgs[msgs.length - 1].sent_at;
                     setChatMessages((prev) => [...prev, ...msgs]);
                 }
-            } catch { }
+            } catch (error) {}
         }, 2500);
     }, []);
 
@@ -192,7 +192,7 @@ export default function PsychologistInterviewRoom() {
         await new Promise((r) => setTimeout(r, 600));
 
         if (engineRef.current) {
-            try { engineRef.current.destroyEngine(); } catch (_) { }
+            try { engineRef.current.destroyEngine(); } catch (_) {}
             engineRef.current = null;
         }
 
@@ -239,7 +239,7 @@ export default function PsychologistInterviewRoom() {
                     try {
                         const micStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
                         micTrack = micStream.getAudioTracks()[0];
-                    } catch (_) { }
+                    } catch (_) {}
 
                     const fake = createFakeStream(userName);
                     canvasCleanupRef.current = fake.cleanup;
@@ -284,8 +284,8 @@ export default function PsychologistInterviewRoom() {
                 if (localStreamIdRef.current) await engine.stopPublishingStream(localStreamIdRef.current);
                 if (localStream) engine.destroyStream(localStream);
                 await engine.logoutRoom();
-            } catch (_) { }
-            try { engine.destroyEngine(); } catch (_) { }
+            } catch (_) {}
+            try { engine.destroyEngine(); } catch (_) {}
             engineRef.current = null;
         }
         navigate("/psychologist/approval-waiting");
@@ -336,7 +336,7 @@ export default function PsychologistInterviewRoom() {
 
     return (
         <div className="w-screen h-screen flex bg-black overflow-hidden">
-            {/* Main video area */}
+            
             <div className="relative flex-1 bg-gray-950">
                 {remoteStreamID ? (
     <video
@@ -357,7 +357,7 @@ export default function PsychologistInterviewRoom() {
                     </div>
                 )}
 
-                {/* Header */}
+                
                 <div className="absolute top-0 left-0 right-0 h-16 bg-gradient-to-b from-black/60 to-transparent flex items-center px-5 gap-3 pointer-events-none">
                     <div className="w-7 h-7 rounded-lg bg-[#1188d8]/30 border border-[#1188d8]/30 flex items-center justify-center">
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1188d8" strokeWidth="2">
@@ -381,13 +381,13 @@ export default function PsychologistInterviewRoom() {
                     </div>
                 )}
 
-                {/* PiP self-view */}
+                
                 <div className="absolute bottom-20 right-4 w-44 rounded-xl overflow-hidden shadow-2xl border border-white/10 bg-gray-900">
                     <video ref={localVideoRef} autoPlay muted playsInline className="w-full h-auto object-cover" />
                     <div className="absolute bottom-1.5 left-2 bg-black/60 text-white text-[9px] font-medium px-1.5 py-0.5 rounded-full">You</div>
                 </div>
 
-                {/* Media warning */}
+                
                 {mediaWarning && (
                     <div className="absolute top-20 left-1/2 -translate-x-1/2 z-10 bg-amber-600/90 backdrop-blur-sm rounded-xl px-5 py-2.5 flex items-center gap-3 max-w-sm">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" className="flex-shrink-0">
@@ -398,7 +398,7 @@ export default function PsychologistInterviewRoom() {
                     </div>
                 )}
 
-                {/* Controls */}
+                
                 <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-black/80 to-transparent flex items-center justify-center gap-3 px-6">
                     <CtrlBtn onClick={toggleMic} active={micOn} title={micOn ? "Mute" : "Unmute"}>
                         {micOn
@@ -425,7 +425,7 @@ export default function PsychologistInterviewRoom() {
                 </div>
             </div>
 
-            {/* Chat panel */}
+            
             {showChat && (
                 <div className="w-80 flex-shrink-0">
                     <ChatPanel messages={chatMessages} onSend={handleSendChat} inputRef={chatInputRef} />

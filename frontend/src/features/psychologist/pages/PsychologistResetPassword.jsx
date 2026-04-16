@@ -37,7 +37,7 @@ const resetPasswordSchema = z.object({
   confirmPassword: z.string().min(1, "Please confirm your password"),
 }).refine((d) => d.newPassword === d.confirmPassword, { message: "Passwords do not match", path: ["confirmPassword"] });
 
-// Shared light-theme tokens
+
 const pageCls = "min-h-screen bg-[#eef0f5] flex flex-col items-center justify-center p-5";
 const cardCls = "bg-white rounded-2xl p-8 shadow-[0_4px_24px_rgba(0,0,0,0.10)] animate-fade-in";
 const labelCls = "block text-sm font-medium text-gray-700 mb-1.5";
@@ -125,7 +125,7 @@ const PsychologistResetPassword = () => {
     { text: "Passwords match", met: newPassword && confirmPassword && newPassword === confirmPassword },
   ];
 
-  // Validating
+  
   if (isValidating) {
     return (
       <div className={pageCls}>
@@ -140,7 +140,7 @@ const PsychologistResetPassword = () => {
     );
   }
 
-  // Invalid token
+  
   if (!isTokenValid) {
     return (
       <div className={pageCls}>
@@ -164,7 +164,7 @@ const PsychologistResetPassword = () => {
     );
   }
 
-  // Success
+  
   if (mutation.isSuccess) {
     return (
       <div className={pageCls}>
@@ -186,7 +186,7 @@ const PsychologistResetPassword = () => {
     );
   }
 
-  // Form
+  
   return (
     <div className={pageCls}>
       <div className="w-full max-w-[420px]">

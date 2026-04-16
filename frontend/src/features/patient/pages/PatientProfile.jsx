@@ -12,7 +12,7 @@ const PREVIEW_SIZE = 220;
 
 const DEFAULT_TOPICS = ["Anxiety", "Work Stress", "Depression", "Relationship Issues", "Sleep Disorders", "Trauma", "Eating Disorders"];
 
-// Shared
+
 const inputCls = "w-full px-4 py-3 text-sm font-['DM_Sans',sans-serif] text-ui-900 bg-ui-50 border border-ui-200 rounded-[10px] outline-none transition-all duration-200 placeholder:text-ui-400 focus:border-patient-primary focus:bg-white focus:shadow-[0_0_0_3px_rgba(26,190,170,0.1)] disabled:opacity-60 disabled:cursor-not-allowed";
 const selectCls = "w-full px-4 py-3 text-sm font-['DM_Sans',sans-serif] text-ui-900 bg-ui-50 border border-ui-200 rounded-[10px] outline-none transition-all duration-200 focus:border-patient-primary focus:bg-white focus:shadow-[0_0_0_3px_rgba(26,190,170,0.1)] cursor-pointer appearance-none";
 const labelCls = "block text-xs font-semibold text-ui-500 uppercase tracking-[0.06em] mb-1.5";
@@ -75,7 +75,7 @@ function PhotoCropModal({ file, onCrop, onCancel }) {
     return (
         <div className="fixed inset-0 bg-[rgba(0,0,0,0.6)] backdrop-blur-[3px] z-[200] flex items-center justify-center p-6 animate-[pdmFadeIn_0.18s_ease]" onClick={onCancel}>
             <div className="bg-white rounded-[20px] shadow-[0_24px_60px_rgba(0,0,0,0.2)] w-full max-w-[400px] overflow-hidden animate-[pdmSlideUp_0.22s_cubic-bezier(0.22,1,0.36,1)]" onClick={(e) => e.stopPropagation()}>
-                {/* Header */}
+                
                 <div className="flex items-center justify-between px-6 py-4 border-b border-ui-100">
                     <h3 className="text-base font-bold text-ui-900">Crop Photo</h3>
                     <button className="w-8 h-8 bg-ui-100 rounded-full flex items-center justify-center text-ui-500 border-none cursor-pointer transition-all duration-200 hover:bg-ui-200 hover:text-ui-900" onClick={onCancel} type="button">
@@ -83,7 +83,7 @@ function PhotoCropModal({ file, onCrop, onCancel }) {
                     </button>
                 </div>
 
-                {/* Crop area */}
+                
                 <div className="flex flex-col items-center px-6 py-6 gap-4">
                     <div
                         className="relative w-[220px] h-[220px] rounded-full overflow-hidden border-[3px] border-patient-primary shadow-patient-md cursor-grab select-none"
@@ -100,7 +100,7 @@ function PhotoCropModal({ file, onCrop, onCancel }) {
                     </div>
                     <p className="text-xs text-ui-400 text-center">Drag to reposition · Scroll slider to zoom</p>
 
-                    {/* Zoom slider */}
+                    
                     <div className="flex items-center gap-3 w-full">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-ui-400 flex-shrink-0"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /><line x1="11" y1="8" x2="11" y2="14" /><line x1="8" y1="11" x2="14" y2="11" /></svg>
                         <input type="range" min="1" max="3" step="0.02" value={zoom} onChange={(e) => handleZoomChange(parseFloat(e.target.value))} className="flex-1 accent-patient h-1.5 cursor-pointer" />
@@ -108,7 +108,7 @@ function PhotoCropModal({ file, onCrop, onCancel }) {
                     </div>
                 </div>
 
-                {/* Actions */}
+                
                 <div className="flex justify-end gap-3 px-6 py-4 border-t border-ui-100">
                     <button className={cancelBtnCls} onClick={onCancel} type="button">Cancel</button>
                     <button className={saveBtnCls} onClick={handleApply} type="button">✓ Use Photo</button>
@@ -229,7 +229,7 @@ export default function PatientProfile() {
             <PatientNavbar />
             <main className="flex-1 flex flex-col pt-[66px]">
                 <div className="max-w-[860px] mx-auto w-full px-6 py-10 flex flex-col gap-6">
-                    {/* Heading row */}
+                    
                     <div className="flex items-start justify-between gap-4">
                         <div>
                             <h1 className="font-outfit text-[1.6rem] font-extrabold text-ui-900 tracking-tight">Profile Settings</h1>
@@ -248,10 +248,10 @@ export default function PatientProfile() {
                         )}
                     </div>
 
-                    {/* Profile Picture Card */}
+                    
                     <div className={cardCls}>
                         <div className="flex items-center gap-6">
-                            {/* Avatar */}
+                            
                             <div className="relative flex-shrink-0">
                                 <div className="w-[88px] h-[88px] rounded-full overflow-hidden shadow-patient-md relative">
                                     <div className="absolute inset-0 bg-gradient-to-br from-patient-primary to-patient-dark text-white text-2xl font-bold flex items-center justify-center">
@@ -273,7 +273,7 @@ export default function PatientProfile() {
                                 )}
                             </div>
 
-                            {/* Info / edit controls */}
+                            
                             <div className="flex-1 min-w-0">
                                 {isEditing ? (
                                     <>
@@ -303,7 +303,7 @@ export default function PatientProfile() {
                         </div>
                     </div>
 
-                    {/* Personal Details */}
+                    
                     <div className={cardCls}>
                         <SectionHeader icon={<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>} label="Personal Details" />
                         {isEditing ? (
@@ -337,7 +337,7 @@ export default function PatientProfile() {
                         )}
                     </div>
 
-                    {/* Focus Areas */}
+                    
                     <div className={cardCls}>
                         <SectionHeader icon={<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" /></svg>} label="Focus Areas" />
                         <p className="text-sm text-ui-500 mb-4">Select the topics you'd like to address in your sessions.</p>
@@ -359,7 +359,7 @@ export default function PatientProfile() {
                         </div>
                     </div>
 
-                    {/* Emergency Contact */}
+                    
                     <div className={cardCls}>
                         <SectionHeader icon={<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91A16 16 0 0 0 13 14.82l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21 16.92z" /></svg>} label="Emergency Contact" iconBg="bg-[rgba(239,68,68,0.08)] text-red-500" />
                         {isEditing ? (
@@ -375,7 +375,7 @@ export default function PatientProfile() {
                         )}
                     </div>
 
-                    {/* Action Bar */}
+                    
                     {isEditing && (
                         <form onSubmit={handleSave}>
                             <div className="flex items-center justify-between gap-4 bg-white border border-ui-200 rounded-[14px] px-6 py-4 shadow-[0_2px_12px_rgba(0,0,0,0.04)]">

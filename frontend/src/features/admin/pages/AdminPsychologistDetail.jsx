@@ -4,14 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { fetchAdminPsychologistDetail, togglePsychologistSuspension } from "../../../api/admin.api";
 import Sidebar from "../../../components/admin/Sidebar/AdminSidebar";
 import Navbar from "../../../components/admin/Navbar/AdminNavbar";
-
-const BASE_URL = "http://localhost:8000";
-
-const mediaUrl = (path) => {
-    if (!path) return null;
-    if (path.startsWith("http")) return path;
-    return `${BASE_URL}${path.startsWith("/") ? "" : "/"}${path}`;
-};
+import { resolveMediaUrl } from "../../../utils/url";
 
 function InfoRow({ label, value }) {
     return (
@@ -110,7 +103,7 @@ function ProfileAvatar({ name, photo, size = 96 }) {
     if (photo) {
         return (
             <img
-                src={mediaUrl(photo)} alt={name}
+                src={resolveMediaUrl(photo)} alt={name}
                 className="rounded-full object-cover border-4 border-slate-700/60"
                 style={{ width: size, height: size }}
                 onError={(e) => { e.target.style.display = "none"; }}
@@ -238,7 +231,7 @@ export default function AdminPsychologistDetail() {
         : { label: "Suspended", cls: "bg-red-500/15 text-red-400 border border-red-500/25" };
 
     const specs = profile.specializations || [];
-    const audioUrl = profile.audio_intro ? mediaUrl(profile.audio_intro) : null;
+    const audioUrl = profile.audio_intro ? resolveMediaUrl(profile.audio_intro) : null;
     
     const commissionRate = 0.10;
     const fee = parseFloat(profile.consultation_fee) || 0;

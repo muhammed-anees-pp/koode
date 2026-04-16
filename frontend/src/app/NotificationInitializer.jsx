@@ -102,8 +102,8 @@ const NotificationInitializer = () => {
             }
             prependNotification(payload.notification);
           }
-        } catch {
-          // Ignore malformed websocket messages.
+        } catch (error) {
+          console.error("Error parsing notification payload:", error);
         }
       };
 

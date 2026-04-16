@@ -40,7 +40,7 @@ const resetPasswordSchema = z.object({
   path: ["confirmPassword"],
 });
 
-// Shared style tokens
+
 const cardCls = "bg-[rgba(13,17,30,0.92)] border border-slate-800/60 rounded-2xl p-8 w-full max-w-[440px] shadow-[0_24px_80px_rgba(0,0,0,0.5)] animate-fade-in backdrop-blur-sm";
 const labelCls = "block text-xs font-semibold text-slate-500 uppercase tracking-[0.07em] mb-2";
 const inputCls = (hasErr) => `w-full bg-[#0d1117] border ${hasErr ? "border-red-500" : "border-slate-700/60"} text-slate-100 text-[0.938rem] rounded-xl pl-11 pr-11 py-[14px] outline-none transition-colors duration-200 placeholder:text-slate-600 focus:border-admin-primary focus:shadow-[0_0_0_3px_rgba(99,102,241,0.15)] disabled:opacity-50 disabled:cursor-not-allowed`;
