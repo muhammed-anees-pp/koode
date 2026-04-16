@@ -1,6 +1,7 @@
 import logging
 from accounts.models import User
 from notifications.services import create_notification, notify_many
+from notifications.time_formatting import format_india_datetime
 
 
 logger = logging.getLogger(__name__)
@@ -48,7 +49,7 @@ def notify_applicant_status_changed(application, old_status, new_status):
 
 
 def notify_applicant_interview_scheduled(application):
-    message = f"Your interview has been scheduled for {application.interview_date}."
+    message = f"Your interview has been scheduled for {format_india_datetime(application.interview_date)}."
 
     try:
         create_notification(application.user, message)

@@ -8,8 +8,10 @@ import { useNotificationsStore } from "../../store/notifications.store";
 
 const formatNotificationTime = (value) =>
   new Intl.DateTimeFormat("en-IN", {
+    timeZone: "Asia/Kolkata",
     dateStyle: "medium",
     timeStyle: "short",
+    hour12: true,
   }).format(new Date(value));
 
 const STYLES = {

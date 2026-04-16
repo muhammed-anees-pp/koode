@@ -13,6 +13,7 @@ from patients.models import PatientProfile
 from patients.permissions import IsPatient
 from psychologists.permissions import IsPsychologist
 from notifications.services import create_notification
+from notifications.time_formatting import format_india_slot
 from .serializers import (
     AvailabilitySerializer, BookingSerializer, CancelBookingSerializer, CreateAvailabilitySerializer, CreateBookingSerializer, RescheduleBookingSerializer, is_future_slot,
 )
@@ -47,6 +48,10 @@ def send_booking_notification(recipient, message, booking_id):
             booking_id,
             getattr(recipient, "id", None),
         )
+
+
+def booking_slot_text(booking):
+    return format_india_slot(booking.date, booking.start_time)
 
 
 
@@ -141,12 +146,12 @@ class CreateBookingView(APIView):
 
         send_booking_notification(
             booking.patient.user,
-            f"Your appointment with {booking.psychologist.user.full_name} is confirmed for {booking.date} at {booking.start_time.strftime('%H:%M')}.",
+            f"Your appointment with {booking.psychologist.user.full_name} is confirmed for {booking_slot_text(booking)}.",
             booking.id,
         )
         send_booking_notification(
             booking.psychologist.user,
-            f"New appointment booked by {booking.patient.user.full_name} for {booking.date} at {booking.start_time.strftime('%H:%M')}.",
+            f"New appointment booked by {booking.patient.user.full_name} for {booking_slot_text(booking)}.",
             booking.id,
         )
 
@@ -246,23 +251,23 @@ class CancelBookingView(BookingActionBaseView):
         if request.user.role == "PATIENT":
             send_booking_notification(
                 booking.patient.user,
-                f"You cancelled your appointment with {booking.psychologist.user.full_name} scheduled for {booking.date} at {booking.start_time.strftime('%H:%M')}.",
+                f"You cancelled your appointment with {booking.psychologist.user.full_name} scheduled for {booking_slot_text(booking)}.",
                 booking.id,
             )
             send_booking_notification(
                 booking.psychologist.user,
-                f"{booking.patient.user.full_name} cancelled the appointment scheduled for {booking.date} at {booking.start_time.strftime('%H:%M')}.",
+                f"{booking.patient.user.full_name} cancelled the appointment scheduled for {booking_slot_text(booking)}.",
                 booking.id,
             )
         else:
             send_booking_notification(
                 booking.psychologist.user,
-                f"You cancelled the appointment with {booking.patient.user.full_name} scheduled for {booking.date} at {booking.start_time.strftime('%H:%M')}.",
+                f"You cancelled the appointment with {booking.patient.user.full_name} scheduled for {booking_slot_text(booking)}.",
                 booking.id,
             )
             send_booking_notification(
                 booking.patient.user,
-                f"{booking.psychologist.user.full_name} cancelled your appointment scheduled for {booking.date} at {booking.start_time.strftime('%H:%M')}.",
+                f"{booking.psychologist.user.full_name} cancelled your appointment scheduled for {booking_slot_text(booking)}.",
                 booking.id,
             )
 
@@ -296,12 +301,12 @@ class RescheduleBookingView(BookingActionBaseView):
 
         send_booking_notification(
             booking.psychologist.user,
-            f"Appointment with {booking.patient.user.full_name} was rescheduled to {booking.date} at {booking.start_time.strftime('%H:%M')}.",
+            f"Appointment with {booking.patient.user.full_name} was rescheduled to {booking_slot_text(booking)}.",
             booking.id,
         )
         send_booking_notification(
             booking.patient.user,
-            f"Your appointment with {booking.psychologist.user.full_name} was rescheduled to {booking.date} at {booking.start_time.strftime('%H:%M')}.",
+            f"Your appointment with {booking.psychologist.user.full_name} was rescheduled to {booking_slot_text(booking)}.",
             booking.id,
         )
 
