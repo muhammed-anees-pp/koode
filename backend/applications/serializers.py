@@ -1,7 +1,12 @@
+import logging
 import re
 import os
+from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import serializers
 from .models import PsychologistApplication
+
+
+logger = logging.getLogger(__name__)
 
 
 """
@@ -22,14 +27,20 @@ class PsychologistApplicationSerializer(serializers.ModelSerializer):
         try:
             interview = obj.interview
             return str(interview.id) if interview else None
+        except ObjectDoesNotExist:
+            return None
         except Exception:
+            logger.exception("Failed to read interview id for application %s", obj.id)
             return None
 
     def get_interview_status(self, obj):
         try:
             interview = obj.interview
             return interview.status if interview else None
+        except ObjectDoesNotExist:
+            return None
         except Exception:
+            logger.exception("Failed to read interview status for application %s", obj.id)
             return None
 
     class Meta:

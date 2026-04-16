@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuthStore } from "../../../store/auth.store";
 import { patientLogout } from "../../../api/patient.api";
+import NotificationBell from "../../notifications/NotificationBell";
 import logo from "../../../assets/patient-logo.png";
 
 // Shared
@@ -47,8 +48,6 @@ const PatientNavbar = ({ authLink } = {}) => {
     const [isServicesDropdownOpen, setIsServicesDropdownOpen] = useState(false);
     const [isConcernDropdownOpen, setIsConcernDropdownOpen] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-    const [notificationCount] = useState(3);
-
     const profileDropdownRef = useRef(null);
     const servicesDropdownRef = useRef(null);
     const concernDropdownRef = useRef(null);
@@ -147,14 +146,7 @@ const PatientNavbar = ({ authLink } = {}) => {
                         ) : isLoggedIn ? (
                             <>
                                 {/* Notification Bell */}
-                                <button className="relative w-10 h-10 bg-ui-100 rounded-full border-none cursor-pointer flex items-center justify-center text-ui-600 transition-all duration-200 hover:bg-[rgba(26,190,170,0.1)] hover:text-patient-primary" onClick={() => console.log('Notifications clicked')}>
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" />
-                                    </svg>
-                                    {notificationCount > 0 && (
-                                        <span className="absolute -top-[3px] -right-[3px] w-[18px] h-[18px] bg-[#ef4444] text-white text-[10px] font-bold rounded-full flex items-center justify-center">{notificationCount}</span>
-                                    )}
-                                </button>
+                                <NotificationBell variant="patient" />
 
                                 {/* Profile Dropdown */}
                                 <div className="relative" ref={profileDropdownRef}>

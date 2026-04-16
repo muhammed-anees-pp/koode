@@ -1,7 +1,11 @@
-from psychologists.models import PsychologistProfile, Specialization
-import shutil
+import logging
 import os
+
 from django.core.files.base import ContentFile
+from psychologists.models import PsychologistProfile, Specialization
+
+
+logger = logging.getLogger(__name__)
 
 
 
@@ -12,8 +16,10 @@ class PsychologistProfileService:
     @staticmethod
     def create_from_application(application, user):
         if PsychologistProfile.objects.filter(user=user).exists():
+            logger.info("Psychologist profile already exists for user %s", user.id)
             return
 
+        logger.info("Creating psychologist profile for user %s from application %s", user.id, application.id)
         profile = PsychologistProfile(
             user=user,
             phone_number=application.phone_number or "",
@@ -56,13 +62,14 @@ class PsychologistProfileService:
                 user.profile_picture.save(filename, ContentFile(content), save=False)
                 user_fields_to_update.append("profile_picture")
             except Exception:
-                pass
+                logger.exception("Failed to copy profile picture from application %s to user %s", application.id, user.id)
 
-        if application.full_name and not user.full_name:
-            user.full_name = application.full_name
+        if application.user.full_name and not user.full_name:
+            user.full_name = application.user.full_name
             user_fields_to_update.append("full_name")
 
         if user_fields_to_update:
             user.save(update_fields=user_fields_to_update)
 
+        logger.info("Psychologist profile %s created for user %s", profile.psychologist_id, user.id)
         return profile
