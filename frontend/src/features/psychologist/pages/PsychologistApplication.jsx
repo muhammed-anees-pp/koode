@@ -269,9 +269,9 @@ const PsychologistApplication = () => {
         consultation_fee: '',
     });
 
-    const [touched, setTouched] = useState();
-    const [fieldErrors, setFieldErrors] = useState();
-    const [fileErrors, setFileErrors] = useState();
+    const [touched, setTouched] = useState({});
+    const [fieldErrors, setFieldErrors] = useState({});
+    const [fileErrors, setFileErrors] = useState({});
 
     const [profilePic, setProfilePic] = useState(null);
     const [profilePicPreview, setProfilePicPreview] = useState(null);
@@ -365,7 +365,14 @@ const PsychologistApplication = () => {
         setCertificateDoc(file);
     };
 
-    const toggleSpec = (id) => setSelectedSpecs((prev) => prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]);
+    const toggleSpec = (id) => {
+        setSelectedSpecs((prev) => prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]);
+        setFileErrors((prev) => {
+            const next = { ...prev };
+            delete next.specializations;
+            return next;
+        });
+    };
 
 
     const submitMutation = useMutation({
