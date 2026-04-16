@@ -8,6 +8,7 @@ from psychologists.models import PsychologistProfile
 from patients.models import PatientProfile
 from patients.permissions import IsPatient
 from psychologists.permissions import IsPsychologist
+from notifications.services import create_notification
 from .serializers import (
     AvailabilitySerializer, BookingSerializer, CancelBookingSerializer, CreateAvailabilitySerializer, CreateBookingSerializer, RescheduleBookingSerializer, is_future_slot,
 )
@@ -85,6 +86,14 @@ class CreateBookingView(APIView):
 
         if serializer.is_valid():
             booking = serializer.save()
+            create_notification(
+                booking.patient.user,
+                f"Your appointment with {booking.psychologist.user.full_name} is confirmed for {booking.date} at {booking.start_time.strftime('%H:%M')}.",
+            )
+            create_notification(
+                booking.psychologist.user,
+                f"New appointment booked by {booking.patient.user.full_name} for {booking.date} at {booking.start_time.strftime('%H:%M')}.",
+            )
             return Response(
                 BookingSerializer(booking, context={"request": request}).data,
                 status=status.HTTP_201_CREATED,
@@ -164,6 +173,24 @@ class CancelBookingView(BookingActionBaseView):
 
         if serializer.is_valid():
             booking = serializer.save()
+            if request.user.role == "PATIENT":
+                create_notification(
+                    booking.patient.user,
+                    f"You cancelled your appointment with {booking.psychologist.user.full_name} scheduled for {booking.date} at {booking.start_time.strftime('%H:%M')}.",
+                )
+                create_notification(
+                    booking.psychologist.user,
+                    f"{booking.patient.user.full_name} cancelled the appointment scheduled for {booking.date} at {booking.start_time.strftime('%H:%M')}.",
+                )
+            else:
+                create_notification(
+                    booking.psychologist.user,
+                    f"You cancelled the appointment with {booking.patient.user.full_name} scheduled for {booking.date} at {booking.start_time.strftime('%H:%M')}.",
+                )
+                create_notification(
+                    booking.patient.user,
+                    f"{booking.psychologist.user.full_name} cancelled your appointment scheduled for {booking.date} at {booking.start_time.strftime('%H:%M')}.",
+                )
             return Response(BookingSerializer(booking, context={"request": request}).data)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -190,6 +217,14 @@ class RescheduleBookingView(BookingActionBaseView):
 
         if serializer.is_valid():
             booking = serializer.save()
+            create_notification(
+                booking.psychologist.user,
+                f"Appointment with {booking.patient.user.full_name} was rescheduled to {booking.date} at {booking.start_time.strftime('%H:%M')}.",
+            )
+            create_notification(
+                booking.patient.user,
+                f"Your appointment with {booking.psychologist.user.full_name} was rescheduled to {booking.date} at {booking.start_time.strftime('%H:%M')}.",
+            )
             return Response(BookingSerializer(booking, context={"request": request}).data)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

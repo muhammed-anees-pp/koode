@@ -130,7 +130,6 @@ class BookingSerializer(serializers.ModelSerializer):
         user = obj.psychologist.user
         photo = user.profile_picture if user.profile_picture else None
         if not photo:
-            # Fall back to the application photo if user has none
             app = getattr(user, "application", None)
             if app and getattr(app, "profile_picture", None):
                 photo = app.profile_picture
