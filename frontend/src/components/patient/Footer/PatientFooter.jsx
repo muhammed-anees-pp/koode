@@ -5,7 +5,7 @@ export default function PatientFooter() {
     return (
         <footer className="bg-patient-primary text-white pt-14 pb-6 px-8 mt-auto">
             <div className="max-w-[1200px] mx-auto grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-10 pb-10 border-b border-white/20">
-                {/* Service */}
+                
                 <div>
                     <h4 className={colTitleCls}>Service</h4>
                     <ul className="list-none p-0 m-0 flex flex-col gap-3">
@@ -16,7 +16,7 @@ export default function PatientFooter() {
                     </ul>
                 </div>
 
-                {/* Conditions */}
+                
                 <div>
                     <h4 className={colTitleCls}>Conditions</h4>
                     <ul className="list-none p-0 m-0 flex flex-col gap-3">
@@ -29,7 +29,7 @@ export default function PatientFooter() {
                     </ul>
                 </div>
 
-                {/* About */}
+                
                 <div>
                     <h4 className={colTitleCls}>About</h4>
                     <ul className="list-none p-0 m-0 flex flex-col gap-3">
@@ -40,13 +40,13 @@ export default function PatientFooter() {
                     </ul>
                 </div>
 
-                {/* Connect Us */}
+                
                 <div>
                     <h4 className={colTitleCls}>Connect Us</h4>
                     <p className="text-sm mb-1 text-white/90">+1 (555) 123-4567</p>
                     <p className="text-sm mb-4 text-white/90">help@koode.in</p>
                     <div className="flex gap-2.5">
-                        {/* Social icon placeholders */}
+                        
                         {["Y", "IG", "TH", "YT"].map((s) => (
                             <div key={s} className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center text-white text-[9px] font-bold cursor-pointer hover:bg-white/30 transition">
                                 {s}
@@ -55,7 +55,7 @@ export default function PatientFooter() {
                     </div>
                 </div>
 
-                {/* CTA */}
+                
                 <div>
                     <p className="text-sm mb-4 text-white leading-relaxed">
                         Join us at koode and let's navigate this path together!
@@ -76,7 +76,7 @@ export default function PatientFooter() {
                 </div>
             </div>
 
-            {/* Disclaimer */}
+            
             <div className="max-w-[1200px] mx-auto pt-6 text-center text-white/60 text-xs leading-relaxed">
                 <p>
                     Koode does not deal with medical or psychological emergencies. We are not designed to offer support in crisis situations — including when an individual is

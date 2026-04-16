@@ -4,14 +4,7 @@ import { useState, useRef } from "react";
 import { fetchApplicationDetail, updateApplication, scheduleInterview } from "../../../api/admin.api";
 import Sidebar from "../../../components/admin/Sidebar/AdminSidebar";
 import Navbar from "../../../components/admin/Navbar/AdminNavbar";
-
-const BASE_URL = "http://localhost:8000";
-
-const mediaUrl = (path) => {
-    if (!path) return null;
-    if (path.startsWith("http")) return path;
-    return `${BASE_URL}${path.startsWith("/") ? "" : "/"}${path}`;
-};
+import { resolveMediaUrl } from "../../../utils/url";
 
 const STATUS_CONFIG = {
     SUBMITTED: { label: "Pending Review", cls: "bg-yellow-500/15 text-yellow-400 border border-yellow-500/25" },
@@ -131,7 +124,7 @@ function ProfileAvatar({ name, photo, size = 96 }) {
     if (photo) {
         return (
             <img
-                src={mediaUrl(photo)} alt={name}
+                src={resolveMediaUrl(photo)} alt={name}
                 className="rounded-full object-cover border-4 border-slate-700/60"
                 style={{ width: size, height: size }}
                 onError={(e) => { e.target.style.display = "none"; }}
@@ -294,7 +287,7 @@ function ScheduleModal({ onConfirm, onClose, loading, candidateName, shortId }) 
                         </div>
                     </div>
 
-                    {/* Error messages */}
+                    
                     {dateError && (
                         <div className="flex items-start gap-2 mt-3 px-3 py-2.5 bg-red-500/10 border border-red-500/25 rounded-xl">
                             <svg className="flex-shrink-0 mt-0.5" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="2">
@@ -465,8 +458,8 @@ export default function AdminApplicationDetail() {
 
     const statusCfg = STATUS_CONFIG[app.status] || STATUS_CONFIG["SUBMITTED"];
     const specs = (app.specializations || []).map((s) => s.name ?? s);
-    const audioUrl = app.audio_intro ? mediaUrl(app.audio_intro) : null;
-    const certUrl = app.certificate_document ? mediaUrl(app.certificate_document) : null;
+    const audioUrl = app.audio_intro ? resolveMediaUrl(app.audio_intro) : null;
+    const certUrl = app.certificate_document ? resolveMediaUrl(app.certificate_document) : null;
     const certName = certUrl ? certUrl.split("/").pop() : "certificate.pdf";
 
     const commissionRate = 0.10;
@@ -630,7 +623,7 @@ export default function AdminApplicationDetail() {
                         </div>
                     </div>
 
-                    {/* Post-interview Approve / Reject panel */}
+                    
                     {app.interview_status === "COMPLETED" && !["APPROVED", "REJECTED"].includes(app.status) && (
                         <div className="mt-6 bg-[#141826] border border-purple-500/30 rounded-2xl overflow-hidden">
                             <div className="flex items-center gap-2.5 px-5 py-4 border-b border-purple-500/20">
@@ -689,7 +682,7 @@ export default function AdminApplicationDetail() {
                         </div>
                     )}
 
-                    {/* Original Schedule / Decline panel — shown only when interview is not yet done */}
+                    
                     {!app.interview_status || (app.interview_status !== "COMPLETED" && !["INTERVIEW_SCHEDULED", "REJECTED", "APPROVED"].includes(app.status)) ? (
                         !["INTERVIEW_SCHEDULED", "REJECTED", "APPROVED"].includes(app.status) && (
                             <div className="mt-6 bg-[#141826] border border-slate-700/50 rounded-2xl overflow-hidden">

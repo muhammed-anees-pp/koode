@@ -129,7 +129,7 @@ const PsychologistAvailability = () => {
 
         <main className="min-w-0 flex-1 px-6 py-8">
           <div className="mx-auto max-w-6xl">
-                      {/* Page heading */}
+                      
             <div className="mb-8">
               <h1 className="text-2xl font-bold text-slate-900">Availability</h1>
               <p className="mt-1 text-sm text-slate-500">Pick a date and publish the hours you want to offer to patients.</p>

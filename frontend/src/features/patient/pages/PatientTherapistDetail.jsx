@@ -90,15 +90,15 @@ export default function PatientTherapistDetail() {
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
     const daysInMonth = lastDay.getDate();
-    const startingDayOfWeek = firstDay.getDay(); // 0 = Sunday
+    const startingDayOfWeek = firstDay.getDay(); 
     
     const days = [];
-    // Add empty cells for days before month starts (adjust for Monday start)
+    
     const adjustedStart = startingDayOfWeek === 0 ? 6 : startingDayOfWeek - 1;
     for (let i = 0; i < adjustedStart; i++) {
       days.push(null);
     }
-    // Add actual days
+    
     for (let i = 1; i <= daysInMonth; i++) {
       days.push(new Date(year, month, i));
     }
@@ -151,7 +151,7 @@ export default function PatientTherapistDetail() {
 
       <main className="flex-1 max-w-[1240px] w-full mx-auto px-6 md:px-12 pt-[7rem] pb-24 grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-12 items-start">
         
-        {/* Left Column - Therapist Info */}
+        
         <div className="w-full">
 
           <div className="bg-[#f0fdf9] rounded-[32px] p-8 md:p-10 relative overflow-hidden">
@@ -292,7 +292,7 @@ export default function PatientTherapistDetail() {
           </div>
         </div>
 
-        {/* Right Column - Booking Section */}
+        
         <div ref={bookingPanelRef} className="w-full flex md:sticky top-[120px] flex-col gap-6">
            
           <div className="bg-white border border-slate-200 shadow-xl shadow-slate-200/50 rounded-[32px] p-8">
@@ -301,7 +301,7 @@ export default function PatientTherapistDetail() {
               <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-0.5 rounded-full">Available</span>
             </div>
             
-            {/* Calendar Section */}
+            
             <div className="mb-6">
               <div className="flex justify-between items-center mb-4">
                 <span className="text-sm font-bold text-slate-800">{currentMonth} {currentYear}</span>
@@ -334,7 +334,7 @@ export default function PatientTherapistDetail() {
               </div>
             </div>
 
-            {/* Check Availability Button */}
+            
             <button 
               onClick={fetchSlots}
               disabled={!selectedDate || isLoadingSlots}
@@ -377,7 +377,7 @@ export default function PatientTherapistDetail() {
               </div>
             ) : null}
 
-            {/* Available Slots */}
+            
             {slots.length > 0 && (
               <div className="mt-4">
                 <h4 className="font-bold text-slate-800 mb-3 text-sm">Available Slots</h4>

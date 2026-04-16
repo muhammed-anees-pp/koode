@@ -14,6 +14,7 @@ import { useAuthStore } from "../../store/auth.store";
 import { getApplicationStatus } from "../../api/psychologist.api";
 import PsychologistAvailability from "./pages/PsychologistAvailability";
 import PsychologistAppointments from "./pages/PsychologistAppointments";
+import PsychologistMessages from "./pages/PsychologistMessages";
 
 const useAppStatus = (isAuthenticated, role) => {
   const [appStatus, setAppStatus] = useState(null);
@@ -148,6 +149,14 @@ const PsychologistRoutes = () => {
         element={
           isAuthenticated && role === "PSYCHOLOGIST"
             ? <PsychologistAppointments />
+            : <Navigate to="/psychologist/login" replace />
+        }
+      />
+      <Route
+        path="messages"
+        element={
+          isAuthenticated && role === "PSYCHOLOGIST"
+            ? <PsychologistMessages />
             : <Navigate to="/psychologist/login" replace />
         }
       />

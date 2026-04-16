@@ -139,7 +139,7 @@ export default function InterviewRoom() {
             const appId = parseInt(app_id);
             const server = `wss://webliveroom${appId}-api.zegocloud.com/ws`;
 
-            try { ZegoExpressEngine.destroyEngine(); } catch (_) { }
+            try { ZegoExpressEngine.destroyEngine(); } catch (_) {}
 
             const engine = new ZegoExpressEngine(appId, server);
             engineRef.current = engine;
@@ -190,7 +190,7 @@ export default function InterviewRoom() {
             setJoinPhase("in_call");
         } catch (err) {
             console.error("Failed to join room:", err);
-            try { ZegoExpressEngine.destroyEngine(); } catch (_) { }
+            try { ZegoExpressEngine.destroyEngine(); } catch (_) {}
             engineRef.current = null;
             setError("Could not connect to the interview room. Please try again.");
         }
@@ -319,7 +319,7 @@ export default function InterviewRoom() {
         <div className="min-h-screen bg-[#eef0f5] flex flex-col">
             <PsychologistNavbar />
 
-            {/* Interview ended by admin — overlay */}
+            
             {interviewEnded && (
                 <div className="fixed inset-0 z-[500] flex items-center justify-center bg-black/70 backdrop-blur-sm">
                     <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full text-center">

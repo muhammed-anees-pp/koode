@@ -18,7 +18,7 @@ import {
   calendarDateToISO,
 } from "../../../utils/indiaDateTime";
 
-// Calendar helpers
+
 const DAYS = ["S", "M", "T", "W", "T", "F", "S"];
 const MONTHS = [
   "January", "February", "March", "April", "May", "June",
@@ -258,7 +258,7 @@ export default function PatientBooking() {
     );
   }
 
-  // Fee calculations
+  
   const fee = Number(therapist.consultation_fee) || 500;
   const gst = Math.round(fee * 0.1);
   const total = fee + gst;
@@ -269,7 +269,7 @@ export default function PatientBooking() {
 
       <main className="flex-1 px-6 pt-[7rem] pb-24">
         <div className="mx-auto max-w-[1200px]">
-          {/* Page Title */}
+          
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-slate-900">Slot Selection &amp; Booking</h1>
             <p className="mt-1 text-sm text-slate-500">
@@ -278,7 +278,7 @@ export default function PatientBooking() {
           </div>
 
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_1.8fr]">
-            {/* Left: Calendar */}
+            
             <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm h-fit">
               <p className="text-sm font-semibold text-slate-800 mb-5">Choose a Date</p>
               <MiniCalendar
@@ -287,7 +287,7 @@ export default function PatientBooking() {
                 minDate={today}
               />
 
-              {/* Session Duration */}
+              
               <div className="mt-6 pt-5 border-t border-slate-100">
                 <div className="flex items-start gap-3">
                   <div className="w-10 h-10 rounded-full bg-patient-light flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -309,9 +309,9 @@ export default function PatientBooking() {
               </div>
             </div>
 
-            {/* Right: Slots + Summary */}
+            
             <div className="flex flex-col gap-5">
-              {/* Slot Selection Card */}
+              
               <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                 <p className="text-sm font-semibold text-slate-800 mb-5">Select an Available Slot</p>
 
@@ -365,9 +365,9 @@ export default function PatientBooking() {
                 ) : null}
               </div>
 
-              {/* Booking Summary Card */}
+              
               <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                {/* Therapist info */}
+                
                 <div className="flex items-center gap-4 mb-5 pb-5 border-b border-slate-100">
                   <div className="w-14 h-14 rounded-full overflow-hidden bg-slate-100 flex-shrink-0">
                     {therapist.profile_picture ? (
@@ -398,7 +398,7 @@ export default function PatientBooking() {
                   </div>
                 </div>
 
-                {/* Fee breakdown */}
+                
                 <div className="space-y-3 mb-5">
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-slate-600">Consultation Fee</span>
@@ -415,7 +415,7 @@ export default function PatientBooking() {
                   <p className="text-xs text-slate-400 text-right">Includes all applicable taxes and processing fees.</p>
                 </div>
 
-                {/* Time slot detail shown when selected */}
+                
                 {selectedSlot && (
                   <div className="mb-4 rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-700 font-medium">
                     Selected slot:{" "}
@@ -425,7 +425,7 @@ export default function PatientBooking() {
                   </div>
                 )}
 
-                {/* CTA */}
+                
                 <button
                   type="button"
                   onClick={handleBook}

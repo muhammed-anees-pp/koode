@@ -3,14 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import PsychologistNavbar from '../../../components/psychologist/Navbar/PsychologistNavbar';
 import { getMyApplication, getApplicationStatus, requestJoin, getJoinStatus } from '../../../api/psychologist.api';
 import { usePsychologistSessionGuard } from '../../../hooks/usePsychologistSessionGuard';
-
-const BASE_URL = 'http://localhost:8000';
-
-const mediaUrl = (path) => {
-    if (!path) return null;
-    if (path.startsWith('http')) return path;
-    return `${BASE_URL}${path.startsWith('/') ? '' : '/'}${path}`;
-};
+import { resolveMediaUrl } from '../../../utils/url';
 
 const STEPS = [
     {
@@ -352,7 +345,7 @@ function WaitingRoomModal({ interviewDate, interviewId, onClose, onEnterRoom, na
                             streamRef.current = null;
                             await new Promise(r => setTimeout(r, 800));
                         }
-                        // Persist mic/cam state so InterviewRoom can pick it up
+                        
                         sessionStorage.setItem('interview_micOn', micOn ? '1' : '0');
                         sessionStorage.setItem('interview_camOn', camOn ? '1' : '0');
                         onEnterRoom();
@@ -396,7 +389,7 @@ function WaitingRoomModal({ interviewDate, interviewId, onClose, onEnterRoom, na
                             playsInline
                             className="w-full h-full object-cover"
                         />
-                        {/* Camera-off overlay: show profile image or avatar */}
+                        
                         {!camOn && (
                             <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900">
                                 {profileImgUrl ? (
@@ -554,8 +547,8 @@ const PsychologistApprovalWaiting = () => {
     const address = [application?.street_address, application?.city, application?.state, application?.pincode]
         .filter(Boolean).join(', ');
 
-    const profileImgUrl = mediaUrl(application?.profile_picture);
-    const audioUrl = mediaUrl(application?.audio_intro);
+    const profileImgUrl = resolveMediaUrl(application?.profile_picture);
+    const audioUrl = resolveMediaUrl(application?.audio_intro);
     const specs = application?.specializations || [];
 
     const interviewStatuses = ['INTERVIEW_SCHEDULED', 'WAITING', 'ONGOING'];
@@ -711,7 +704,7 @@ const PsychologistApprovalWaiting = () => {
                     </div>
                 )}
 
-                {/* Interview completed — awaiting admin decision */}
+                
                 {!loading && interviewCompleted && (
                     <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6 mb-5 border-l-4 border-l-purple-400">
                         <div className="flex items-start gap-4">

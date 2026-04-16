@@ -37,8 +37,7 @@ export default function PatientHome() {
   const { data } = useQuery({ queryKey: ["patient-home"], queryFn: fetchPatientHome, enabled: isPatient });
   const fullName = authUser?.full_name || data?.patient_email?.split("@")[0] || "there";
 
-  /* Authenticated landing page */
-  if (isPatient) {
+    if (isPatient) {
     return (
       <div className="flex flex-col min-h-screen font-['DM_Sans',sans-serif] antialiased">
         <PatientNavbar />
@@ -70,15 +69,14 @@ export default function PatientHome() {
     );
   }
 
-  /* Unauthenticated public landing page */
-  return (
+    return (
     <div className="flex flex-col min-h-screen font-['DM_Sans',sans-serif] antialiased">
       <PatientNavbar />
 
-      {/* Hero */}
+      
       <section className="relative overflow-hidden pt-36 pb-16 px-8 text-center bg-gradient-to-[160deg] from-[#f0fdf9] via-[#f8fafc] to-[#edfcf7]"
         style={{ background: "linear-gradient(160deg, #f0fdf9 0%, #f8fafc 60%, #edfcf7 100%)" }}>
-        {/* Orbs */}
+        
         <div className="absolute w-[500px] h-[500px] rounded-full pointer-events-none -top-[120px] -left-[100px] animate-[orbFloat_8s_ease-in-out_infinite_alternate]"
           style={{ background: "radial-gradient(circle, rgba(26,190,170,0.15) 0%, transparent 70%)", filter: "blur(80px)" }} />
         <div className="absolute w-[400px] h-[400px] rounded-full pointer-events-none -bottom-[80px] -right-[80px] animate-[orbFloat_10s_ease-in-out_infinite_alternate-reverse]"
@@ -105,7 +103,7 @@ export default function PatientHome() {
           </div>
         </div>
 
-        {/* Stats */}
+        
         <div className="relative z-10 flex justify-center gap-5 flex-wrap max-w-[900px] mx-auto animate-[phFadeUp_0.7s_ease-out_0.15s_both]">
           {publicStats.map((s) => (
             <div key={s.label} className="bg-white border border-[#e2e8f0] rounded-[16px] px-8 py-5 flex flex-col items-center gap-1 min-w-[150px] shadow-[0_2px_12px_rgba(0,0,0,0.05)] transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_8px_24px_rgba(26,190,170,0.12)]">
@@ -116,7 +114,7 @@ export default function PatientHome() {
         </div>
       </section>
 
-      {/* Features */}
+      
       <section className="py-20 px-8 max-w-[1200px] mx-auto w-full">
         <div className="text-center mb-12">
           <p className="text-[0.8rem] font-bold text-patient-primary uppercase tracking-[0.1em] mb-3">Why Koode</p>
@@ -136,7 +134,7 @@ export default function PatientHome() {
         </div>
       </section>
 
-      {/* CTA */}
+      
       <section className="px-8 pb-20">
         <div className="max-w-[1160px] mx-auto bg-gradient-to-r from-patient-primary to-[#14a090] rounded-[24px] px-12 py-16 text-center relative overflow-hidden shadow-[0_20px_60px_rgba(26,190,170,0.3)]"
           style={{ background: "linear-gradient(135deg, #1ABEAA 0%, #14a090 100%)" }}>

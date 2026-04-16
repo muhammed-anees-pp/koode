@@ -3,8 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchAdminPatients, togglePatientSuspension } from "../../../api/admin.api";
 import Sidebar from "../../../components/admin/Sidebar/AdminSidebar";
 import Navbar from "../../../components/admin/Navbar/AdminNavbar";
-
-const BASE_URL = "http://localhost:8000";
+import { resolveMediaUrl } from "../../../utils/url";
 
 function PatientAvatar({ name, photo, size = 38 }) {
     const [imgError, setImgError] = useState(false);
@@ -13,10 +12,9 @@ function PatientAvatar({ name, photo, size = 38 }) {
     const colour = colours[(name?.charCodeAt(0) || 0) % colours.length];
 
     if (photo && !imgError) {
-        const src = photo.startsWith("http") ? photo : `${BASE_URL}${photo.startsWith("/") ? "" : "/"}${photo}`;
         return (
             <img
-                src={src}
+                src={resolveMediaUrl(photo)}
                 alt={name}
                 className="rounded-full object-cover flex-shrink-0"
                 style={{ width: size, height: size }}
