@@ -29,6 +29,7 @@ class AdminLoginView(APIView):
         refresh = data["refresh"]
 
         user_data = {
+            "id": str(user.id),
             "email": user.email,
             "full_name": user.full_name,
             "profile_picture": user.profile_picture.url if user.profile_picture else None,
@@ -211,6 +212,7 @@ class PatientLoginView(APIView):
         user = serializer.context.get("user")
 
         user_data = {
+            "id": str(user.id),
             "email": user.email,
             "full_name": user.full_name,
             "profile_picture": user.profile_picture.url if user.profile_picture else None,
@@ -321,6 +323,7 @@ class PatientGoogleAuthView(APIView):
             {
                 "access": result["access"],
                 "user": {
+                    "id": str(user.id),
                     "email": user.email,
                     "full_name": user.full_name,
                     "profile_picture": user.profile_picture.url if user.profile_picture else None,
@@ -412,6 +415,7 @@ class PsychologistLoginView(APIView):
                 pass
 
         user_data = {
+            "id": str(user.id),
             "email": user.email,
             "full_name": user.full_name,
             "profile_picture": profile_pic_url,
@@ -523,6 +527,7 @@ class PsychologistGoogleAuthView(APIView):
             {
                 "access": result["access"],
                 "user": {
+                    "id": str(user.id),
                     "email": user.email,
                     "full_name": user.full_name,
                     "profile_picture": user.profile_picture.url if user.profile_picture else None,
