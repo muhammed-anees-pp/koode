@@ -1,16 +1,46 @@
+import logging
+from functools import wraps
+
+from django.db import models, transaction
+from django.http import Http404
+from django.shortcuts import get_object_or_404
+from interviews.repositories.interview_repository import InterviewRepository
+from interviews.services.interview_service import InterviewService
+from psychologists.services.psychologist_service import PsychologistProfileService
+from rest_framework import status
+from rest_framework.exceptions import APIException
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-from rest_framework import status
 from .serializers import (PsychologistApplicationSerializer, ApplicationSubmitSerializer, AdminUpdateApplicationSerializer, AdminScheduleInterviewSerializer,)
 from .services.application_service import ApplicationService
+from .services.notification_service import (
+    notify_admins_application_submitted,
+    notify_applicant_interview_scheduled,
+    notify_applicant_status_changed,
+)
 from .repositories.application_repository import ApplicationRepository
-from django.db import models
 from .models import PsychologistApplication
-from django.shortcuts import get_object_or_404
-from interviews.services.interview_service import InterviewService
-from interviews.repositories.interview_repository import InterviewRepository
-from psychologists.services.psychologist_service import PsychologistProfileService
+
+
+logger = logging.getLogger(__name__)
+
+
+def log_unexpected_errors(action):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            except (APIException, Http404):
+                raise
+            except Exception as exc:
+                logger.exception("Unexpected error while %s", action)
+                raise APIException("Something went wrong. Please try again later.") from exc
+
+        return wrapper
+
+    return decorator
 
 
 
@@ -23,17 +53,19 @@ SUBMIT APPLICATION VIEW
 class SubmitApplicationView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @log_unexpected_errors("submitting psychologist application")
     def post(self, request):
         serializer = ApplicationSubmitSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
 
-        if serializer.is_valid():
-            application = ApplicationService.submit_application(request.user, serializer.validated_data)
-            return Response(
-                PsychologistApplicationSerializer(application).data,
-                status=status.HTTP_201_CREATED
-            )
+        application = ApplicationService.submit_application(request.user, serializer.validated_data)
+        notify_admins_application_submitted(application)
+        logger.info("Application %s submitted by user %s", application.id, request.user.id)
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            PsychologistApplicationSerializer(application).data,
+            status=status.HTTP_201_CREATED
+        )
 
 
 """
@@ -42,16 +74,19 @@ GET CURRENT APPLICATION
 class MyApplicationView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @log_unexpected_errors("retrieving current application")
     def get(self, request):
         application = ApplicationRepository.get_by_user(request.user)
 
         if not application:
+            logger.info("Application not found for user %s", request.user.id)
             return Response(
                 {"message": "Application not found"},
                 status=status.HTTP_404_NOT_FOUND
             )
 
         serializer = PsychologistApplicationSerializer(application)
+        logger.info("Application %s returned for user %s", application.id, request.user.id)
         return Response(serializer.data)
 
 
@@ -61,9 +96,11 @@ GET APPLICATION STATUS
 class ApplicationStatusView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @log_unexpected_errors("retrieving application status")
     def get(self, request):
         application = ApplicationRepository.get_by_user(request.user)
         if not application:
+            logger.info("Application status requested before submission by user %s", request.user.id)
             return Response(
                 {"status": "NOT_SUBMITTED"}
             )
@@ -79,6 +116,7 @@ class ApplicationStatusView(APIView):
                 response_data["interview_id"] = str(interview.id)
                 response_data["interview_status"] = interview.status
 
+        logger.info("Application status returned for application %s", application.id)
         return Response(response_data)
 
 
@@ -99,6 +137,7 @@ class AdminApplicationListView(APIView):
         "experience": "years_of_experience",
     }
 
+    @log_unexpected_errors("listing admin applications")
     def get(self, request):
         applications = (
             PsychologistApplication.objects
@@ -127,6 +166,7 @@ class AdminApplicationListView(APIView):
         applications = applications.order_by(db_field)
 
         serializer = PsychologistApplicationSerializer(applications, many=True)
+        logger.info("Returned %s applications for admin list", applications.count())
         return Response(serializer.data)
 
 
@@ -136,12 +176,14 @@ ADMIN SIDE APPLICATION DETAIL
 class AdminApplicationDetailView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @log_unexpected_errors("retrieving admin application detail")
     def get(self, request, pk):
         application = get_object_or_404(
             PsychologistApplication.objects.select_related("user").prefetch_related("specializations"),
             pk=pk
         )
         serializer = PsychologistApplicationSerializer(application, context={"request": request})
+        logger.info("Admin application detail returned for application %s", pk)
         return Response(serializer.data)
 
 
@@ -151,10 +193,14 @@ ADMIN UPDATE APPLICATION
 class AdminUpdateApplicationView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @log_unexpected_errors("updating admin application")
     def patch(self, request, pk):
         application = get_object_or_404(PsychologistApplication, pk=pk)
+        old_status = application.status
         serializer = AdminUpdateApplicationSerializer(application, data=request.data, partial=True)
-        if serializer.is_valid():
+        serializer.is_valid(raise_exception=True)
+
+        with transaction.atomic():
             new_status = serializer.validated_data.get("status")
             updated = serializer.save()
 
@@ -164,8 +210,9 @@ class AdminUpdateApplicationView(APIView):
                 user.save(update_fields=["role"])
                 PsychologistProfileService.create_from_application(updated, user)
 
-            return Response(PsychologistApplicationSerializer(updated, context={"request": request}).data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        notify_applicant_status_changed(updated, old_status, new_status)
+        logger.info("Application %s updated by admin user %s", updated.id, request.user.id)
+        return Response(PsychologistApplicationSerializer(updated, context={"request": request}).data)
 
 
 """
@@ -174,10 +221,13 @@ ADMIN SCHEDULE INTERVIEW
 class AdminScheduleInterviewView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @log_unexpected_errors("scheduling application interview")
     def post(self, request, pk):
         application = get_object_or_404(PsychologistApplication, pk=pk)
         serializer = AdminScheduleInterviewSerializer(data=request.data)
-        if serializer.is_valid():
+        serializer.is_valid(raise_exception=True)
+
+        with transaction.atomic():
             interview_date = serializer.validated_data["interview_date"]
             application.interview_date = interview_date
             application.status = "INTERVIEW_SCHEDULED"
@@ -190,5 +240,7 @@ class AdminScheduleInterviewView(APIView):
                 admin=request.user,
                 scheduled_at=interview_date,
             )
-            return Response(PsychologistApplicationSerializer(application, context={"request": request}).data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        notify_applicant_interview_scheduled(application)
+        logger.info("Interview scheduled for application %s by admin user %s", application.id, request.user.id)
+        return Response(PsychologistApplicationSerializer(application, context={"request": request}).data)

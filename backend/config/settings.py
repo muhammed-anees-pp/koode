@@ -32,6 +32,8 @@ ALLOWED_HOSTS = [
 # APPLICATIONS
 # -------------------------------------------------
 INSTALLED_APPS = [
+    "daphne",
+
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -42,6 +44,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "corsheaders",
     "rest_framework_simplejwt.token_blacklist",
+    "channels",
 
     "storages",
 
@@ -53,6 +56,7 @@ INSTALLED_APPS = [
     "psychologists",
     "interviews",
     "appointments",
+    "notifications",
 ]
 
 # -------------------------------------------------
@@ -164,12 +168,89 @@ REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
+    "EXCEPTION_HANDLER": "config.exceptions.custom_exception_handler",
     "DEFAULT_THROTTLE_CLASSES": [
         "rest_framework.throttling.AnonRateThrottle",
     ],
     "DEFAULT_THROTTLE_RATES": {
         "anon": "120/minute",
         "forgot_password": "3/minute",
+    },
+}
+
+
+# -------------------------------------------------
+# LOGGING
+# -------------------------------------------------
+LOG_DIR = BASE_DIR / "logs"
+LOG_DIR.mkdir(exist_ok=True)
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "{levelname} {asctime} {name} {process:d} {thread:d} {message}",
+            "style": "{",
+        },
+        "simple": {
+            "format": "{levelname} {name} {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "simple",
+        },
+        "file": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": LOG_DIR / "backend.log",
+            "maxBytes": 1024 * 1024 * 5,
+            "backupCount": 5,
+            "formatter": "verbose",
+        },
+    },
+    "root": {
+        "handlers": ["console", "file"],
+        "level": os.getenv("LOG_LEVEL", "INFO"),
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["console", "file"],
+            "level": os.getenv("DJANGO_LOG_LEVEL", "INFO"),
+            "propagate": False,
+        },
+        "appointments": {
+            "handlers": ["console", "file"],
+            "level": os.getenv("APP_LOG_LEVEL", "INFO"),
+            "propagate": False,
+        },
+        "notifications": {
+            "handlers": ["console", "file"],
+            "level": os.getenv("APP_LOG_LEVEL", "INFO"),
+            "propagate": False,
+        },
+        "patients": {
+            "handlers": ["console", "file"],
+            "level": os.getenv("APP_LOG_LEVEL", "INFO"),
+            "propagate": False,
+        },
+        "psychologists": {
+            "handlers": ["console", "file"],
+            "level": os.getenv("APP_LOG_LEVEL", "INFO"),
+            "propagate": False,
+        },
+        "applications": {
+            "handlers": ["console", "file"],
+            "level": os.getenv("APP_LOG_LEVEL", "INFO"),
+            "propagate": False,
+        },
+        "config.exceptions": {
+            "handlers": ["console", "file"],
+            "level": os.getenv("APP_LOG_LEVEL", "INFO"),
+            "propagate": False,
+        },
     },
 }
 
@@ -188,6 +269,17 @@ SIMPLE_JWT = {
 
     "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": True,
+}
+
+
+CHANNEL_REDIS_URL = os.getenv("CHANNEL_REDIS_URL", "redis://127.0.0.1:6379/1")
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [CHANNEL_REDIS_URL],
+        },
+    },
 }
 
 # -------------------------------------------------

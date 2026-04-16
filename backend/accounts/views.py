@@ -13,6 +13,50 @@ from . serializers import (AdminLoginSerializer, ForgotPasswordSerializer, Reset
 from .services.google_auth_service import GooglePatientAuthService, GooglePsychologistAuthService
 
 
+REFRESH_COOKIE_BY_ROLE = {
+    "ADMIN": "admin_refresh_token",
+    "PATIENT": "patient_refresh_token",
+    "PSYCHOLOGIST": "psychologist_refresh_token",
+}
+
+
+def get_refresh_cookie_name(role):
+    return REFRESH_COOKIE_BY_ROLE.get(role)
+
+
+def build_user_data(user, profile_picture_url=None):
+    return {
+        "id": str(user.id),
+        "email": user.email,
+        "full_name": user.full_name,
+        "profile_picture": profile_picture_url if profile_picture_url is not None else (user.profile_picture.url if user.profile_picture else None),
+        "role": user.role,
+    }
+
+
+def set_refresh_cookie(response, role, refresh_token):
+    cookie_name = get_refresh_cookie_name(role)
+    if not cookie_name:
+        return
+
+    response.set_cookie(
+        key=cookie_name,
+        value=refresh_token,
+        httponly=True,
+        secure=settings.COOKIE_SECURE,
+        samesite=settings.COOKIE_SAMESITE,
+        path="/",
+    )
+    response.delete_cookie("refresh_token", path="/")
+
+
+def delete_refresh_cookie(response, role):
+    cookie_name = get_refresh_cookie_name(role)
+    if cookie_name:
+        response.delete_cookie(cookie_name, path="/")
+    response.delete_cookie("refresh_token", path="/")
+
+
 ############################
 ####        ADMIN       ####
 ############################
@@ -28,26 +72,14 @@ class AdminLoginView(APIView):
         access = data["access"]
         refresh = data["refresh"]
 
-        user_data = {
-            "email": user.email,
-            "full_name": user.full_name,
-            "profile_picture": user.profile_picture.url if user.profile_picture else None,
-            "role": user.role
-        }
+        user_data = build_user_data(user)
 
         response = Response(
             {"access": access, "user": user_data},
             status = status.HTTP_200_OK
         )
 
-        response.set_cookie(
-            key = "refresh_token",
-            value = refresh,
-            httponly = True,
-            secure = settings.COOKIE_SECURE,
-            samesite = settings.COOKIE_SAMESITE,
-            path = "/",
-        )
+        set_refresh_cookie(response, user.role, refresh)
 
         return response
 
@@ -58,7 +90,11 @@ REFRESH TOKEN
 """
 class RefreshTokenView(APIView):
     def post(self, request):
-        refresh_token = request.COOKIES.get("refresh_token")
+        requested_role = request.data.get("role")
+        cookie_name = get_refresh_cookie_name(requested_role)
+        refresh_token = request.COOKIES.get(cookie_name) if cookie_name else None
+        if not refresh_token:
+            refresh_token = request.COOKIES.get("refresh_token")
 
         if not refresh_token:
             return Response({"detail": "No refresh token"}, status = 401)
@@ -71,7 +107,11 @@ class RefreshTokenView(APIView):
             if role:
                 access["role"] = role
 
+            if requested_role and role != requested_role:
+                return Response({"detail": "Invalid token for this role"}, status=401)
+
             user_id = refresh.get("user_id") or refresh.payload.get("user_id")
+            user = None
             if user_id:
                 try:
                     user = User.objects.get(pk=user_id)
@@ -83,7 +123,15 @@ class RefreshTokenView(APIView):
                 except User.DoesNotExist:
                     return Response({"detail": "Invalid token"}, status=401)
 
-            return Response({"access": str(access)})
+            response_data = {"access": str(access)}
+            if user:
+                response_data["user"] = build_user_data(user)
+                response_data["role"] = user.role
+
+            response = Response(response_data)
+            if role:
+                set_refresh_cookie(response, role, refresh_token)
+            return response
         except Exception:
             return Response({"detail": "Invalid token"}, status = 401)
 
@@ -96,7 +144,7 @@ class AdminLogoutView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        refresh_token = request.COOKIES.get("refresh_token")
+        refresh_token = request.COOKIES.get(get_refresh_cookie_name("ADMIN")) or request.COOKIES.get("refresh_token")
 
         if refresh_token:
             try:
@@ -110,7 +158,7 @@ class AdminLogoutView(APIView):
             status=status.HTTP_200_OK
         )
 
-        response.delete_cookie("refresh_token")
+        delete_refresh_cookie(response, "ADMIN")
 
         return response
 
@@ -210,26 +258,14 @@ class PatientLoginView(APIView):
         data = serializer.validated_data
         user = serializer.context.get("user")
 
-        user_data = {
-            "email": user.email,
-            "full_name": user.full_name,
-            "profile_picture": user.profile_picture.url if user.profile_picture else None,
-            "role": user.role
-        }
+        user_data = build_user_data(user)
 
         response = Response(
             {"access": data["access"], "user": user_data},
             status=status.HTTP_200_OK
         )
 
-        response.set_cookie(
-            key="refresh_token",
-            value=data["refresh"],
-            httponly=True,
-            secure=settings.COOKIE_SECURE,
-            samesite=settings.COOKIE_SAMESITE,
-            path="/",
-        )
+        set_refresh_cookie(response, user.role, data["refresh"])
 
         return response
     
@@ -241,7 +277,7 @@ class PatientLogoutView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        refresh_token = request.COOKIES.get("refresh_token")
+        refresh_token = request.COOKIES.get(get_refresh_cookie_name("PATIENT")) or request.COOKIES.get("refresh_token")
 
         if refresh_token:
             try:
@@ -255,7 +291,7 @@ class PatientLogoutView(APIView):
             status=status.HTTP_200_OK
         )
 
-        response.delete_cookie("refresh_token")
+        delete_refresh_cookie(response, "PATIENT")
 
         return response
     
@@ -320,24 +356,12 @@ class PatientGoogleAuthView(APIView):
         response = Response(
             {
                 "access": result["access"],
-                "user": {
-                    "email": user.email,
-                    "full_name": user.full_name,
-                    "profile_picture": user.profile_picture.url if user.profile_picture else None,
-                    "role": user.role,
-                }
+                "user": build_user_data(user)
             },
             status=status.HTTP_200_OK
         )
 
-        response.set_cookie(
-            key="refresh_token",
-            value=result["refresh"],
-            httponly=True,
-            secure=settings.COOKIE_SECURE,
-            samesite=settings.COOKIE_SAMESITE,
-            path="/",
-        )
+        set_refresh_cookie(response, user.role, result["refresh"])
 
         return response
     
@@ -411,26 +435,14 @@ class PsychologistLoginView(APIView):
             except Exception:
                 pass
 
-        user_data = {
-            "email": user.email,
-            "full_name": user.full_name,
-            "profile_picture": profile_pic_url,
-            "role": user.role
-        }
+        user_data = build_user_data(user, profile_pic_url)
 
         response = Response(
             {"access": data["access"], "user": user_data},
             status=status.HTTP_200_OK
         )
 
-        response.set_cookie(
-            key="refresh_token",
-            value=data["refresh"],
-            httponly=True,
-            secure=settings.COOKIE_SECURE,
-            samesite=settings.COOKIE_SAMESITE,
-            path="/",
-        )
+        set_refresh_cookie(response, user.role, data["refresh"])
 
         return response
 
@@ -442,7 +454,7 @@ class PsychologistLogoutView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        refresh_token = request.COOKIES.get("refresh_token")
+        refresh_token = request.COOKIES.get(get_refresh_cookie_name("PSYCHOLOGIST")) or request.COOKIES.get("refresh_token")
 
         if refresh_token:
             try:
@@ -456,7 +468,7 @@ class PsychologistLogoutView(APIView):
             status=status.HTTP_200_OK
         )
 
-        response.delete_cookie("refresh_token")
+        delete_refresh_cookie(response, "PSYCHOLOGIST")
         return response
 
 
@@ -522,23 +534,11 @@ class PsychologistGoogleAuthView(APIView):
         response = Response(
             {
                 "access": result["access"],
-                "user": {
-                    "email": user.email,
-                    "full_name": user.full_name,
-                    "profile_picture": user.profile_picture.url if user.profile_picture else None,
-                    "role": user.role,
-                }
+                "user": build_user_data(user)
             },
             status=status.HTTP_200_OK
         )
 
-        response.set_cookie(
-            key="refresh_token",
-            value=result["refresh"],
-            httponly=True,
-            secure=settings.COOKIE_SECURE,
-            samesite=settings.COOKIE_SAMESITE,
-            path="/",
-        )
+        set_refresh_cookie(response, user.role, result["refresh"])
 
         return response
