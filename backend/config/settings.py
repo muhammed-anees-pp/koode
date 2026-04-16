@@ -229,6 +229,21 @@ LOGGING = {
             "level": os.getenv("APP_LOG_LEVEL", "INFO"),
             "propagate": False,
         },
+        "patients": {
+            "handlers": ["console", "file"],
+            "level": os.getenv("APP_LOG_LEVEL", "INFO"),
+            "propagate": False,
+        },
+        "psychologists": {
+            "handlers": ["console", "file"],
+            "level": os.getenv("APP_LOG_LEVEL", "INFO"),
+            "propagate": False,
+        },
+        "applications": {
+            "handlers": ["console", "file"],
+            "level": os.getenv("APP_LOG_LEVEL", "INFO"),
+            "propagate": False,
+        },
         "config.exceptions": {
             "handlers": ["console", "file"],
             "level": os.getenv("APP_LOG_LEVEL", "INFO"),
