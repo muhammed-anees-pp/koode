@@ -9,7 +9,7 @@ from patients.models import PatientProfile
 from patients.permissions import IsPatient
 from psychologists.permissions import IsPsychologist
 from .serializers import (
-    AvailabilitySerializer, BookingSerializer, CancelBookingSerializer, CreateAvailabilitySerializer, CreateBookingSerializer, RescheduleBookingSerializer, is_future_slot,
+    AvailabilitySerializer, BookingSerializer, CancelBookingSerializer, CreateAvailabilitySerializer, CreateBookingSerializer, RescheduleBookingSerializer, RevokeAvailabilitySlotSerializer, is_future_slot,
 )
 
 
@@ -25,11 +25,37 @@ class CreateAvailabilityView(APIView):
         serializer = CreateAvailabilitySerializer(data=request.data, context={"psychologist": psychologist})
 
         if serializer.is_valid():
-            availability = serializer.save()
+            availabilities = serializer.save()
             return Response(
-                AvailabilitySerializer(availability).data,
+                AvailabilitySerializer(availabilities, many=True).data,
                 status=status.HTTP_201_CREATED
             )
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+"""
+REVOKE AVAILABILITY SLOT
+"""
+class RevokeAvailabilitySlotView(APIView):
+    permission_classes = [permissions.IsAuthenticated, IsPsychologist]
+
+    def post(self, request):
+        psychologist = get_object_or_404(PsychologistProfile, user=request.user)
+        serializer = RevokeAvailabilitySlotSerializer(
+            data=request.data,
+            context={"psychologist": psychologist},
+        )
+
+        if serializer.is_valid():
+            availability = serializer.save()
+            if availability is None:
+                return Response({"detail": "Slot revoked successfully.", "availability": None})
+
+            return Response({
+                "detail": "Slot revoked successfully.",
+                "availability": AvailabilitySerializer(availability).data,
+            })
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
