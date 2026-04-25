@@ -108,6 +108,14 @@ export const createAvailability = async (data) => {
   return response.data;
 };
 
+export const revokeAvailabilitySlot = async (slotId) => {
+  const response = await axiosInstance.post(
+    "appointments/availability/revoke-slot/",
+    { slot_id: slotId }
+  );
+  return response.data;
+};
+
 export const getMyAvailability = async () => {
   const response = await axiosInstance.get(
     "appointments/availability/me/"
