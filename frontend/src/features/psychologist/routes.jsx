@@ -16,6 +16,17 @@ import PsychologistAvailability from "./pages/PsychologistAvailability";
 import PsychologistAppointments from "./pages/PsychologistAppointments";
 import PsychologistMessages from "./pages/PsychologistMessages";
 
+const RouteLoader = () => (
+  <div className="min-h-screen bg-[#eef0f5] flex items-center justify-center">
+    <div className="flex flex-col items-center gap-3">
+      <svg className="animate-spin text-psycho-primary" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+      </svg>
+      <p className="text-sm text-gray-500">Loading…</p>
+    </div>
+  </div>
+);
+
 const useAppStatus = (isAuthenticated, role) => {
   const [appStatus, setAppStatus] = useState(null);
   const [checking, setChecking] = useState(true);
@@ -37,7 +48,7 @@ const PostLoginRedirect = ({ isAuthenticated, role }) => {
   if (!isAuthenticated || role !== "PSYCHOLOGIST") {
     return <Navigate to="/psychologist/login" replace />;
   }
-  if (checking) return null;
+  if (checking) return <RouteLoader />;
 
   if (appStatus === "APPROVED") return <Navigate to="/psychologist/home" replace />;
   if (appStatus === "NOT_SUBMITTED" || appStatus === null) return <Navigate to="/psychologist/application" replace />;
@@ -50,7 +61,7 @@ const GuardedHome = ({ isAuthenticated, role }) => {
   if (!isAuthenticated || role !== "PSYCHOLOGIST") {
     return <Navigate to="/psychologist/login" replace />;
   }
-  if (checking) return null;
+  if (checking) return <RouteLoader />;
 
   if (appStatus === "APPROVED") return <PsychologistHome />;
   if (appStatus === "NOT_SUBMITTED" || appStatus === null) return <Navigate to="/psychologist/application" replace />;
@@ -63,7 +74,7 @@ const GuardedApplication = ({ isAuthenticated, role }) => {
   if (!isAuthenticated || role !== "PSYCHOLOGIST") {
     return <Navigate to="/psychologist/login" replace />;
   }
-  if (checking) return null;
+  if (checking) return <RouteLoader />;
 
   if (appStatus === "APPROVED") return <Navigate to="/psychologist/home" replace />;
   if (appStatus !== "NOT_SUBMITTED" && appStatus !== null) return <Navigate to="/psychologist/approval-waiting" replace />;
@@ -76,7 +87,7 @@ const GuardedApprovalWaiting = ({ isAuthenticated, role }) => {
   if (!isAuthenticated || role !== "PSYCHOLOGIST") {
     return <Navigate to="/psychologist/login" replace />;
   }
-  if (checking) return null;
+  if (checking) return <RouteLoader />;
 
   if (appStatus === "APPROVED") return <Navigate to="/psychologist/home" replace />;
   if (appStatus === "NOT_SUBMITTED" || appStatus === null) return <Navigate to="/psychologist/application" replace />;
