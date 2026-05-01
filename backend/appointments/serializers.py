@@ -5,6 +5,12 @@ from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from .models import Availability, AvailableSlot, Booking
 
+from chat.services.chat_service import sync_chat_room_for_booking
+from notifications.services import create_notification
+from notifications.time_formatting import format_india_slot
+from chat.services.chat_service import ensure_chat_room_for_booking
+
+
 INDIA_TZ = ZoneInfo("Asia/Kolkata")
 
 
@@ -231,7 +237,7 @@ class CreateAvailabilitySerializer(serializers.Serializer):
 
 
 """
-Revoke Availability
+REVOKE AVILABILITY
 """
 class RevokeAvailabilitySlotSerializer(serializers.Serializer):
     slot_id = serializers.UUIDField()
@@ -394,9 +400,16 @@ class CreateBookingSerializer(serializers.Serializer):
                 status="CONFIRMED",
             )
 
-        from chat.services.chat_service import ensure_chat_room_for_booking
-
         ensure_chat_room_for_booking(booking)
+        slot_label = format_india_slot(booking.date, booking.start_time)
+        create_notification(
+            booking.psychologist.user,
+            f"New appointment booked by {booking.patient.user.full_name} for {slot_label}.",
+        )
+        create_notification(
+            booking.patient.user,
+            f"Your appointment with {booking.psychologist.user.full_name} is confirmed for {slot_label}.",
+        )
         return booking
 
 
@@ -435,6 +448,16 @@ class CancelBookingSerializer(serializers.Serializer):
             locked_booking.notes = note
             locked_booking.save(update_fields=["slot", "status", "notes"])
 
+        sync_chat_room_for_booking(locked_booking)
+        slot_label = format_india_slot(locked_booking.date, locked_booking.start_time)
+        create_notification(
+            locked_booking.patient.user,
+            f"Your appointment with {locked_booking.psychologist.user.full_name} for {slot_label} was cancelled.",
+        )
+        create_notification(
+            locked_booking.psychologist.user,
+            f"Appointment with {locked_booking.patient.user.full_name} for {slot_label} was cancelled.",
+        )
         return locked_booking
 
 
@@ -526,7 +549,10 @@ class RescheduleBookingSerializer(serializers.Serializer):
                 ]
             )
 
-        from chat.services.chat_service import sync_chat_room_for_booking
-
         sync_chat_room_for_booking(locked_booking)
+        slot_label = format_india_slot(locked_booking.date, locked_booking.start_time)
+        create_notification(
+            locked_booking.patient.user,
+            f"Your appointment with {locked_booking.psychologist.user.full_name} was rescheduled to {slot_label}.",
+        )
         return locked_booking

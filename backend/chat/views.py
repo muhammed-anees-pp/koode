@@ -15,6 +15,7 @@ from appointments.models import Booking
 from chat.models import ChatRoom, Message
 from chat.serializers import ChatRoomSerializer, MessageSerializer
 from chat.services.chat_service import ensure_chat_room_for_booking, mark_room_messages_read
+from notifications.services import create_notification
 
 
 logger = logging.getLogger(__name__)
@@ -167,6 +168,15 @@ class AppointmentChatFileUploadView(APIView):
             attachment_name=uploaded_file.name,
             attachment_size=uploaded_file.size,
             attachment_content_type=getattr(uploaded_file, "content_type", "") or "",
+        )
+        recipient = (
+            room.psychologist.user
+            if request.user.id == room.patient.user_id
+            else room.patient.user
+        )
+        create_notification(
+            recipient,
+            f"{request.user.full_name} sent a file: {uploaded_file.name}",
         )
         serializer = MessageSerializer(message, context={"request": request})
         message_data = serializer.data

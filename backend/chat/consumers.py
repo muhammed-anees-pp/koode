@@ -9,6 +9,7 @@ from appointments.models import Booking
 from chat.models import ChatRoom, Message
 from chat.serializers import MessageSerializer
 from chat.services.chat_service import ensure_chat_room_for_booking
+from notifications.services import create_notification
 
 
 logger = logging.getLogger(__name__)
@@ -149,7 +150,11 @@ class AppointmentChatConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def create_message(self, content):
         try:
-            room = ChatRoom.objects.select_related("appointment").get(id=self.room_id)
+            room = ChatRoom.objects.select_related(
+                "appointment",
+                "patient__user",
+                "psychologist__user",
+            ).get(id=self.room_id)
             room.sync_active_state(save=True)
 
             if not room.is_active:
@@ -162,6 +167,15 @@ class AppointmentChatConsumer(AsyncWebsocketConsumer):
                 room=room,
                 sender=self.user,
                 content=content,
+            )
+            recipient = (
+                room.psychologist.user
+                if self.user.id == room.patient.user_id
+                else room.patient.user
+            )
+            create_notification(
+                recipient,
+                f"New message from {self.user.full_name}: {content[:80]}",
             )
             serializer_data = MessageSerializer(message).data
             return json.loads(JSONRenderer().render(serializer_data))
