@@ -122,12 +122,15 @@ class CreateAvailabilitySerializer(serializers.Serializer):
                 seen_dates.add(current_date)
 
                 if not current_slots:
-                    raise serializers.ValidationError({"days": "Each day must include at least one slot."})
+                    continue
 
                 normalized_days.append({
                     "date": current_date,
                     "slots": self._normalize_slots(current_slots, [current_date], cutoff),
                 })
+
+            if not normalized_days:
+                raise serializers.ValidationError({"days": "At least one day must include a slot."})
 
             attrs["days"] = normalized_days
             return attrs

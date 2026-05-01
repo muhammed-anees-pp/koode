@@ -65,6 +65,18 @@ const getEligibleSlotsForDate = (date, availabilityEntry) =>
 const sortSlots = (slots) =>
   [...slots].sort((a, b) => a.start_time.localeCompare(b.start_time));
 
+const getApiErrorMessage = (value) => {
+  if (!value) return "";
+  if (typeof value === "string") return value;
+  if (Array.isArray(value)) {
+    return value.map(getApiErrorMessage).find(Boolean) ?? "";
+  }
+  if (typeof value === "object") {
+    return Object.values(value).map(getApiErrorMessage).find(Boolean) ?? "";
+  }
+  return "";
+};
+
 const PublishModeToggle = ({ publishMode, onChange }) => (
   <div className="inline-flex rounded-2xl border border-slate-200 bg-slate-50 p-1">
     <button
@@ -92,8 +104,15 @@ const PublishModeToggle = ({ publishMode, onChange }) => (
   </div>
 );
 
-const DatePickerField = ({ label, value, min, inputRef, onChange }) => (
-  <label className="block">
+const DatePickerField = ({
+  label,
+  value,
+  min,
+  inputRef,
+  onChange,
+  className = "",
+}) => (
+  <label className={`block ${className}`}>
     <span className="mb-2 block text-sm font-medium text-slate-600">{label}</span>
     <div className="relative">
       <button
@@ -155,6 +174,8 @@ const PsychologistAvailability = () => {
   const [endDate, setEndDate] = useState(earliestBookableDate);
   const [selectedSlots, setSelectedSlots] = useState([]);
   const [rangeExcludedSlots, setRangeExcludedSlots] = useState({});
+  const [rangePreviewIndex, setRangePreviewIndex] = useState(0);
+  const [publishedPreviewIndex, setPublishedPreviewIndex] = useState(0);
   const [revokingSlotId, setRevokingSlotId] = useState(null);
   const [feedback, setFeedback] = useState({ type: "", message: "" });
 
@@ -202,6 +223,20 @@ const PsychologistAvailability = () => {
     [rangeSelectionByDate]
   );
 
+  const activeRangePreviewIndex = previewDates.length
+    ? Math.min(rangePreviewIndex, previewDates.length - 1)
+    : 0;
+  const activeRangeDate = previewDates[activeRangePreviewIndex] ?? "";
+  const activeRangeAvailableSlots = activeRangeDate
+    ? getEligibleSlotsForDate(
+        activeRangeDate,
+        previewAvailabilityByDate.get(activeRangeDate)
+      )
+    : [];
+  const activeRangeSelectedSlots = activeRangeDate
+    ? rangeSelectionByDate[activeRangeDate] ?? []
+    : [];
+
   const upcomingAvailability = useMemo(
     () =>
       [...(availabilityQuery.data ?? [])].sort((a, b) =>
@@ -209,6 +244,12 @@ const PsychologistAvailability = () => {
       ),
     [availabilityQuery.data]
   );
+
+  const activePublishedPreviewIndex = upcomingAvailability.length
+    ? Math.min(publishedPreviewIndex, upcomingAvailability.length - 1)
+    : 0;
+  const activePublishedEntry =
+    upcomingAvailability[activePublishedPreviewIndex] ?? null;
 
   const saveAvailabilityMutation = useMutation({
     mutationFn: createAvailability,
@@ -242,6 +283,9 @@ const PsychologistAvailability = () => {
         apiError?.detail ||
         apiError?.end_date?.[0] ||
         apiError?.date?.[0] ||
+        apiError?.slots?.[0] ||
+        getApiErrorMessage(apiError?.days) ||
+        getApiErrorMessage(apiError) ||
         "Unable to save availability right now.";
 
       setFeedback({ type: "error", message: detail });
@@ -346,7 +390,7 @@ const PsychologistAvailability = () => {
 
       saveAvailabilityMutation.mutate({
         mode: "range",
-        days,
+        days: publishableDays,
       });
       return;
     }
@@ -382,7 +426,7 @@ const PsychologistAvailability = () => {
         <PsychologistSidebar />
 
         <main className="min-w-0 flex-1 px-6 py-8">
-          <div className="mx-auto max-w-6xl">
+          <div className="mx-auto max-w-7xl">
             <div className="mb-8">
               <h1 className="text-2xl font-bold text-slate-900">Availability</h1>
               <p className="mt-1 text-sm text-slate-500">
@@ -391,8 +435,8 @@ const PsychologistAvailability = () => {
               <div className="mt-3 h-1 w-10 rounded-full bg-psycho-primary" />
             </div>
 
-            <section className="mt-8 grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-              <div className="rounded-[28px] border border-white/70 bg-white p-8 shadow-sm">
+            <section className="mt-8 grid gap-6 lg:[grid-template-columns:minmax(0,1fr)_minmax(0,1fr)]">
+              <div className="w-full min-w-0 rounded-[28px] border border-white/70 bg-white p-8 shadow-sm">
                 <div className="flex flex-col gap-6">
                   <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                     <div>
@@ -409,6 +453,7 @@ const PsychologistAvailability = () => {
                         setPublishMode(nextMode);
                         setSelectedSlots([]);
                         setRangeExcludedSlots({});
+                        setRangePreviewIndex(0);
                         setFeedback({ type: "", message: "" });
                       }}
                     />
@@ -420,6 +465,7 @@ const PsychologistAvailability = () => {
                       value={date}
                       min={earliestBookableDate}
                       inputRef={dateInputRef}
+                      className="w-full max-w-[260px]"
                       onChange={(event) => {
                         setDate(event.target.value);
                         setSelectedSlots([]);
@@ -427,12 +473,13 @@ const PsychologistAvailability = () => {
                       }}
                     />
                   ) : (
-                    <div className="grid gap-4 md:grid-cols-2">
+                    <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between md:gap-8">
                       <DatePickerField
                         label="From date"
                         value={startDate}
                         min={earliestBookableDate}
                         inputRef={startDateInputRef}
+                        className="w-full max-w-[240px] md:flex-shrink-0"
                         onChange={(event) => {
                           const nextStart = event.target.value;
                           setStartDate(nextStart);
@@ -440,6 +487,7 @@ const PsychologistAvailability = () => {
                             setEndDate(nextStart);
                           }
                           setRangeExcludedSlots({});
+                          setRangePreviewIndex(0);
                           setFeedback({ type: "", message: "" });
                         }}
                       />
@@ -448,16 +496,18 @@ const PsychologistAvailability = () => {
                         value={endDate}
                         min={startDate}
                         inputRef={endDateInputRef}
+                        className="w-full max-w-[240px] md:flex-shrink-0"
                         onChange={(event) => {
                           setEndDate(event.target.value);
                           setRangeExcludedSlots({});
+                          setRangePreviewIndex(0);
                           setFeedback({ type: "", message: "" });
                         }}
                       />
                     </div>
                   )}
 
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600">
+                  <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-medium text-amber-800 shadow-[0_8px_24px_-18px_rgba(180,83,9,0.85)]">
                     {publishMode === "range"
                       ? `All eligible slots from ${formatIndiaDate(startDate)} to ${formatIndiaDate(endDate)} are preselected. Remove any slot you do not want before publishing.`
                       : "Slots can only be published more than 24 hours in advance."}
@@ -558,72 +608,95 @@ const PsychologistAvailability = () => {
                       </span>
                     </div>
 
-                    <div className="space-y-4">
-                      {previewDates.map((currentDate) => {
-                        const availableSlots = getEligibleSlotsForDate(
-                          currentDate,
-                          previewAvailabilityByDate.get(currentDate)
-                        );
-                        const selectedForDate = rangeSelectionByDate[currentDate] ?? [];
+                    <article className="rounded-3xl border border-slate-200 bg-slate-50/70 p-5">
+                      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                          <h3 className="text-base font-semibold text-slate-900">
+                            {activeRangeDate
+                              ? formatIndiaDate(activeRangeDate)
+                              : "No dates selected"}
+                          </h3>
+                          <p className="mt-1 text-xs text-slate-500">
+                            {activeRangeDate
+                              ? `${activeRangeSelectedSlots.length} of ${activeRangeAvailableSlots.length} slots selected`
+                              : "Choose a valid date range to review slots."}
+                          </p>
+                        </div>
 
-                        return (
-                          <article
-                            key={currentDate}
-                            className="rounded-3xl border border-slate-200 bg-slate-50/70 p-5"
-                          >
-                            <div className="flex items-center justify-between gap-4">
-                              <div>
-                                <h3 className="text-base font-semibold text-slate-900">
-                                  {formatIndiaDate(currentDate)}
-                                </h3>
-                                <p className="mt-1 text-xs text-slate-500">
-                                  {selectedForDate.length} of {availableSlots.length} slots selected
-                                </p>
-                              </div>
-                            </div>
+                        {previewDates.length > 0 ? (
+                          <div className="flex items-center gap-2 self-start">
+                            <span className="text-xs font-medium uppercase tracking-[0.12em] text-slate-400">
+                              {activeRangePreviewIndex + 1} / {previewDates.length}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setRangePreviewIndex((current) => Math.max(current - 1, 0))
+                              }
+                              disabled={activeRangePreviewIndex === 0}
+                              className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              Prev
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setRangePreviewIndex((current) =>
+                                  Math.min(current + 1, previewDates.length - 1)
+                                )
+                              }
+                              disabled={
+                                activeRangePreviewIndex === previewDates.length - 1
+                              }
+                              className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              Next
+                            </button>
+                          </div>
+                        ) : null}
+                      </div>
 
-                            {availableSlots.length === 0 ? (
-                              <div className="mt-4 rounded-2xl border border-dashed border-slate-200 bg-white px-4 py-4 text-sm text-slate-500">
-                                No new eligible slots are available on this date.
-                              </div>
-                            ) : (
-                              <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                                {availableSlots.map((slot) => {
-                                  const selected = selectedForDate.some(
-                                    (item) => item.start_time === slot.start_time
-                                  );
+                      {activeRangeDate && activeRangeAvailableSlots.length === 0 ? (
+                        <div className="mt-4 rounded-2xl border border-dashed border-slate-200 bg-white px-4 py-4 text-sm text-slate-500">
+                          No new eligible slots are available on this date.
+                        </div>
+                      ) : null}
 
-                                  return (
-                                    <button
-                                      key={`${currentDate}-${slot.start_time}`}
-                                      type="button"
-                                      onClick={() =>
-                                        toggleRangeSlot(currentDate, slot.start_time)
-                                      }
-                                      className={`rounded-2xl border px-4 py-4 text-left transition ${
-                                        selected
-                                          ? "border-psycho-primary bg-[#e8f4fd] text-psycho-primary shadow-sm"
-                                          : "border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:bg-slate-50"
-                                      }`}
-                                    >
-                                      <div className="text-sm font-semibold">
-                                        {formatIndiaTime(slot.start_time)} -{" "}
-                                        {formatIndiaTime(slot.end_time)}
-                                      </div>
-                                      <div className="mt-1 text-xs">
-                                        {selected
-                                          ? "Selected for publish"
-                                          : "Excluded from publish"}
-                                      </div>
-                                    </button>
-                                  );
-                                })}
-                              </div>
-                            )}
-                          </article>
-                        );
-                      })}
-                    </div>
+                      {activeRangeDate && activeRangeAvailableSlots.length > 0 ? (
+                        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                          {activeRangeAvailableSlots.map((slot) => {
+                            const selected = activeRangeSelectedSlots.some(
+                              (item) => item.start_time === slot.start_time
+                            );
+
+                            return (
+                              <button
+                                key={`${activeRangeDate}-${slot.start_time}`}
+                                type="button"
+                                onClick={() =>
+                                  toggleRangeSlot(activeRangeDate, slot.start_time)
+                                }
+                                className={`rounded-2xl border px-4 py-4 text-left transition ${
+                                  selected
+                                    ? "border-psycho-primary bg-[#e8f4fd] text-psycho-primary shadow-sm"
+                                    : "border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:bg-slate-50"
+                                }`}
+                              >
+                                <div className="text-sm font-semibold">
+                                  {formatIndiaTime(slot.start_time)} -{" "}
+                                  {formatIndiaTime(slot.end_time)}
+                                </div>
+                                <div className="mt-1 text-xs">
+                                  {selected
+                                    ? "Selected for publish"
+                                    : "Excluded from publish"}
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      ) : null}
+                    </article>
                   </div>
                 )}
 
@@ -663,7 +736,7 @@ const PsychologistAvailability = () => {
                 )}
               </div>
 
-              <div className="rounded-[28px] border border-white/70 bg-white p-8 shadow-sm">
+              <div className="w-full min-w-0 rounded-[28px] border border-white/70 bg-white p-8 shadow-sm">
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <p className="text-sm font-semibold uppercase tracking-[0.14em] text-psycho-primary">
@@ -704,30 +777,60 @@ const PsychologistAvailability = () => {
                     </div>
                   ) : null}
 
-                  {upcomingAvailability.map((entry) => (
-                    <article
-                      key={entry.id ?? entry.date}
-                      className="rounded-3xl border border-slate-200 bg-slate-50/70 p-5"
-                    >
-                      <div className="flex items-center justify-between gap-4">
+                  {activePublishedEntry ? (
+                    <article className="rounded-3xl border border-slate-200 bg-slate-50/70 p-5">
+                      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                         <div>
                           <h3 className="text-base font-semibold text-slate-900">
-                            {formatIndiaDate(entry.date)}
+                            {formatIndiaDate(activePublishedEntry.date)}
                           </h3>
                           <p className="mt-1 text-xs text-slate-500">
-                            {entry.slots.length} slot
-                            {entry.slots.length === 1 ? "" : "s"} published
+                            {activePublishedEntry.slots.length} slot
+                            {activePublishedEntry.slots.length === 1 ? "" : "s"}{" "}
+                            published
                           </p>
                         </div>
-                        {entry.date === date ? (
-                          <span className="rounded-full bg-[#dff1ff] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-psycho-primary">
-                            Selected
+                        <div className="flex items-center gap-2 self-start">
+                          {activePublishedEntry.date === date ? (
+                            <span className="rounded-full bg-[#dff1ff] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-psycho-primary">
+                              Selected
+                            </span>
+                          ) : null}
+                          <span className="text-xs font-medium uppercase tracking-[0.12em] text-slate-400">
+                            {activePublishedPreviewIndex + 1} / {upcomingAvailability.length}
                           </span>
-                        ) : null}
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setPublishedPreviewIndex((current) =>
+                                Math.max(current - 1, 0)
+                              )
+                            }
+                            disabled={activePublishedPreviewIndex === 0}
+                            className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            Prev
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setPublishedPreviewIndex((current) =>
+                                Math.min(current + 1, upcomingAvailability.length - 1)
+                              )
+                            }
+                            disabled={
+                              activePublishedPreviewIndex ===
+                              upcomingAvailability.length - 1
+                            }
+                            className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            Next
+                          </button>
+                        </div>
                       </div>
 
                       <div className="mt-4 space-y-2">
-                        {sortSlots(entry.slots).map((slot) => (
+                        {sortSlots(activePublishedEntry.slots).map((slot) => (
                           <div
                             key={slot.id}
                             className={`flex items-center justify-between gap-3 rounded-2xl px-3 py-3 ${
@@ -753,10 +856,14 @@ const PsychologistAvailability = () => {
                               <button
                                 type="button"
                                 onClick={() => handleRevokeSlot(slot.id)}
-                                disabled={revokeSlotMutation.isPending && revokingSlotId === slot.id}
+                                disabled={
+                                  revokeSlotMutation.isPending &&
+                                  revokingSlotId === slot.id
+                                }
                                 className="inline-flex items-center justify-center rounded-full border border-red-200 bg-red-50 px-3 py-2 text-[11px] font-semibold text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
                               >
-                                {revokeSlotMutation.isPending && revokingSlotId === slot.id
+                                {revokeSlotMutation.isPending &&
+                                revokingSlotId === slot.id
                                   ? "Revoking..."
                                   : "Revoke"}
                               </button>
@@ -765,7 +872,7 @@ const PsychologistAvailability = () => {
                         ))}
                       </div>
                     </article>
-                  ))}
+                  ) : null}
                 </div>
               </div>
             </section>
