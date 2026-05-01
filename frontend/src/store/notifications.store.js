@@ -13,6 +13,7 @@ const dedupeNotifications = (notifications) => {
 
 export const useNotificationsStore = create((set) => ({
   items: [],
+  toasts: [],
   unreadCount: 0,
   isConnected: false,
   hasLoaded: false,
@@ -41,6 +42,23 @@ export const useNotificationsStore = create((set) => ({
           (exists || notification.is_read ? 0 : 1),
       };
     }),
+
+  pushToast: (notification) =>
+    set((state) => {
+      const exists = state.toasts.some((toast) => toast.id === notification.id);
+      if (exists) {
+        return state;
+      }
+
+      return {
+        toasts: [notification, ...state.toasts].slice(0, 3),
+      };
+    }),
+
+  dismissToast: (notificationId) =>
+    set((state) => ({
+      toasts: state.toasts.filter((toast) => toast.id !== notificationId),
+    })),
 
   markAsRead: (notificationId) =>
     set((state) => ({
@@ -74,6 +92,7 @@ export const useNotificationsStore = create((set) => ({
   reset: () =>
     set({
       items: [],
+      toasts: [],
       unreadCount: 0,
       isConnected: false,
       hasLoaded: false,

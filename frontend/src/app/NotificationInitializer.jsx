@@ -43,6 +43,7 @@ const NotificationInitializer = () => {
   const currentUserId = user?.id || getUserIdFromToken(accessToken);
   const setNotifications = useNotificationsStore((state) => state.setNotifications);
   const prependNotification = useNotificationsStore((state) => state.prependNotification);
+  const pushToast = useNotificationsStore((state) => state.pushToast);
   const setConnected = useNotificationsStore((state) => state.setConnected);
   const resetNotifications = useNotificationsStore((state) => state.reset);
   const previousUserIdRef = useRef(currentUserId);
@@ -112,6 +113,7 @@ const NotificationInitializer = () => {
               return;
             }
             prependNotification(payload.notification);
+            pushToast(payload.notification);
           }
         } catch (error) {
           console.error("Error parsing notification payload:", error);
@@ -156,6 +158,7 @@ const NotificationInitializer = () => {
     hasAccessToken,
     isAuthenticated,
     prependNotification,
+    pushToast,
     resetNotifications,
     setConnected,
   ]);
