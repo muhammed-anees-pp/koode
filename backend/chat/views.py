@@ -1,9 +1,12 @@
 import logging
 
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 from django.shortcuts import get_object_or_404
 from django.db.models import OuterRef, Prefetch, Subquery
 from rest_framework import status
 from rest_framework.exceptions import PermissionDenied
+from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -15,6 +18,7 @@ from chat.services.chat_service import ensure_chat_room_for_booking, mark_room_m
 
 
 logger = logging.getLogger(__name__)
+MAX_CHAT_ATTACHMENT_SIZE = 10 * 1024 * 1024
 
 
 def get_participant_booking_or_403(user, appointment_id):
@@ -28,6 +32,10 @@ def get_participant_booking_or_403(user, appointment_id):
     return booking
 
 
+
+"""
+CHAT ROOM VIEW
+"""
 class AppointmentChatRoomView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -37,10 +45,28 @@ class AppointmentChatRoomView(APIView):
         return Response(ChatRoomSerializer(room).data)
 
 
+"""
+CHAT ROOM LIST VIEW
+"""
 class ChatRoomListView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        active_bookings = Booking.objects.select_related(
+            "patient",
+            "psychologist",
+        ).filter(status="CONFIRMED")
+
+        if request.user.role == "PATIENT":
+            active_bookings = active_bookings.filter(patient__user=request.user)
+        elif request.user.role == "PSYCHOLOGIST":
+            active_bookings = active_bookings.filter(psychologist__user=request.user)
+        else:
+            active_bookings = Booking.objects.none()
+
+        for booking in active_bookings:
+            ensure_chat_room_for_booking(booking)
+
         last_message_qs = Message.objects.filter(room=OuterRef("pk")).order_by("-created_at")
         rooms = ChatRoom.objects.select_related(
             "appointment",
@@ -72,6 +98,9 @@ class ChatRoomListView(APIView):
         return Response(serializer.data)
 
 
+"""
+CHAT MESSAGE LIST
+"""
 class AppointmentChatMessageListView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -96,3 +125,63 @@ class AppointmentChatMessageListView(APIView):
             },
             status=status.HTTP_200_OK,
         )
+
+
+"""
+CHAT FILE UPLOAD VIEW
+"""
+class AppointmentChatFileUploadView(APIView):
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def post(self, request, appointment_id):
+        booking = get_participant_booking_or_403(request.user, appointment_id)
+        room = ensure_chat_room_for_booking(booking)
+        room.sync_active_state(save=True)
+
+        if not room.is_active:
+            return Response(
+                {"detail": "Chat is not active for this appointment."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        uploaded_file = request.FILES.get("file")
+        if not uploaded_file:
+            return Response(
+                {"file": "Choose a file to send."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if uploaded_file.size > MAX_CHAT_ATTACHMENT_SIZE:
+            return Response(
+                {"file": "File size must be 10 MB or less."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        message = Message.objects.create(
+            room=room,
+            sender=request.user,
+            message_type=Message.MESSAGE_TYPE_FILE,
+            content=request.data.get("caption", "").strip(),
+            attachment=uploaded_file,
+            attachment_name=uploaded_file.name,
+            attachment_size=uploaded_file.size,
+            attachment_content_type=getattr(uploaded_file, "content_type", "") or "",
+        )
+        serializer = MessageSerializer(message, context={"request": request})
+        message_data = serializer.data
+
+        channel_layer = get_channel_layer()
+        if channel_layer:
+            try:
+                async_to_sync(channel_layer.group_send)(
+                    f"chat_{appointment_id}",
+                    {
+                        "type": "chat.message",
+                        "message": message_data,
+                    },
+                )
+            except Exception:
+                logger.exception("Failed to broadcast chat attachment for appointment %s", appointment_id)
+
+        return Response(message_data, status=status.HTTP_201_CREATED)

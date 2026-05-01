@@ -53,10 +53,22 @@ class ChatRoom(models.Model):
 
 
 class Message(models.Model):
+    MESSAGE_TYPE_TEXT = "TEXT"
+    MESSAGE_TYPE_FILE = "FILE"
+    MESSAGE_TYPE_CHOICES = (
+        (MESSAGE_TYPE_TEXT, "Text"),
+        (MESSAGE_TYPE_FILE, "File"),
+    )
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     room = models.ForeignKey(ChatRoom, on_delete=models.CASCADE, related_name="messages")
     sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="chat_messages")
-    content = models.TextField()
+    message_type = models.CharField(max_length=10, choices=MESSAGE_TYPE_CHOICES, default=MESSAGE_TYPE_TEXT)
+    content = models.TextField(blank=True)
+    attachment = models.FileField(upload_to="chat/attachments/%Y/%m/", null=True, blank=True)
+    attachment_name = models.CharField(max_length=255, blank=True)
+    attachment_size = models.PositiveIntegerField(null=True, blank=True)
+    attachment_content_type = models.CharField(max_length=120, blank=True)
     is_read = models.BooleanField(default=False)
     read_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)

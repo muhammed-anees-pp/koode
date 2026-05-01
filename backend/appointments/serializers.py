@@ -295,6 +295,7 @@ class BookingSerializer(serializers.ModelSerializer):
     psychologist_id = serializers.CharField(source="psychologist.psychologist_id", read_only=True)
     specialization = serializers.SerializerMethodField()
     cancellation_note = serializers.CharField(source="notes", read_only=True)
+    chat_enabled = serializers.SerializerMethodField()
 
     def get_psychologist_photo(self, obj):
         request = self.context.get("request")
@@ -318,6 +319,9 @@ class BookingSerializer(serializers.ModelSerializer):
             return specs.first().name
         return None
 
+    def get_chat_enabled(self, obj):
+        return obj.status == "CONFIRMED"
+
     class Meta:
         model = Booking
         fields = [
@@ -336,6 +340,7 @@ class BookingSerializer(serializers.ModelSerializer):
             "payment_status",
             "meeting_link",
             "cancellation_note",
+            "chat_enabled",
             "slot",
             "created_at",
         ]
@@ -389,6 +394,9 @@ class CreateBookingSerializer(serializers.Serializer):
                 status="CONFIRMED",
             )
 
+        from chat.services.chat_service import ensure_chat_room_for_booking
+
+        ensure_chat_room_for_booking(booking)
         return booking
 
 
@@ -518,4 +526,7 @@ class RescheduleBookingSerializer(serializers.Serializer):
                 ]
             )
 
+        from chat.services.chat_service import sync_chat_room_for_booking
+
+        sync_chat_room_for_booking(locked_booking)
         return locked_booking

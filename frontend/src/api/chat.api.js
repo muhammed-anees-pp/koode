@@ -15,3 +15,17 @@ export const fetchAppointmentMessages = async (appointmentId) => {
   const response = await axiosInstance.get(`chat/appointments/${appointmentId}/messages/`);
   return response.data;
 };
+
+export const uploadAppointmentChatFile = async ({ appointmentId, file }) => {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await axiosInstance.post(
+    `chat/appointments/${appointmentId}/messages/files/`,
+    formData,
+    {
+      headers: { "Content-Type": "multipart/form-data" },
+    }
+  );
+  return response.data;
+};
