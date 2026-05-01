@@ -47,10 +47,10 @@ class AvailabilitySerializer(serializers.ModelSerializer):
     slots = serializers.SerializerMethodField()
 
     def get_slots(self, obj):
-        future_slots = [
+        future_slots = sorted([
             slot for slot in obj.slots.all()
             if is_future_slot(obj.date, slot.start_time)
-        ]
+        ], key=lambda slot: (slot.start_time, slot.end_time))
         return AvailableSlotSerializer(future_slots, many=True).data
 
     class Meta:
