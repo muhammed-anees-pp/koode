@@ -405,10 +405,12 @@ class CreateBookingSerializer(serializers.Serializer):
         create_notification(
             booking.psychologist.user,
             f"New appointment booked by {booking.patient.user.full_name} for {slot_label}.",
+            target_url="/psychologist/appointments",
         )
         create_notification(
             booking.patient.user,
             f"Your appointment with {booking.psychologist.user.full_name} is confirmed for {slot_label}.",
+            target_url=f"/patient/appointments/{booking.id}",
         )
         return booking
 
@@ -453,10 +455,12 @@ class CancelBookingSerializer(serializers.Serializer):
         create_notification(
             locked_booking.patient.user,
             f"Your appointment with {locked_booking.psychologist.user.full_name} for {slot_label} was cancelled.",
+            target_url=f"/patient/appointments/{locked_booking.id}",
         )
         create_notification(
             locked_booking.psychologist.user,
             f"Appointment with {locked_booking.patient.user.full_name} for {slot_label} was cancelled.",
+            target_url="/psychologist/appointments",
         )
         return locked_booking
 
@@ -554,5 +558,6 @@ class RescheduleBookingSerializer(serializers.Serializer):
         create_notification(
             locked_booking.patient.user,
             f"Your appointment with {locked_booking.psychologist.user.full_name} was rescheduled to {slot_label}.",
+            target_url=f"/patient/appointments/{locked_booking.id}",
         )
         return locked_booking

@@ -1,6 +1,10 @@
 import { useEffect } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
+import { markNotificationRead } from "../../api/notifications.api";
 import { useAuthStore } from "../../store/auth.store";
 import { useNotificationsStore } from "../../store/notifications.store";
+import { getNotificationTarget, getRoleKey } from "../../utils/notificationNavigation";
 
 const TOAST_DURATION = 5000;
 
@@ -75,7 +79,7 @@ const CloseIcon = () => (
   </svg>
 );
 
-const NotificationToast = ({ notification, styles, onDismiss }) => {
+const NotificationToast = ({ notification, styles, onDismiss, onOpen }) => {
   useEffect(() => {
     const timer = window.setTimeout(() => onDismiss(notification.id), TOAST_DURATION);
     return () => window.clearTimeout(timer);
@@ -84,11 +88,19 @@ const NotificationToast = ({ notification, styles, onDismiss }) => {
   return (
     <div
       className={`relative flex w-full max-w-[calc(100vw-32px)] overflow-hidden rounded-[12px] animate-toast-slide-up sm:w-[360px] ${styles.wrapper}`}
-      role="status"
+      role="button"
       aria-live="polite"
+      tabIndex={0}
+      onClick={() => onOpen(notification)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onOpen(notification);
+        }
+      }}
     >
       <span className={`absolute ${styles.accent}`} />
-      <div className={`flex min-w-0 flex-1 ${styles.content}`}>
+      <div className={`flex min-w-0 flex-1 text-left ${styles.content}`}>
         <div className={`mt-0.5 flex flex-shrink-0 items-center justify-center ${styles.icon}`}>
           <BellIcon />
         </div>
@@ -104,7 +116,10 @@ const NotificationToast = ({ notification, styles, onDismiss }) => {
           type="button"
           className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full transition ${styles.action}`}
           aria-label="Dismiss notification"
-          onClick={() => onDismiss(notification.id)}
+          onClick={(event) => {
+            event.stopPropagation();
+            onDismiss(notification.id);
+          }}
         >
           <CloseIcon />
         </button>
@@ -114,10 +129,25 @@ const NotificationToast = ({ notification, styles, onDismiss }) => {
 };
 
 const NotificationToasts = () => {
+  const navigate = useNavigate();
   const role = useAuthStore((state) => state.role);
   const toasts = useNotificationsStore((state) => state.toasts);
+  const markAsRead = useNotificationsStore((state) => state.markAsRead);
   const dismissToast = useNotificationsStore((state) => state.dismissToast);
-  const styles = STYLES[role] || STYLES.patient;
+  const styles = STYLES[getRoleKey(role)];
+
+  const markReadMutation = useMutation({
+    mutationFn: markNotificationRead,
+  });
+
+  const handleOpen = (notification) => {
+    dismissToast(notification.id);
+    if (!notification.is_read) {
+      markAsRead(notification.id);
+      markReadMutation.mutate(notification.id);
+    }
+    navigate(getNotificationTarget(notification, role));
+  };
 
   if (!toasts.length) {
     return null;
@@ -131,6 +161,7 @@ const NotificationToasts = () => {
             notification={notification}
             styles={styles}
             onDismiss={dismissToast}
+            onOpen={handleOpen}
           />
         </div>
       ))}

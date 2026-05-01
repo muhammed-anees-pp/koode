@@ -177,6 +177,7 @@ class AppointmentChatFileUploadView(APIView):
         create_notification(
             recipient,
             f"{request.user.full_name} sent a file: {uploaded_file.name}",
+            target_url="/patient/messages" if recipient.role == "PATIENT" else "/psychologist/messages",
         )
         serializer = MessageSerializer(message, context={"request": request})
         message_data = serializer.data

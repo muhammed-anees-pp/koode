@@ -176,6 +176,7 @@ class AppointmentChatConsumer(AsyncWebsocketConsumer):
             create_notification(
                 recipient,
                 f"New message from {self.user.full_name}: {content[:80]}",
+                target_url="/patient/messages" if recipient.role == "PATIENT" else "/psychologist/messages",
             )
             serializer_data = MessageSerializer(message).data
             return json.loads(JSONRenderer().render(serializer_data))
