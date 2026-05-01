@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { fetchChatRooms } from "../../api/chat.api";
-import { formatIndiaTime } from "../../utils/indiaDateTime";
+import { formatIndiaDate, formatIndiaTime } from "../../utils/indiaDateTime";
 import AppointmentChat from "./AppointmentChat";
 
 const formatLastSeen = (value) => {
@@ -196,15 +196,16 @@ const ChatInbox = ({ variant = "patient" }) => {
           {filteredRooms.map((room) => {
             const active = selectedRoom?.id === room.id;
             const name = isPatient ? room.psychologist_name : room.patient_name;
+            const hasMessage = Boolean(room.last_message_at);
             const activeChat =
               room.is_active &&
               !["COMPLETED", "CANCELLED"].includes(room.appointment_status);
             const preview =
               room.last_message ||
               `Appointment · ${formatIndiaTime(room.appointment_start_time)}`;
-            const timeLabel = formatLastSeen(
-              room.last_message_at || room.appointment_start_time
-            );
+            const timeLabel = hasMessage
+              ? formatLastSeen(room.last_message_at)
+              : formatIndiaDate(room.appointment_date);
 
             return (
               <button
