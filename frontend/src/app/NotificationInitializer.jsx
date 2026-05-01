@@ -43,9 +43,16 @@ const NotificationInitializer = () => {
   const currentUserId = user?.id || getUserIdFromToken(accessToken);
   const setNotifications = useNotificationsStore((state) => state.setNotifications);
   const prependNotification = useNotificationsStore((state) => state.prependNotification);
+  const pushToast = useNotificationsStore((state) => state.pushToast);
   const setConnected = useNotificationsStore((state) => state.setConnected);
   const resetNotifications = useNotificationsStore((state) => state.reset);
   const previousUserIdRef = useRef(currentUserId);
+  const latestAccessTokenRef = useRef(accessToken);
+  const hasAccessToken = Boolean(accessToken);
+
+  useEffect(() => {
+    latestAccessTokenRef.current = accessToken;
+  }, [accessToken]);
 
   const notificationsQuery = useQuery({
     queryKey: ["notifications", currentUserId],
@@ -71,7 +78,7 @@ const NotificationInitializer = () => {
   }, [setNotifications, notificationsQuery.data]);
 
   useEffect(() => {
-    if (!isAuthenticated || !accessToken) {
+    if (!isAuthenticated || !hasAccessToken) {
       resetNotifications();
       return undefined;
     }
@@ -82,7 +89,12 @@ const NotificationInitializer = () => {
     let reconnectAttempts = 0;
 
     const connect = () => {
-      socket = new WebSocket(buildNotificationWebSocketUrl(accessToken));
+      const token = latestAccessTokenRef.current;
+      if (!token) {
+        return;
+      }
+
+      socket = new WebSocket(buildNotificationWebSocketUrl(token));
 
       socket.onopen = () => {
         reconnectAttempts = 0;
@@ -101,6 +113,7 @@ const NotificationInitializer = () => {
               return;
             }
             prependNotification(payload.notification);
+            pushToast(payload.notification);
           }
         } catch (error) {
           console.error("Error parsing notification payload:", error);
@@ -141,10 +154,11 @@ const NotificationInitializer = () => {
       socket?.close();
     };
   }, [
-    accessToken,
     currentUserId,
+    hasAccessToken,
     isAuthenticated,
     prependNotification,
+    pushToast,
     resetNotifications,
     setConnected,
   ]);

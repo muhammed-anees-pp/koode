@@ -97,9 +97,10 @@ function AppointmentAvatar({ booking }) {
 }
 
 
-function UpcomingCard({ booking, onCancel }) {
+function UpcomingCard({ booking, onCancel, onOpenChat }) {
   const isToday = booking.date === getIndiaTodayISO();
   const canJoin = isToday;
+  const canChat = booking.chat_enabled || booking.status === "CONFIRMED";
 
   return (
     <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm flex flex-col sm:flex-row sm:items-center gap-4">
@@ -134,6 +135,18 @@ function UpcomingCard({ booking, onCancel }) {
       </div>
 
       <div className="flex flex-col items-stretch sm:items-end gap-2 min-w-[180px]">
+        {canChat ? (
+          <button
+            type="button"
+            onClick={() => onOpenChat(booking)}
+            className="flex items-center justify-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100"
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            </svg>
+            Open chat
+          </button>
+        ) : null}
         <button
           type="button"
           className={`flex items-center justify-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
@@ -433,6 +446,10 @@ export default function PatientAppointments() {
     }
   };
 
+  const handleOpenChat = (booking) => {
+    navigate(`/patient/messages?appointment=${booking.id}`);
+  };
+
 
   if (!isAuthenticated || role !== "PATIENT") {
     return <Navigate to="/patient/login" replace />;
@@ -565,6 +582,7 @@ export default function PatientAppointments() {
                       key={booking.id}
                       booking={booking}
                       onCancel={openCancelModal}
+                      onOpenChat={handleOpenChat}
                     />
                   );
                 }

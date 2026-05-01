@@ -42,10 +42,11 @@ def _dispatch_notification(notification):
 """
 CREATE NEW NOTIFICATION
 """
-def create_notification(recipient, message):
+def create_notification(recipient, message, target_url=""):
     notification = Notification.objects.create(
         recipient=recipient,
         message=message,
+        target_url=target_url or "",
     )
     transaction.on_commit(lambda: _dispatch_notification(notification))
     logger.info("Notification %s created for user %s", notification.id, recipient.id)
@@ -55,11 +56,11 @@ def create_notification(recipient, message):
 """
 BULK NOTIFICATION
 """
-def notify_many(recipients, message):
+def notify_many(recipients, message, target_url=""):
     notifications = []
     for recipient in recipients:
         try:
-            notifications.append(create_notification(recipient, message))
+            notifications.append(create_notification(recipient, message, target_url=target_url))
         except Exception:
             logger.exception("Failed to create bulk notification for user %s", getattr(recipient, "id", None))
     return notifications

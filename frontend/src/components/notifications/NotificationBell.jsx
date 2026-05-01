@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import {
   markAllNotificationsRead,
   markNotificationRead,
 } from "../../api/notifications.api";
+import { useAuthStore } from "../../store/auth.store";
 import { useNotificationsStore } from "../../store/notifications.store";
+import { getNotificationTarget } from "../../utils/notificationNavigation";
 
 const formatNotificationTime = (value) =>
   new Intl.DateTimeFormat("en-IN", {
@@ -62,9 +65,11 @@ const FILTERS = ["Unread", "Read", "All"];
 
 const NotificationBell = ({ variant = "patient" }) => {
   const styles = STYLES[variant];
+  const navigate = useNavigate();
   const ref = useRef(null);
   const [isOpen, setIsOpen] = useState(false);
   const [activeFilter, setActiveFilter] = useState("Unread");
+  const role = useAuthStore((state) => state.role);
   const items = useNotificationsStore((state) => state.items);
   const unreadCount = useNotificationsStore((state) => state.unreadCount);
   const isConnected = useNotificationsStore((state) => state.isConnected);
@@ -105,6 +110,15 @@ const NotificationBell = ({ variant = "patient" }) => {
     }
     return true;
   });
+
+  const handleNotificationClick = (notification) => {
+    setIsOpen(false);
+    if (!notification.is_read) {
+      markAsRead(notification.id);
+      markReadMutation.mutate(notification.id);
+    }
+    navigate(getNotificationTarget(notification, role || variant));
+  };
 
   return (
     <div className="relative" ref={ref}>
@@ -173,6 +187,15 @@ const NotificationBell = ({ variant = "patient" }) => {
                 <div
                   key={notification.id}
                   className={`block w-full border-none px-4 py-3 text-left transition hover:bg-black/5 ${notification.is_read ? styles.itemRead : styles.itemUnread}`}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => handleNotificationClick(notification)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      handleNotificationClick(notification);
+                    }
+                  }}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <p className={`text-sm ${styles.bodyText || "text-slate-700"}`}>{notification.message}</p>
@@ -186,7 +209,10 @@ const NotificationBell = ({ variant = "patient" }) => {
                   {!notification.is_read ? (
                     <button
                       type="button"
-                      onClick={() => markReadMutation.mutate(notification.id)}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        markReadMutation.mutate(notification.id);
+                      }}
                       className={`mt-3 text-xs font-semibold ${styles.action}`}
                     >
                       Mark as read

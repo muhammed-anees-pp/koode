@@ -7,6 +7,7 @@ class MessageSerializer(serializers.ModelSerializer):
     sender_name = serializers.CharField(source="sender.full_name", read_only=True)
     sender_role = serializers.CharField(source="sender.role", read_only=True)
     is_mine = serializers.SerializerMethodField()
+    attachment_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Message
@@ -16,7 +17,13 @@ class MessageSerializer(serializers.ModelSerializer):
             "sender",
             "sender_name",
             "sender_role",
+            "message_type",
             "content",
+            "attachment",
+            "attachment_url",
+            "attachment_name",
+            "attachment_size",
+            "attachment_content_type",
             "is_read",
             "read_at",
             "created_at",
@@ -27,6 +34,18 @@ class MessageSerializer(serializers.ModelSerializer):
     def get_is_mine(self, obj):
         request = self.context.get("request")
         return bool(request and request.user.is_authenticated and obj.sender_id == request.user.id)
+
+    def get_attachment_url(self, obj):
+        if not obj.attachment:
+            return ""
+
+        request = self.context.get("request")
+        try:
+            url = obj.attachment.url
+        except Exception:
+            return ""
+
+        return request.build_absolute_uri(url) if request else url
 
 
 class ChatRoomSerializer(serializers.ModelSerializer):
@@ -65,7 +84,11 @@ class ChatRoomSerializer(serializers.ModelSerializer):
         message = getattr(obj, "last_message_obj", None)
         if not message:
             message = obj.messages.order_by("-created_at").first()
-        return message.content if message else ""
+        if not message:
+            return ""
+        if message.message_type == Message.MESSAGE_TYPE_FILE:
+            return message.attachment_name or "Document"
+        return message.content
 
     def get_last_message_at(self, obj):
         message = getattr(obj, "last_message_obj", None)

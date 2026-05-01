@@ -5,6 +5,12 @@ from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from .models import Availability, AvailableSlot, Booking
 
+from chat.services.chat_service import sync_chat_room_for_booking
+from notifications.services import create_notification
+from notifications.time_formatting import format_india_slot
+from chat.services.chat_service import ensure_chat_room_for_booking
+
+
 INDIA_TZ = ZoneInfo("Asia/Kolkata")
 
 
@@ -47,10 +53,10 @@ class AvailabilitySerializer(serializers.ModelSerializer):
     slots = serializers.SerializerMethodField()
 
     def get_slots(self, obj):
-        future_slots = [
+        future_slots = sorted([
             slot for slot in obj.slots.all()
             if is_future_slot(obj.date, slot.start_time)
-        ]
+        ], key=lambda slot: (slot.start_time, slot.end_time))
         return AvailableSlotSerializer(future_slots, many=True).data
 
     class Meta:
@@ -65,8 +71,12 @@ class AvailabilitySerializer(serializers.ModelSerializer):
 CREATE SLOTS
 """
 class CreateAvailabilitySerializer(serializers.Serializer):
-    date = serializers.DateField()
-    slots = serializers.ListField(child=serializers.DictField(),allow_empty=False)
+    mode = serializers.ChoiceField(choices=["single", "range"], required=False, default="single")
+    date = serializers.DateField(required=False)
+    start_date = serializers.DateField(required=False)
+    end_date = serializers.DateField(required=False)
+    slots = serializers.ListField(child=serializers.DictField(), allow_empty=False, required=False)
+    days = serializers.ListField(child=serializers.DictField(), allow_empty=False, required=False)
 
     def validate_slots(self, value):
         if not value:
@@ -80,37 +90,204 @@ class CreateAvailabilitySerializer(serializers.Serializer):
         return value
 
     def validate(self, attrs):
-        date = attrs["date"]
-        slots = attrs["slots"]
+        mode = attrs.get("mode", "single")
+        date = attrs.get("date")
+        start_date = attrs.get("start_date")
+        end_date = attrs.get("end_date")
         cutoff = datetime.now(INDIA_TZ) + timedelta(hours=24)
+
+        if mode == "single":
+            slots = attrs.get("slots")
+            if not date:
+                raise serializers.ValidationError({"date": "Choose a date."})
+            if not slots:
+                raise serializers.ValidationError({"slots": "At least one slot is required"})
+            dates = [date]
+            normalized_slots = self._normalize_slots(slots, dates, cutoff)
+            attrs["dates"] = dates
+            attrs["slots"] = normalized_slots
+            return attrs
+
+        days = attrs.get("days")
+        if days:
+            normalized_days = []
+            seen_dates = set()
+
+            for day in days:
+                current_date = day.get("date")
+                current_slots = day.get("slots")
+
+                if not current_date:
+                    raise serializers.ValidationError({"days": "Each day must include a date."})
+
+                if isinstance(current_date, str):
+                    current_date = datetime.strptime(current_date, "%Y-%m-%d").date()
+
+                if current_date in seen_dates:
+                    raise serializers.ValidationError({"days": "Duplicate dates are not allowed."})
+                seen_dates.add(current_date)
+
+                if not current_slots:
+                    continue
+
+                normalized_days.append({
+                    "date": current_date,
+                    "slots": self._normalize_slots(current_slots, [current_date], cutoff),
+                })
+
+            if not normalized_days:
+                raise serializers.ValidationError({"days": "At least one day must include a slot."})
+
+            attrs["days"] = normalized_days
+            return attrs
+
+        slots = attrs.get("slots")
+        if not slots:
+            raise serializers.ValidationError({"slots": "At least one slot is required"})
+
+        if not start_date or not end_date:
+            raise serializers.ValidationError({
+                "start_date": "Choose a start date.",
+                "end_date": "Choose an end date.",
+            })
+        if end_date < start_date:
+            raise serializers.ValidationError(
+                {"end_date": "End date must be on or after the start date."}
+            )
+
+        day_span = (end_date - start_date).days
+        dates = [start_date + timedelta(days=offset) for offset in range(day_span + 1)]
+        normalized_slots = self._normalize_slots(slots, dates, cutoff)
+        attrs["dates"] = dates
+        attrs["slots"] = normalized_slots
+        return attrs
+
+    def _normalize_slots(self, slots, dates, cutoff):
+        normalized_slots = []
 
         for slot in slots:
             start_time = slot["start_time"]
+            end_time = slot["end_time"]
             if isinstance(start_time, str):
                 start_time = datetime.strptime(start_time, "%H:%M").time()
+            if isinstance(end_time, str):
+                end_time = datetime.strptime(end_time, "%H:%M").time()
 
-            slot_start = datetime.combine(date, start_time, tzinfo=INDIA_TZ)
-            if slot_start <= cutoff:
+            if end_time <= start_time:
                 raise serializers.ValidationError(
-                    "Availability can only be added for slots more than 24 hours in advance"
+                    "Each slot end time must be after its start time."
                 )
 
-        return attrs
+            for current_date in dates:
+                slot_start = datetime.combine(current_date, start_time, tzinfo=INDIA_TZ)
+                if slot_start <= cutoff:
+                    raise serializers.ValidationError(
+                        "Availability can only be added for slots more than 24 hours in advance"
+                    )
+
+            normalized_slots.append({
+                "start_time": start_time,
+                "end_time": end_time,
+            })
+
+        return normalized_slots
 
     def create(self, validated_data):
         psychologist = self.context["psychologist"]
-        date = validated_data["date"]
-        slots_data = validated_data["slots"]
+        created_availabilities = []
 
         with transaction.atomic():
-            availability, created = Availability.objects.get_or_create(psychologist=psychologist,date=date)
-            created_slots = []
+            if validated_data.get("days"):
+                for day in validated_data["days"]:
+                    availability, _ = Availability.objects.get_or_create(
+                        psychologist=psychologist,
+                        date=day["date"],
+                    )
 
-            for slot in slots_data:
-                slot_obj, _ = AvailableSlot.objects.get_or_create(availability=availability, start_time=slot["start_time"], end_time=slot["end_time"],)
-                created_slots.append(slot_obj)
+                    for slot in day["slots"]:
+                        AvailableSlot.objects.get_or_create(
+                            availability=availability,
+                            start_time=slot["start_time"],
+                            end_time=slot["end_time"],
+                        )
 
-        return availability
+                    created_availabilities.append(availability)
+            else:
+                dates = validated_data["dates"]
+                slots_data = validated_data["slots"]
+
+                for current_date in dates:
+                    availability, _ = Availability.objects.get_or_create(
+                        psychologist=psychologist,
+                        date=current_date
+                    )
+
+                    for slot in slots_data:
+                        AvailableSlot.objects.get_or_create(
+                            availability=availability,
+                            start_time=slot["start_time"],
+                            end_time=slot["end_time"],
+                        )
+
+                    created_availabilities.append(availability)
+
+        return Availability.objects.filter(
+            id__in=[availability.id for availability in created_availabilities]
+        ).prefetch_related("slots").order_by("date")
+
+
+"""
+REVOKE AVILABILITY
+"""
+class RevokeAvailabilitySlotSerializer(serializers.Serializer):
+    slot_id = serializers.UUIDField()
+
+    def validate(self, attrs):
+        psychologist = self.context["psychologist"]
+
+        try:
+            slot = AvailableSlot.objects.select_related("availability").get(id=attrs["slot_id"])
+        except AvailableSlot.DoesNotExist:
+            raise serializers.ValidationError({"slot_id": "Invalid slot."})
+
+        if slot.availability.psychologist_id != psychologist.psychologist_id:
+            raise serializers.ValidationError({"slot_id": "This slot does not belong to you."})
+
+        if slot.is_booked:
+            raise serializers.ValidationError(
+                {"slot_id": "Booked slots cannot be revoked."}
+            )
+
+        if not is_future_slot(slot.availability.date, slot.start_time):
+            raise serializers.ValidationError(
+                {"slot_id": "Past slots cannot be revoked."}
+            )
+
+        attrs["slot"] = slot
+        return attrs
+
+    def save(self, **kwargs):
+        slot = self.validated_data["slot"]
+        availability = slot.availability
+
+        with transaction.atomic():
+            locked_slot = AvailableSlot.objects.select_for_update().select_related(
+                "availability"
+            ).get(id=slot.id)
+
+            if locked_slot.is_booked:
+                raise serializers.ValidationError(
+                    {"slot_id": "Booked slots cannot be revoked."}
+                )
+
+            availability = locked_slot.availability
+            locked_slot.delete()
+
+            if not availability.slots.exists():
+                availability.delete()
+                return None
+
+            return Availability.objects.prefetch_related("slots").get(id=availability.id)
 
 
 """
@@ -125,13 +302,13 @@ class BookingSerializer(serializers.ModelSerializer):
     specialization = serializers.SerializerMethodField()
     cancellation_note = serializers.CharField(source="notes", read_only=True)
     chat_enabled = serializers.SerializerMethodField()
-    chat_room_id = serializers.SerializerMethodField()
 
     def get_psychologist_photo(self, obj):
         request = self.context.get("request")
         user = obj.psychologist.user
         photo = user.profile_picture if user.profile_picture else None
         if not photo:
+            # Fall back to the application photo if user has none
             app = getattr(user, "application", None)
             if app and getattr(app, "profile_picture", None):
                 photo = app.profile_picture
@@ -149,11 +326,7 @@ class BookingSerializer(serializers.ModelSerializer):
         return None
 
     def get_chat_enabled(self, obj):
-        return obj.status not in {"COMPLETED", "CANCELLED"}
-
-    def get_chat_room_id(self, obj):
-        room = getattr(obj, "chat_room", None)
-        return str(room.id) if room else None
+        return obj.status == "CONFIRMED"
 
     class Meta:
         model = Booking
@@ -174,7 +347,6 @@ class BookingSerializer(serializers.ModelSerializer):
             "meeting_link",
             "cancellation_note",
             "chat_enabled",
-            "chat_room_id",
             "slot",
             "created_at",
         ]
@@ -228,6 +400,18 @@ class CreateBookingSerializer(serializers.Serializer):
                 status="CONFIRMED",
             )
 
+        ensure_chat_room_for_booking(booking)
+        slot_label = format_india_slot(booking.date, booking.start_time)
+        create_notification(
+            booking.psychologist.user,
+            f"New appointment booked by {booking.patient.user.full_name} for {slot_label}.",
+            target_url="/psychologist/appointments",
+        )
+        create_notification(
+            booking.patient.user,
+            f"Your appointment with {booking.psychologist.user.full_name} is confirmed for {slot_label}.",
+            target_url=f"/patient/appointments/{booking.id}",
+        )
         return booking
 
 
@@ -266,6 +450,18 @@ class CancelBookingSerializer(serializers.Serializer):
             locked_booking.notes = note
             locked_booking.save(update_fields=["slot", "status", "notes"])
 
+        sync_chat_room_for_booking(locked_booking)
+        slot_label = format_india_slot(locked_booking.date, locked_booking.start_time)
+        create_notification(
+            locked_booking.patient.user,
+            f"Your appointment with {locked_booking.psychologist.user.full_name} for {slot_label} was cancelled.",
+            target_url=f"/patient/appointments/{locked_booking.id}",
+        )
+        create_notification(
+            locked_booking.psychologist.user,
+            f"Appointment with {locked_booking.patient.user.full_name} for {slot_label} was cancelled.",
+            target_url="/psychologist/appointments",
+        )
         return locked_booking
 
 
@@ -357,4 +553,11 @@ class RescheduleBookingSerializer(serializers.Serializer):
                 ]
             )
 
+        sync_chat_room_for_booking(locked_booking)
+        slot_label = format_india_slot(locked_booking.date, locked_booking.start_time)
+        create_notification(
+            locked_booking.patient.user,
+            f"Your appointment with {locked_booking.psychologist.user.full_name} was rescheduled to {slot_label}.",
+            target_url=f"/patient/appointments/{locked_booking.id}",
+        )
         return locked_booking

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { fetchAppointmentMessages } from "../../api/chat.api";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { fetchAppointmentMessages, uploadAppointmentChatFile } from "../../api/chat.api";
 import { formatIndiaDate } from "../../utils/indiaDateTime";
 import { useAuthStore } from "../../store/auth.store";
 
@@ -70,6 +70,27 @@ const sortRooms = (rooms) =>
     return secondTime.localeCompare(firstTime);
   });
 
+const getMessagePreview = (message) => {
+  if (message.message_type === "FILE") {
+    return message.attachment_name || "Document";
+  }
+
+  return message.content;
+};
+
+const formatFileSize = (bytes) => {
+  if (!bytes) return "";
+  if (bytes < 1024 * 1024) {
+    return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+  }
+
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+};
+
+const isImageFile = (file) => file?.type?.startsWith("image/");
+const isImageMessage = (message) =>
+  message?.attachment_content_type?.startsWith("image/");
+
 const Avatar = ({ name, color }) => (
   <div
     className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-sm font-bold text-white"
@@ -130,14 +151,123 @@ const TypingIndicator = () => (
   </div>
 );
 
+const FileMessage = ({ message, isMine }) => {
+  const attachmentUrl = message.attachment_url || message.attachment;
+
+  if (isImageMessage(message)) {
+    return (
+      <a href={attachmentUrl} target="_blank" rel="noreferrer" className="block">
+        <img
+          src={attachmentUrl}
+          alt={message.attachment_name || "Shared image"}
+          className="max-h-64 w-full rounded-xl object-cover"
+        />
+        <span className={`mt-2 block truncate text-xs ${isMine ? "text-white/80" : "text-slate-500"}`}>
+          {message.attachment_name || "Image"} · {formatFileSize(message.attachment_size)}
+        </span>
+      </a>
+    );
+  }
+
+  return (
+    <a
+      href={attachmentUrl}
+      target="_blank"
+      rel="noreferrer"
+      className={`flex items-center gap-3 rounded-xl p-3 transition ${
+        isMine ? "bg-white/15 hover:bg-white/25" : "bg-slate-50 hover:bg-slate-100"
+      }`}
+    >
+      <span
+        className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg ${
+          isMine ? "bg-white/20 text-white" : "bg-white text-slate-500 ring-1 ring-slate-200"
+        }`}
+      >
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+          <path d="M14 2v6h6" />
+        </svg>
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-sm font-semibold">
+          {message.attachment_name || "Document"}
+        </span>
+        <span className={`mt-0.5 block text-[11px] ${isMine ? "text-white/70" : "text-slate-400"}`}>
+          {formatFileSize(message.attachment_size) || "Open document"}
+        </span>
+      </span>
+      <span className={isMine ? "text-white/80" : "text-slate-400"}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M7 17 17 7" />
+          <path d="M7 7h10v10" />
+        </svg>
+      </span>
+    </a>
+  );
+};
+
+const AttachmentPreview = ({ attachment, onRemove, isPatient }) => {
+  if (!attachment) return null;
+
+  const { file, previewUrl } = attachment;
+  const isImage = isImageFile(file);
+
+  return (
+    <div className="mb-3 rounded-2xl border border-slate-200 bg-slate-50 p-3">
+      <div className="flex items-start gap-3">
+        {isImage ? (
+          <img
+            src={previewUrl}
+            alt={file.name}
+            className="h-24 w-24 flex-shrink-0 rounded-xl object-cover"
+          />
+        ) : (
+          <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-xl bg-white text-slate-500 ring-1 ring-slate-200">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <path d="M14 2v6h6" />
+            </svg>
+          </div>
+        )}
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold text-slate-800">{file.name}</p>
+          <p className="mt-1 text-xs text-slate-500">
+            {isImage ? "Image preview" : "Document"} · {formatFileSize(file.size)}
+          </p>
+          <p className="mt-2 text-xs text-slate-400">
+            Click send to share this {isImage ? "image" : "file"}.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onRemove}
+          className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-white text-slate-400 transition hover:text-slate-700"
+          title="Remove attachment"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
+      <div
+        className={`mt-3 h-1 rounded-full ${isPatient ? "bg-[#1ABEAA]" : "bg-[#1188D8]"}`}
+      />
+    </div>
+  );
+};
+
 const AppointmentChat = ({ booking, roleVariant = "patient", onClose, embedded = false }) => {
   const accessToken = useAuthStore((state) => state.accessToken);
   const user = useAuthStore((state) => state.user);
   const queryClient = useQueryClient();
   const socketRef = useRef(null);
   const scrollRef = useRef(null);
+  const fileInputRef = useRef(null);
   const typingTimerRef = useRef(null);
   const [draft, setDraft] = useState("");
+  const [pendingAttachment, setPendingAttachment] = useState(null);
+  const [uploadError, setUploadError] = useState("");
   const [connectionState, setConnectionState] = useState(
     booking?.chat_enabled &&
       !["COMPLETED", "CANCELLED"].includes(booking.status) &&
@@ -172,6 +302,15 @@ const AppointmentChat = ({ booking, roleVariant = "patient", onClose, embedded =
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, typingUser]);
 
+  useEffect(
+    () => () => {
+      if (pendingAttachment?.previewUrl) {
+        URL.revokeObjectURL(pendingAttachment.previewUrl);
+      }
+    },
+    [pendingAttachment]
+  );
+
   const updateRoomPreview = useCallback(
     (message) => {
       queryClient.setQueryData(["chat-rooms", roleVariant], (currentRooms = []) =>
@@ -180,7 +319,7 @@ const AppointmentChat = ({ booking, roleVariant = "patient", onClose, embedded =
             String(room.appointment_id) === String(booking.id)
               ? {
                   ...room,
-                  last_message: message.content,
+                  last_message: getMessagePreview(message),
                   last_message_at: message.created_at,
                   unread_count: 0,
                   updated_at: message.created_at,
@@ -254,10 +393,11 @@ const AppointmentChat = ({ booking, roleVariant = "patient", onClose, embedded =
 
   const handleDraftChange = (event) => {
     setDraft(event.target.value);
+    setUploadError("");
     sendTypingState(Boolean(event.target.value.trim()));
   };
 
-  const sendMessage = () => {
+  const sendTextMessage = () => {
     const content = draft.trim();
     if (!content || socketRef.current?.readyState !== WebSocket.OPEN) {
       return;
@@ -266,6 +406,85 @@ const AppointmentChat = ({ booking, roleVariant = "patient", onClose, embedded =
     socketRef.current.send(JSON.stringify({ type: "message", content }));
     setDraft("");
     sendTypingState(false);
+  };
+
+  const fileUploadMutation = useMutation({
+    mutationFn: (file) => uploadAppointmentChatFile({ appointmentId: booking.id, file }),
+    onSuccess: (message) => {
+      setUploadError("");
+      setPendingAttachment((current) => {
+        if (current?.previewUrl) {
+          URL.revokeObjectURL(current.previewUrl);
+        }
+        return null;
+      });
+      queryClient.setQueryData(["appointment-chat", booking.id], (current) => ({
+        ...(current ?? {}),
+        room: current?.room ?? null,
+        results: dedupeMessages([...(current?.results ?? []), message]),
+      }));
+      updateRoomPreview(message);
+      queryClient.invalidateQueries({ queryKey: ["chat-rooms", roleVariant] });
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    },
+    onError: (error) => {
+      const apiError = error?.response?.data;
+      setUploadError(
+        apiError?.file?.[0] ||
+          apiError?.file ||
+          apiError?.detail ||
+          "Unable to send this file."
+      );
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    },
+  });
+
+  const handleFileChange = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setUploadError("");
+    setDraft("");
+    sendTypingState(false);
+    setPendingAttachment((current) => {
+      if (current?.previewUrl) {
+        URL.revokeObjectURL(current.previewUrl);
+      }
+      return {
+        file,
+        previewUrl: isImageFile(file) ? URL.createObjectURL(file) : "",
+      };
+    });
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const removePendingAttachment = () => {
+    setPendingAttachment((current) => {
+      if (current?.previewUrl) {
+        URL.revokeObjectURL(current.previewUrl);
+      }
+      return null;
+    });
+    setUploadError("");
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const sendMessage = () => {
+    if (pendingAttachment) {
+      if (!fileUploadMutation.isPending) {
+        fileUploadMutation.mutate(pendingAttachment.file);
+      }
+      return;
+    }
+
+    sendTextMessage();
   };
 
   const panel = (
@@ -340,9 +559,13 @@ const AppointmentChat = ({ booking, roleVariant = "patient", onClose, embedded =
                         : "rounded-bl-sm border border-slate-200 bg-white text-slate-800"
                     }`}
                   >
-                    <p className="whitespace-pre-wrap break-words leading-relaxed">
-                      {message.content}
-                    </p>
+                    {message.message_type === "FILE" ? (
+                      <FileMessage message={message} isMine={isMine} />
+                    ) : (
+                      <p className="whitespace-pre-wrap break-words leading-relaxed">
+                        {message.content}
+                      </p>
+                    )}
                     <div
                       className={`mt-1 flex items-center gap-0.5 text-[10px] ${
                         isMine ? "justify-end text-white/70" : "text-slate-400"
@@ -369,7 +592,39 @@ const AppointmentChat = ({ booking, roleVariant = "patient", onClose, embedded =
           </div>
         ) : (
           <div className="px-5 py-3">
+            {uploadError ? (
+              <div className="mb-2 rounded-xl bg-red-50 px-3 py-2 text-xs font-medium text-red-600">
+                {uploadError}
+              </div>
+            ) : null}
+            <AttachmentPreview
+              attachment={pendingAttachment}
+              onRemove={removePendingAttachment}
+              isPatient={isPatient}
+            />
             <div className="flex items-center gap-3">
+              <input
+                ref={fileInputRef}
+                type="file"
+                onChange={handleFileChange}
+                className="hidden"
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.rtf,.csv,image/*"
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={connectionState !== "connected" || fileUploadMutation.isPending}
+                className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                title="Attach document"
+              >
+                {fileUploadMutation.isPending ? (
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-slate-600" />
+                ) : (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+                  </svg>
+                )}
+              </button>
               <input
                 type="text"
                 value={draft}
@@ -381,24 +636,33 @@ const AppointmentChat = ({ booking, roleVariant = "patient", onClose, embedded =
                   }
                 }}
                 placeholder="Type a message..."
+                disabled={Boolean(pendingAttachment) || fileUploadMutation.isPending}
                 className={`flex-1 rounded-full border border-slate-200 px-4 py-2.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-slate-300 ${
                   isPatient ? "bg-white" : "bg-slate-50 focus:bg-white"
-                }`}
+                } disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400`}
               />
               <button
                 type="button"
                 onClick={sendMessage}
-                disabled={!draft.trim() || connectionState !== "connected"}
+                disabled={
+                  (!draft.trim() && !pendingAttachment) ||
+                  connectionState !== "connected" ||
+                  fileUploadMutation.isPending
+                }
                 className={`flex ${isPatient ? "h-9 w-9" : "h-10 w-10"} flex-shrink-0 items-center justify-center rounded-full text-white shadow-sm transition disabled:cursor-not-allowed disabled:opacity-50 ${
                   isPatient
                     ? "bg-[#1ABEAA] hover:bg-[#18a896]"
                     : "bg-[#1188D8] hover:bg-[#0e76c0]"
                 }`}
               >
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <line x1="22" y1="2" x2="11" y2="13" />
-                  <polygon points="22 2 15 22 11 13 2 9 22 2" />
-                </svg>
+                {fileUploadMutation.isPending ? (
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                ) : (
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <line x1="22" y1="2" x2="11" y2="13" />
+                    <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                  </svg>
+                )}
               </button>
             </div>
           </div>

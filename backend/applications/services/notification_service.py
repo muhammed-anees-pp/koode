@@ -19,7 +19,7 @@ def notify_admins_application_submitted(application):
     )
 
     try:
-        notifications = notify_many(admins, message)
+        notifications = notify_many(admins, message, target_url=f"/admin/applications/{application.id}")
         logger.info(
             "Notified %s admins about application %s submission",
             len(notifications),
@@ -36,7 +36,8 @@ def notify_applicant_status_changed(application, old_status, new_status):
     message = f"Your application status changed from {old_status} to {new_status}."
 
     try:
-        create_notification(application.user, message)
+        target_url = "/psychologist/home" if new_status == "APPROVED" else "/psychologist/approval-waiting"
+        create_notification(application.user, message, target_url=target_url)
         logger.info(
             "Notified applicant user %s about application %s status change from %s to %s",
             application.user_id,
@@ -52,7 +53,13 @@ def notify_applicant_interview_scheduled(application):
     message = f"Your interview has been scheduled for {format_india_datetime(application.interview_date)}."
 
     try:
-        create_notification(application.user, message)
+        interview = getattr(application, "interview", None)
+        target_url = (
+            f"/psychologist/interview/{interview.id}"
+            if interview
+            else "/psychologist/approval-waiting"
+        )
+        create_notification(application.user, message, target_url=target_url)
         logger.info(
             "Notified applicant user %s about interview schedule for application %s",
             application.user_id,
