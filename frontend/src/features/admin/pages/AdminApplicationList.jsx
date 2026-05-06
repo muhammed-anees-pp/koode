@@ -381,6 +381,9 @@ export default function AdminApplicationList() {
                                 )}
                                 {paged.map((app) => {
                                     const interviewDT = fmtDateTime(app.interview_date);
+                                    const canOpenInterview =
+                                        app.interview_id &&
+                                        ["SCHEDULED", "WAITING", "ONGOING"].includes(app.interview_status);
 
                                     return (
                                         <tr key={app.id} className="border-b border-slate-700/30 transition-colors hover:bg-slate-800/20">
@@ -426,7 +429,7 @@ export default function AdminApplicationList() {
                                                             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" />
                                                         </svg>
                                                     </NavIconBtn>
-                                                    {(app.status === "INTERVIEW_SCHEDULED" || app.status === "ONGOING") && (
+                                                    {canOpenInterview && (
                                                         <NavIconBtn
                                                             title={isInterviewTimeReached(app.interview_date) ? "Join Interview Room" : "Interview Details"}
                                                             onClick={() => {

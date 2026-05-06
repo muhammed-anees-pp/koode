@@ -13,6 +13,14 @@ from .repositories.interview_repository import InterviewRepository
 from video.zego_service import generate_zego_token
 
 
+def sync_application_status_for_interview(interview):
+    application = interview.application
+    if interview.status == "COMPLETED" and application.status == "INTERVIEW_SCHEDULED":
+        application.status = "INTERVIEW_COMPLETED"
+        application.save(update_fields=["status"])
+    return application
+
+
 
 ############################
 ####        ADMIN       ####
@@ -60,6 +68,7 @@ class UpdateInterviewStatusView(APIView):
 
         interview.status = new_status
         interview.save(update_fields=["status", "updated_at"])
+        sync_application_status_for_interview(interview)
         return Response(InterviewSerializer(interview).data)
 
 
@@ -120,9 +129,12 @@ class EndInterviewView(APIView):
             "status", "psychologist_joined", "admin_joined", "join_requested", "updated_at"
         ])
 
+        application = sync_application_status_for_interview(interview)
+
         return Response({
             "detail": "Interview marked as completed.",
             "interview_status": interview.status,
+            "application_status": application.status,
         })
 
 
