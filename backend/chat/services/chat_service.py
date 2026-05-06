@@ -10,30 +10,45 @@ logger = logging.getLogger(__name__)
 
 
 def is_chat_enabled_for_booking(booking):
-    return booking.status not in {"COMPLETED", "CANCELLED"}
+    return booking.status == "CONFIRMED"
+
+
+def get_active_booking_for_pair(patient, psychologist):
+    return (
+        patient.bookings.filter(
+            psychologist=psychologist,
+            status="CONFIRMED",
+        )
+        .order_by("date", "start_time", "-created_at")
+        .first()
+    )
+
+
+def get_room_context_booking(booking):
+    if is_chat_enabled_for_booking(booking):
+        return booking
+
+    return get_active_booking_for_pair(booking.patient, booking.psychologist) or booking
 
 
 def ensure_chat_room_for_booking(booking):
     with transaction.atomic():
         room, created = ChatRoom.objects.select_for_update().get_or_create(
-            appointment=booking,
+            patient=booking.patient,
+            psychologist=booking.psychologist,
             defaults={
-                "patient": booking.patient,
-                "psychologist": booking.psychologist,
-                "is_active": is_chat_enabled_for_booking(booking),
+                "appointment": get_room_context_booking(booking),
+                "is_active": bool(get_active_booking_for_pair(booking.patient, booking.psychologist)),
             },
         )
 
-        desired_active = is_chat_enabled_for_booking(booking)
+        context_booking = get_room_context_booking(booking)
+        desired_active = bool(get_active_booking_for_pair(booking.patient, booking.psychologist))
         fields_to_update = []
 
-        if room.patient_id != booking.patient_id:
-            room.patient = booking.patient
-            fields_to_update.append("patient")
-
-        if room.psychologist_id != booking.psychologist_id:
-            room.psychologist = booking.psychologist
-            fields_to_update.append("psychologist")
+        if room.appointment_id != context_booking.id:
+            room.appointment = context_booking
+            fields_to_update.append("appointment")
 
         if room.is_active != desired_active:
             room.is_active = desired_active
@@ -50,7 +65,6 @@ def ensure_chat_room_for_booking(booking):
 
 def sync_chat_room_for_booking(booking):
     room = ensure_chat_room_for_booking(booking)
-    room.sync_active_state(save=True)
     return room
 
 
