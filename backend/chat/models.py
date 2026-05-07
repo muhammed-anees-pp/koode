@@ -9,6 +9,9 @@ from patients.models import PatientProfile
 from psychologists.models import PsychologistProfile
 
 
+"""
+CHAT ROOM
+"""
 class ChatRoom(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     appointment = models.OneToOneField(
@@ -35,9 +38,15 @@ class ChatRoom(models.Model):
             models.Index(fields=["patient", "is_active"]),
             models.Index(fields=["psychologist", "is_active"]),
         ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["patient", "psychologist"],
+                name="unique_chat_room_per_patient_psychologist",
+            ),
+        ]
 
     def __str__(self):
-        return f"Chat for appointment {self.appointment_id}"
+        return f"Chat between {self.patient_id} and {self.psychologist_id}"
 
     def can_participate(self, user):
         return user.is_authenticated and user.id in {
@@ -46,12 +55,26 @@ class ChatRoom(models.Model):
         }
 
     def sync_active_state(self, save=True):
-        self.is_active = self.appointment.status not in {"COMPLETED", "CANCELLED"}
+        active_booking = Booking.objects.filter(
+            patient_id=self.patient_id,
+            psychologist_id=self.psychologist_id,
+            status="CONFIRMED",
+        ).order_by("date", "start_time", "-created_at").first()
+
+        if active_booking:
+            self.appointment = active_booking
+            self.is_active = True
+        else:
+            self.is_active = False
+
         if save:
-            self.save(update_fields=["is_active", "updated_at"])
+            self.save(update_fields=["appointment", "is_active", "updated_at"])
         return self.is_active
 
 
+"""
+MESSAGE
+"""
 class Message(models.Model):
     MESSAGE_TYPE_TEXT = "TEXT"
     MESSAGE_TYPE_FILE = "FILE"
