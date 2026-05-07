@@ -6,13 +6,20 @@ from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from admin_panel.permissions import IsAdminUserRole
 from appointments.models import Booking
 from appointments.serializers import BookingSerializer, notify_booking_confirmed
 from patients.permissions import IsPatient
 from .models import RazorpayOrder
 from .serializers import (
-    CreateWalletTopUpOrderSerializer, VerifyRazorpayOrderSerializer, WalletSerializer,
+    CommissionRateSerializer,
+    CreateCommissionRateSerializer,
+    CurrentCommissionRateSerializer,
+    CreateWalletTopUpOrderSerializer,
+    VerifyRazorpayOrderSerializer,
+    WalletSerializer,
 )
+from .services.amounts import get_effective_commission_percentage
 from .services.bookings import credit_admin_for_booking, refund_booking_to_patient
 from .services.razorpay import (
     create_razorpay_order,
@@ -28,6 +35,49 @@ class WalletView(APIView):
     def get(self, request):
         wallet = get_wallet(request.user)
         return Response(WalletSerializer(wallet, context={"request": request}).data)
+
+
+class CommissionRateListCreateView(APIView):
+    permission_classes = [permissions.IsAuthenticated, IsAdminUserRole]
+
+    def get(self, request):
+        from .models import CommissionRate
+
+        queryset = CommissionRate.objects.select_related("changed_by").all()
+        return Response(CommissionRateSerializer(queryset, many=True).data)
+
+    def post(self, request):
+        serializer = CreateCommissionRateSerializer(
+            data=request.data,
+            context={"request": request},
+        )
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        commission_rate = serializer.save()
+        return Response(
+            CommissionRateSerializer(commission_rate).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class CurrentCommissionRateView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        from .models import CommissionRate
+
+        today = timezone.localdate()
+        rate = CommissionRate.objects.filter(effective_from__lte=today).order_by(
+            "-effective_from",
+            "-created_at",
+        ).first()
+        data = {
+            "percentage": get_effective_commission_percentage(today),
+            "effective_from": rate.effective_from if rate else None,
+            "is_default": rate is None,
+        }
+        return Response(CurrentCommissionRateSerializer(data).data)
 
 
 class CreateWalletTopUpOrderView(APIView):

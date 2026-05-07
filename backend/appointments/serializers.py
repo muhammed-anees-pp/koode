@@ -9,7 +9,7 @@ from chat.services.chat_service import sync_chat_room_for_booking
 from notifications.services import create_notification
 from notifications.time_formatting import format_india_slot
 from chat.services.chat_service import ensure_chat_room_for_booking
-from finance.services.amounts import calculate_booking_amounts, money
+from finance.services.amounts import calculate_booking_amounts, calculate_psychologist_payout, money
 from finance.services.bookings import (
     complete_booking_payment,
     credit_admin_for_booking,
@@ -313,6 +313,9 @@ class BookingSerializer(serializers.ModelSerializer):
     specialization = serializers.SerializerMethodField()
     cancellation_note = serializers.CharField(source="notes", read_only=True)
     chat_enabled = serializers.SerializerMethodField()
+    commission_percentage = serializers.SerializerMethodField()
+    admin_commission_amount = serializers.SerializerMethodField()
+    psychologist_payout_amount = serializers.SerializerMethodField()
 
     def get_psychologist_photo(self, obj):
         request = self.context.get("request")
@@ -339,6 +342,15 @@ class BookingSerializer(serializers.ModelSerializer):
     def get_chat_enabled(self, obj):
         return obj.status == "CONFIRMED"
 
+    def get_commission_percentage(self, obj):
+        return calculate_psychologist_payout(obj)["commission_percentage"]
+
+    def get_admin_commission_amount(self, obj):
+        return calculate_psychologist_payout(obj)["commission_amount"]
+
+    def get_psychologist_payout_amount(self, obj):
+        return calculate_psychologist_payout(obj)["psychologist_payout"]
+
     class Meta:
         model = Booking
         fields = [
@@ -360,6 +372,9 @@ class BookingSerializer(serializers.ModelSerializer):
             "total_amount",
             "wallet_amount",
             "razorpay_amount",
+            "commission_percentage",
+            "admin_commission_amount",
+            "psychologist_payout_amount",
             "psychologist_paid_at",
             "meeting_link",
             "cancellation_note",

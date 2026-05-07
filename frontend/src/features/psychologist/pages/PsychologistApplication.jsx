@@ -4,6 +4,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { z } from 'zod';
 import PsychologistNavbar from '../../../components/psychologist/Navbar/PsychologistNavbar';
 import { submitApplication, getSpecializations } from '../../../api/psychologist.api';
+import { fetchCurrentCommissionRate } from '../../../api/finance.api';
 import { useAuthStore } from '../../../store/auth.store';
 import { usePsychologistSessionGuard } from '../../../hooks/usePsychologistSessionGuard';
 
@@ -310,7 +311,14 @@ const PsychologistApplication = () => {
 
     const userEmail = authUser?.email || '';
 
-    const COMMISSION_RATE = 0.10;
+    const { data: commissionRate } = useQuery({
+        queryKey: ['current-commission-rate'],
+        queryFn: fetchCurrentCommissionRate,
+        staleTime: 5 * 60 * 1000,
+    });
+
+    const commissionPercentage = Number(commissionRate?.percentage ?? 10);
+    const COMMISSION_RATE = commissionPercentage / 100;
     const fee = parseFloat(form.consultation_fee) || 0;
     const commission = Math.round(fee * COMMISSION_RATE);
     const earning = fee - commission;
@@ -661,7 +669,7 @@ const PsychologistApplication = () => {
                         </div>
                         <div className="bg-gray-50 border border-gray-100 rounded-xl p-4 flex flex-col gap-2 text-sm">
                             <div className="flex justify-between text-gray-500">
-                                <span>Platform Commission (10%)</span>
+                                <span>Platform Commission ({commissionPercentage.toFixed(2)}%)</span>
                                 <span className="text-red-400">-₹{commission}</span>
                             </div>
                             <div className="flex justify-between font-semibold text-gray-900 border-t border-gray-200 pt-2 mt-1">

@@ -18,7 +18,7 @@ const menuItems = {
   ],
   financial: [
     { name: "Finance", path: "/admin/finance", icon: (<svg width="18" height="18" viewBox="0 0 20 20" fill="none"><rect x="2" y="5" width="16" height="10" rx="2" stroke="currentColor" strokeWidth="1.5" /><circle cx="10" cy="10" r="2.5" stroke="currentColor" strokeWidth="1.5" /><path d="M5 8V8.01M15 12V12.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>) },
-    { name: "Commissions", path: "#", icon: (<svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M3 10H17M8 3L3 10L8 17M12 3L17 10L12 17" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>) },
+    { name: "Commissions", path: "/admin/commissions", icon: (<svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M3 10H17M8 3L3 10L8 17M12 3L17 10L12 17" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>) },
   ],
 };
 

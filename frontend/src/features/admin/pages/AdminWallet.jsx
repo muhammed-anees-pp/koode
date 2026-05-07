@@ -52,7 +52,7 @@ const metricConfig = [
   {
     key: "platform_commission_earned",
     title: "Platform Commission Earned",
-    description: "Total 10% commission earned",
+    description: "Total commission earned",
   },
   {
     key: "total_paid_to_psychologists",

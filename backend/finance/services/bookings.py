@@ -77,7 +77,7 @@ def complete_booking_payment(booking):
         "PSYCHOLOGIST_PAYOUT",
         booking=booking,
         note=(
-            f"Psychologist payout after 10% admin commission. "
+            f"Psychologist payout after {payout['commission_percentage']}% admin commission. "
             f"Admin retained {payout['admin_retained']} including GST and commission."
         ),
     )
@@ -87,7 +87,7 @@ def complete_booking_payment(booking):
         "PSYCHOLOGIST_PAYOUT",
         booking=booking,
         note=(
-            f"Consultation fee credited after 10% admin commission. "
+            f"Consultation fee credited after {payout['commission_percentage']}% admin commission. "
             f"Commission: {payout['commission_amount']}."
         ),
     )

@@ -118,3 +118,13 @@ export const getAdminFinance = async () => {
 };
 
 export const getAdminWallet = getAdminFinance;
+
+export const fetchCommissionRates = async () => {
+  const response = await axiosInstance.get("finance/commission-rates/");
+  return response.data;
+};
+
+export const createCommissionRate = async (data) => {
+  const response = await axiosInstance.post("finance/commission-rates/", data);
+  return response.data;
+};

@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PsychologistNavbar from '../../../components/psychologist/Navbar/PsychologistNavbar';
 import { getMyApplication, getApplicationStatus, requestJoin, getJoinStatus } from '../../../api/psychologist.api';
+import { fetchCurrentCommissionRate } from '../../../api/finance.api';
 import { usePsychologistSessionGuard } from '../../../hooks/usePsychologistSessionGuard';
 import { resolveMediaUrl } from '../../../utils/url';
 
@@ -512,14 +513,17 @@ const PsychologistApprovalWaiting = () => {
     const [showInterviewDetails, setShowInterviewDetails] = useState(false);
     const [showWaitingRoom, setShowWaitingRoom] = useState(false);
     const [interviewStatus, setInterviewStatus] = useState(null);
+    const [commissionRate, setCommissionRate] = useState(null);
 
     useEffect(() => {
         Promise.all([
             getMyApplication(),
             getApplicationStatus(),
+            fetchCurrentCommissionRate().catch(() => null),
         ])
-            .then(([appData, statusData]) => {
+            .then(([appData, statusData, commissionData]) => {
                 setApplication(appData);
+                setCommissionRate(commissionData);
                 if (statusData?.interview_id) {
                     setInterviewId(statusData.interview_id);
                 }
@@ -539,9 +543,11 @@ const PsychologistApprovalWaiting = () => {
 
     const fullName = application?.full_name || 'Dr. —';
     const email = application?.email || '—';
+    const commissionPercentage = Number(commissionRate?.percentage ?? 10);
+    const earningPercentage = Math.max(0, 100 - commissionPercentage);
     const fee = application?.consultation_fee ? `₹${parseFloat(application.consultation_fee).toLocaleString('en-IN')}` : '—';
     const earning = application?.consultation_fee
-        ? `₹${Math.round(parseFloat(application.consultation_fee) * 0.90).toLocaleString('en-IN')}`
+        ? `₹${Math.round(parseFloat(application.consultation_fee) * (earningPercentage / 100)).toLocaleString('en-IN')}`
         : '—';
 
     const address = [application?.street_address, application?.city, application?.state, application?.pincode]
@@ -838,7 +844,7 @@ const PsychologistApprovalWaiting = () => {
                                 <p className="text-base font-bold text-gray-900">{fee} <span className="text-xs font-normal text-gray-400">/ session</span></p>
                             </div>
                             <div className="text-right">
-                                <p className="text-xs text-gray-400 mb-0.5">Your Earning (90%)</p>
+                                <p className="text-xs text-gray-400 mb-0.5">Your Earning ({earningPercentage.toFixed(2)}%)</p>
                                 <p className="text-base font-bold text-psycho-primary">{earning} <span className="text-xs font-normal text-gray-400">/ session</span></p>
                             </div>
                         </div>

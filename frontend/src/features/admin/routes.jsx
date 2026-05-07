@@ -9,6 +9,7 @@ import AdminApplicationDetail from "./pages/AdminApplicationDetail";
 import AdminInterviewRoom from "./pages/AdminInterviewRoom";
 import AdminPsychologistList from "./pages/AdminPsychologistList";
 import AdminPsychologistDetail from "./pages/AdminPsychologistDetail";
+import AdminCommissions from "./pages/AdminCommissions";
 import AdminWallet from "./pages/AdminWallet";
 import { useAuthStore } from "../../store/auth.store";
 
@@ -113,6 +114,17 @@ const AdminRoutes = () => {
       />
 
       <Route path="wallet" element={<Navigate to="/admin/finance" replace />} />
+
+      <Route
+        path="commissions"
+        element={
+          isAuthenticated && role === "ADMIN" ? (
+            <AdminCommissions />
+          ) : (
+            <Navigate to="/admin/login" />
+          )
+        }
+      />
 
       <Route path="*" element={<Navigate to="login" />} />
     </Routes>

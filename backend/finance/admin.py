@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import RazorpayOrder, Wallet, WalletTransaction
+from .models import CommissionRate, RazorpayOrder, Wallet, WalletTransaction
 
 
 @admin.register(Wallet)
@@ -21,3 +21,9 @@ class RazorpayOrderAdmin(admin.ModelAdmin):
     list_display = ("razorpay_order_id", "user", "purpose", "amount", "status", "created_at")
     list_filter = ("purpose", "status")
     search_fields = ("razorpay_order_id", "razorpay_payment_id", "user__email")
+
+
+@admin.register(CommissionRate)
+class CommissionRateAdmin(admin.ModelAdmin):
+    list_display = ("percentage", "effective_from", "changed_by", "created_at")
+    search_fields = ("changed_by__email", "changed_by__full_name")

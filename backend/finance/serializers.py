@@ -3,8 +3,13 @@ from django.db.models import Sum
 from django.utils import timezone
 from accounts.models import User
 from appointments.models import Booking
-from .models import RazorpayOrder, Wallet, WalletTransaction
-from .services.amounts import calculate_psychologist_payout
+from notifications.services import notify_many
+from .models import CommissionRate, RazorpayOrder, Wallet, WalletTransaction
+from .services.amounts import (
+    calculate_psychologist_payout,
+    get_effective_commission_percentage,
+    money,
+)
 
 
 """
@@ -159,7 +164,8 @@ class WalletTransactionSerializer(serializers.ModelSerializer):
             payout = calculate_psychologist_payout(booking)
             return (
                 f"Completed appointment payout to {psychologist_name}. "
-                f"Admin kept 10% commission and GST: {payout['admin_retained']}."
+                f"Admin kept {payout['commission_percentage']}% commission and GST: "
+                f"{payout['admin_retained']}."
             )
 
         return obj.note
@@ -287,6 +293,74 @@ class VerifyRazorpayOrderSerializer(serializers.Serializer):
     razorpay_order_id = serializers.CharField()
     razorpay_payment_id = serializers.CharField()
     razorpay_signature = serializers.CharField()
+
+
+class CommissionRateSerializer(serializers.ModelSerializer):
+    changed_by_name = serializers.CharField(source="changed_by.full_name", read_only=True)
+
+    class Meta:
+        model = CommissionRate
+        fields = [
+            "id",
+            "percentage",
+            "effective_from",
+            "note",
+            "changed_by",
+            "changed_by_name",
+            "created_at",
+        ]
+        read_only_fields = ["id", "changed_by", "changed_by_name", "created_at"]
+
+
+class CurrentCommissionRateSerializer(serializers.Serializer):
+    percentage = serializers.DecimalField(max_digits=5, decimal_places=2)
+    effective_from = serializers.DateField(allow_null=True)
+    is_default = serializers.BooleanField()
+
+
+class CreateCommissionRateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CommissionRate
+        fields = ["percentage", "effective_from", "note"]
+
+    def validate_percentage(self, value):
+        value = money(value)
+        if value <= 0 or value > 100:
+            raise serializers.ValidationError("Commission percentage must be between 0.01 and 100.")
+        return value
+
+    def validate_effective_from(self, value):
+        if value < timezone.localdate():
+            raise serializers.ValidationError("Effective date cannot be in the past.")
+        return value
+
+    def validate(self, attrs):
+        effective_from = attrs.get("effective_from")
+        if effective_from and CommissionRate.objects.filter(effective_from=effective_from).exists():
+            raise serializers.ValidationError({
+                "effective_from": "A commission change already exists for this effective date."
+            })
+        return attrs
+
+    def create(self, validated_data):
+        request = self.context["request"]
+        effective_from = validated_data["effective_from"]
+        new_percentage = validated_data["percentage"]
+        previous_percentage = get_effective_commission_percentage(effective_from)
+        commission_rate = CommissionRate.objects.create(
+            **validated_data,
+            changed_by=request.user,
+        )
+        recipients = User.objects.filter(role="PSYCHOLOGIST", is_active=True)
+        notify_many(
+            recipients,
+            (
+                f"Platform commission will change from {previous_percentage}% to "
+                f"{new_percentage}% effective {effective_from}."
+            ),
+            target_url="/psychologist/wallet",
+        )
+        return commission_rate
 
 
 """
