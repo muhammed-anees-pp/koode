@@ -2,6 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, permissions
 from django.shortcuts import get_object_or_404
+from django.conf import settings
 from .models import Availability, Booking
 from django.utils import timezone
 from psychologists.models import PsychologistProfile
@@ -9,7 +10,7 @@ from patients.models import PatientProfile
 from patients.permissions import IsPatient
 from psychologists.permissions import IsPsychologist
 from .serializers import (
-    AvailabilitySerializer, BookingSerializer, CancelBookingSerializer, CreateAvailabilitySerializer, CreateBookingSerializer, RescheduleBookingSerializer, RevokeAvailabilitySlotSerializer, is_future_slot,
+    AvailabilitySerializer, BookingSerializer, CancelBookingSerializer, CompleteBookingSerializer, CreateAvailabilitySerializer, CreateBookingSerializer, RescheduleBookingSerializer, RevokeAvailabilitySlotSerializer, is_future_slot,
 )
 
 
@@ -110,11 +111,21 @@ class CreateBookingView(APIView):
         serializer = CreateBookingSerializer(data=request.data, context={"patient": patient},)
 
         if serializer.is_valid():
-            booking = serializer.save()
-            return Response(
-                BookingSerializer(booking, context={"request": request}).data,
-                status=status.HTTP_201_CREATED,
-            )
+            result = serializer.save()
+            booking = result["booking"]
+            razorpay_order = result["razorpay_order"]
+            data = {
+                "booking": BookingSerializer(booking, context={"request": request}).data,
+                "payment_required": razorpay_order is not None,
+            }
+            if razorpay_order:
+                data["razorpay"] = {
+                    "key": getattr(settings, "RAZORPAY_KEY_ID", ""),
+                    "order_id": razorpay_order.razorpay_order_id,
+                    "amount": int(razorpay_order.amount * 100),
+                    "currency": razorpay_order.currency,
+                }
+            return Response(data, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -214,6 +225,25 @@ class RescheduleBookingView(BookingActionBaseView):
 
         serializer = RescheduleBookingSerializer(data=request.data, context={"booking": booking},)
 
+        if serializer.is_valid():
+            booking = serializer.save()
+            return Response(BookingSerializer(booking, context={"request": request}).data)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+"""
+COMPLETE BOOKING
+"""
+class CompleteBookingView(BookingActionBaseView):
+    permission_classes = [permissions.IsAuthenticated, IsPsychologist]
+
+    def post(self, request, booking_id):
+        booking = self.get_booking(request, booking_id)
+        if booking is None:
+            return Response({"detail": "Not allowed"}, status=status.HTTP_403_FORBIDDEN)
+
+        serializer = CompleteBookingSerializer(data=request.data, context={"booking": booking})
         if serializer.is_valid():
             booking = serializer.save()
             return Response(BookingSerializer(booking, context={"request": request}).data)

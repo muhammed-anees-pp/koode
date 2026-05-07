@@ -17,8 +17,8 @@ const menuItems = {
     { name: "Complaints", path: "#", icon: (<svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M10 6V10M10 14H10.01M18 10C18 14.4183 14.4183 18 10 18C5.58172 18 2 14.4183 2 10C2 5.58172 5.58172 2 10 2C14.4183 2 18 5.58172 18 10Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>) },
   ],
   financial: [
-    { name: "Finance", path: "#", icon: (<svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M10 1C14.9706 1 19 5.02944 19 10C19 14.9706 14.9706 19 10 19C5.02944 19 1 14.9706 1 10C1 5.02944 5.02944 1 10 1Z" stroke="currentColor" strokeWidth="1.5" /><path d="M10 5V6M10 5C8.34315 5 7 6.34315 7 8C7 9.65685 8.34315 11 10 11C11.6569 11 13 12.3431 13 14C13 15.6569 11.6569 17 10 17M10 5C11.6569 5 13 6.34315 13 8M10 17V18M10 17C8.34315 17 7 15.6569 7 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>) },
-    { name: "Commissions", path: "#", icon: (<svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M3 10H17M8 3L3 10L8 17M12 3L17 10L12 17" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>) },
+    { name: "Finance", path: "/admin/finance", icon: (<svg width="18" height="18" viewBox="0 0 20 20" fill="none"><rect x="2" y="5" width="16" height="10" rx="2" stroke="currentColor" strokeWidth="1.5" /><circle cx="10" cy="10" r="2.5" stroke="currentColor" strokeWidth="1.5" /><path d="M5 8V8.01M15 12V12.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>) },
+    { name: "Commissions", path: "/admin/commissions", icon: (<svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M3 10H17M8 3L3 10L8 17M12 3L17 10L12 17" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>) },
   ],
 };
 

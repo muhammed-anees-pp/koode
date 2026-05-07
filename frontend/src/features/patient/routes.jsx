@@ -12,6 +12,9 @@ import PatientBooking from "./pages/PatientBooking";
 import PatientAppointments from "./pages/PatientAppointments";
 import PatientAppointmentDetail from "./pages/PatientAppointmentDetail";
 import PatientMessages from "./pages/PatientMessages";
+import PatientWallet from "./pages/PatientWallet";
+import PatientPaymentConfirmed from "./pages/PatientPaymentConfirmed";
+import PatientPaymentCancelled from "./pages/PatientPaymentCancelled";
 import { useAuthStore } from "../../store/auth.store";
 
 
@@ -64,6 +67,18 @@ const PatientRoutes = () => {
       <Route
         path="messages"
         element={isAuthenticated && role === "PATIENT" ? <PatientMessages /> : <Navigate to="/patient/login" replace />}
+      />
+      <Route
+        path="wallet"
+        element={isAuthenticated && role === "PATIENT" ? <PatientWallet /> : <Navigate to="/patient/login" replace />}
+      />
+      <Route
+        path="payment-confirmed"
+        element={isAuthenticated && role === "PATIENT" ? <PatientPaymentConfirmed /> : <Navigate to="/patient/login" replace />}
+      />
+      <Route
+        path="payment-cancelled"
+        element={isAuthenticated && role === "PATIENT" ? <PatientPaymentCancelled /> : <Navigate to="/patient/login" replace />}
       />
       <Route path="*" element={<Navigate to="home" />} />
     </Routes>

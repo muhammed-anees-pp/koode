@@ -2,6 +2,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, useRef } from "react";
 import { fetchApplicationDetail, updateApplication, scheduleInterview } from "../../../api/admin.api";
+import { fetchCurrentCommissionRate } from "../../../api/finance.api";
 import Sidebar from "../../../components/admin/Sidebar/AdminSidebar";
 import Navbar from "../../../components/admin/Navbar/AdminNavbar";
 import { resolveMediaUrl } from "../../../utils/url";
@@ -398,6 +399,12 @@ export default function AdminApplicationDetail() {
         },
     });
 
+    const { data: commissionRate } = useQuery({
+        queryKey: ["current-commission-rate"],
+        queryFn: fetchCurrentCommissionRate,
+        staleTime: 5 * 60 * 1000,
+    });
+
     const invalidate = () => queryClient.invalidateQueries({ queryKey: ["admin-application-detail", id] });
 
     const notesMutation = useMutation({
@@ -462,9 +469,9 @@ export default function AdminApplicationDetail() {
     const certUrl = app.certificate_document ? resolveMediaUrl(app.certificate_document) : null;
     const certName = certUrl ? certUrl.split("/").pop() : "certificate.pdf";
 
-    const commissionRate = 0.10;
+    const commissionPercentage = Number(commissionRate?.percentage ?? 10);
     const fee = parseFloat(app.consultation_fee) || 0;
-    const commission = Math.round(fee * commissionRate);
+    const commission = Math.round(fee * (commissionPercentage / 100));
     const earning = fee - commission;
 
     return (
@@ -533,7 +540,7 @@ export default function AdminApplicationDetail() {
                                         <span className="text-slate-200 font-semibold">₹{fee.toLocaleString("en-IN")}</span>
                                     </div>
                                     <div className="flex justify-between text-slate-400">
-                                        <span>Platform (10%)</span>
+                                        <span>Platform ({commissionPercentage.toFixed(2)}%)</span>
                                         <span className="text-red-400">−₹{commission}</span>
                                     </div>
                                     <div className="flex justify-between border-t border-slate-700/50 pt-2.5 text-slate-200 font-bold">

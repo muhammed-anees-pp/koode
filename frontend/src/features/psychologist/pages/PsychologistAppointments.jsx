@@ -5,6 +5,7 @@ import PsychologistNavbar from "../../../components/psychologist/Navbar/Psycholo
 import PsychologistSidebar from "../../../components/psychologist/Sidebar/PsychologistSidebar";
 import {
   cancelPsychologistBooking,
+  completePsychologistBooking,
   getPsychologistBookings,
   reschedulePsychologistBooking,
 } from "../../../api/psychologist.api";
@@ -399,6 +400,13 @@ export default function PsychologistAppointments() {
     },
   });
 
+  const completeMutation = useMutation({
+    mutationFn: completePsychologistBooking,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["psychologist-appointments"] });
+    },
+  });
+
   const openCancelModal = (booking) => {
     setCancelTarget(booking);
     setCancelNote("");
@@ -610,6 +618,14 @@ export default function PsychologistAppointments() {
                               className="rounded-full border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-600 transition hover:bg-rose-100"
                             >
                               Cancel appointment
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => completeMutation.mutate(booking.id)}
+                              disabled={completeMutation.isPending || booking.payment_status !== "PAID"}
+                              className="rounded-full border border-slate-200 bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              Mark completed
                             </button>
                           </div>
                         ) : null}

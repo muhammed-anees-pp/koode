@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     "appointments",
     "notifications",
     "chat",
+    "finance",
 ]
 
 # -------------------------------------------------
@@ -385,3 +386,9 @@ GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID")
 # -------------------------------------------------
 ZEGO_APP_ID = os.getenv("ZEGO_APP_ID")
 ZEGO_SERVER_SECRET = os.getenv("ZEGO_SERVER_SECRET")
+
+# -------------------------------------------------
+# RAZORPAY
+# -------------------------------------------------
+RAZORPAY_KEY_ID = os.getenv("RAZORPAY_KEY_ID")
+RAZORPAY_KEY_SECRET = os.getenv("RAZORPAY_KEY_SECRET")

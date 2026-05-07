@@ -111,3 +111,20 @@ export const sendChatMessage = async (interviewId, text) => {
   const response = await axiosInstance.post(`interviews/${interviewId}/chat/send/`, { text });
   return response.data;
 };
+
+export const getAdminFinance = async () => {
+  const response = await axiosInstance.get("finance/wallet/");
+  return response.data;
+};
+
+export const getAdminWallet = getAdminFinance;
+
+export const fetchCommissionRates = async () => {
+  const response = await axiosInstance.get("finance/commission-rates/");
+  return response.data;
+};
+
+export const createCommissionRate = async (data) => {
+  const response = await axiosInstance.post("finance/commission-rates/", data);
+  return response.data;
+};

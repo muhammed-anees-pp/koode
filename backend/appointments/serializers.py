@@ -9,8 +9,19 @@ from chat.services.chat_service import sync_chat_room_for_booking
 from notifications.services import create_notification
 from notifications.time_formatting import format_india_slot
 from chat.services.chat_service import ensure_chat_room_for_booking
+from finance.services.amounts import calculate_booking_amounts, calculate_psychologist_payout, money
+from finance.services.bookings import (
+    complete_booking_payment,
+    credit_admin_for_booking,
+    refund_booking_to_patient,
+)
+from finance.services.razorpay import create_razorpay_order
+from finance.services.wallets import debit_wallet, get_wallet
 
 
+"""
+TIME ZONE
+"""
 INDIA_TZ = ZoneInfo("Asia/Kolkata")
 
 
@@ -302,6 +313,9 @@ class BookingSerializer(serializers.ModelSerializer):
     specialization = serializers.SerializerMethodField()
     cancellation_note = serializers.CharField(source="notes", read_only=True)
     chat_enabled = serializers.SerializerMethodField()
+    commission_percentage = serializers.SerializerMethodField()
+    admin_commission_amount = serializers.SerializerMethodField()
+    psychologist_payout_amount = serializers.SerializerMethodField()
 
     def get_psychologist_photo(self, obj):
         request = self.context.get("request")
@@ -328,6 +342,15 @@ class BookingSerializer(serializers.ModelSerializer):
     def get_chat_enabled(self, obj):
         return obj.status == "CONFIRMED"
 
+    def get_commission_percentage(self, obj):
+        return calculate_psychologist_payout(obj)["commission_percentage"]
+
+    def get_admin_commission_amount(self, obj):
+        return calculate_psychologist_payout(obj)["commission_amount"]
+
+    def get_psychologist_payout_amount(self, obj):
+        return calculate_psychologist_payout(obj)["psychologist_payout"]
+
     class Meta:
         model = Booking
         fields = [
@@ -344,6 +367,15 @@ class BookingSerializer(serializers.ModelSerializer):
             "end_time",
             "status",
             "payment_status",
+            "consultation_fee",
+            "gst_amount",
+            "total_amount",
+            "wallet_amount",
+            "razorpay_amount",
+            "commission_percentage",
+            "admin_commission_amount",
+            "psychologist_payout_amount",
+            "psychologist_paid_at",
             "meeting_link",
             "cancellation_note",
             "chat_enabled",
@@ -358,6 +390,7 @@ CREATE BOOKING
 """
 class CreateBookingSerializer(serializers.Serializer):
     slot_id = serializers.UUIDField()
+    wallet_amount = serializers.DecimalField(max_digits=10, decimal_places=2, required=False, default=0)
 
     def validate(self, attrs):
         try:
@@ -374,19 +407,35 @@ class CreateBookingSerializer(serializers.Serializer):
             raise serializers.ValidationError("Past slots cannot be booked")
 
         attrs["slot"] = slot
+        attrs["wallet_amount"] = money(attrs.get("wallet_amount") or 0)
         return attrs
 
     def create(self, validated_data):
         patient = self.context["patient"]
         slot = validated_data["slot"]
+        requested_wallet_amount = validated_data["wallet_amount"]
         availability = slot.availability
         psychologist = availability.psychologist
+        amounts = calculate_booking_amounts(psychologist)
+        total_amount = amounts["total_amount"]
+        max_wallet_amount = total_amount
+        wallet_amount = min(requested_wallet_amount, max_wallet_amount)
+        razorpay_amount = money(total_amount - wallet_amount)
+
+        razorpay_order = None
 
         with transaction.atomic():
             locked_slot = AvailableSlot.objects.select_for_update().get(id=slot.id)
 
             if locked_slot.is_booked:
                 raise serializers.ValidationError("Slot already booked")
+
+            patient_wallet = get_wallet(patient.user)
+            locked_wallet = None
+            if wallet_amount > 0:
+                locked_wallet = patient_wallet.__class__.objects.select_for_update().get(id=patient_wallet.id)
+                if locked_wallet.balance < wallet_amount:
+                    raise serializers.ValidationError("Insufficient wallet balance.")
 
             locked_slot.is_booked = True
             locked_slot.save(update_fields=["is_booked"])
@@ -397,22 +446,56 @@ class CreateBookingSerializer(serializers.Serializer):
                 date=availability.date,
                 start_time=locked_slot.start_time,
                 end_time=locked_slot.end_time,
-                status="CONFIRMED",
+                status="PENDING" if razorpay_amount > 0 else "CONFIRMED",
+                payment_status="PENDING",
+                consultation_fee=amounts["consultation_fee"],
+                gst_amount=amounts["gst_amount"],
+                total_amount=total_amount,
+                wallet_amount=wallet_amount,
+                razorpay_amount=razorpay_amount,
             )
+            if wallet_amount > 0 and locked_wallet:
+                debit_wallet(
+                    locked_wallet,
+                    wallet_amount,
+                    "APPOINTMENT_HOLD",
+                    booking=booking,
+                    note="Held for appointment payment.",
+                )
 
-        ensure_chat_room_for_booking(booking)
-        slot_label = format_india_slot(booking.date, booking.start_time)
-        create_notification(
-            booking.psychologist.user,
-            f"New appointment booked by {booking.patient.user.full_name} for {slot_label}.",
-            target_url="/psychologist/appointments",
-        )
-        create_notification(
-            booking.patient.user,
-            f"Your appointment with {booking.psychologist.user.full_name} is confirmed for {slot_label}.",
-            target_url=f"/patient/appointments/{booking.id}",
-        )
-        return booking
+            if razorpay_amount == 0:
+                credit_admin_for_booking(booking, reference="wallet")
+            else:
+                razorpay_order = create_razorpay_order(
+                    patient.user,
+                    "APPOINTMENT_PAYMENT",
+                    razorpay_amount,
+                    booking=booking,
+                    notes={"booking_id": str(booking.id)},
+                )
+
+        if booking.payment_status == "PAID":
+            notify_booking_confirmed(booking)
+
+        if razorpay_order:
+            return {"booking": booking, "razorpay_order": razorpay_order}
+
+        return {"booking": booking, "razorpay_order": None}
+
+
+def notify_booking_confirmed(booking):
+    ensure_chat_room_for_booking(booking)
+    slot_label = format_india_slot(booking.date, booking.start_time)
+    create_notification(
+        booking.psychologist.user,
+        f"New appointment booked by {booking.patient.user.full_name} for {slot_label}.",
+        target_url="/psychologist/appointments",
+    )
+    create_notification(
+        booking.patient.user,
+        f"Your appointment with {booking.psychologist.user.full_name} is confirmed for {slot_label}.",
+        target_url=f"/patient/appointments/{booking.id}",
+    )
 
 
 """
@@ -449,6 +532,7 @@ class CancelBookingSerializer(serializers.Serializer):
             locked_booking.status = "CANCELLED"
             locked_booking.notes = note
             locked_booking.save(update_fields=["slot", "status", "notes"])
+            refund_booking_to_patient(locked_booking, note=note)
 
         sync_chat_room_for_booking(locked_booking)
         slot_label = format_india_slot(locked_booking.date, locked_booking.start_time)
@@ -462,6 +546,30 @@ class CancelBookingSerializer(serializers.Serializer):
             f"Appointment with {locked_booking.patient.user.full_name} for {slot_label} was cancelled.",
             target_url="/psychologist/appointments",
         )
+        return locked_booking
+
+
+"""
+COMPLETE BOOKING
+"""
+class CompleteBookingSerializer(serializers.Serializer):
+    def save(self, **kwargs):
+        booking = self.context["booking"]
+
+        with transaction.atomic():
+            locked_booking = Booking.objects.select_for_update().get(id=booking.id)
+
+            if locked_booking.status == "CANCELLED":
+                raise serializers.ValidationError("Cancelled booking cannot be completed")
+
+            if locked_booking.status == "COMPLETED":
+                return locked_booking
+
+            complete_booking_payment(locked_booking)
+            locked_booking.status = "COMPLETED"
+            locked_booking.save(update_fields=["status"])
+
+        sync_chat_room_for_booking(locked_booking)
         return locked_booking
 
 

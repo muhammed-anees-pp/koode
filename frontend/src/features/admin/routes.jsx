@@ -9,6 +9,8 @@ import AdminApplicationDetail from "./pages/AdminApplicationDetail";
 import AdminInterviewRoom from "./pages/AdminInterviewRoom";
 import AdminPsychologistList from "./pages/AdminPsychologistList";
 import AdminPsychologistDetail from "./pages/AdminPsychologistDetail";
+import AdminCommissions from "./pages/AdminCommissions";
+import AdminWallet from "./pages/AdminWallet";
 import { useAuthStore } from "../../store/auth.store";
 
 const AdminRoutes = () => {
@@ -98,6 +100,30 @@ const AdminRoutes = () => {
       <Route
         path="interview/:interviewId"
         element={isAuthenticated && role === "ADMIN" ? <AdminInterviewRoom /> : <Navigate to="/admin/login" />}
+      />
+
+      <Route
+        path="finance"
+        element={
+          isAuthenticated && role === "ADMIN" ? (
+            <AdminWallet />
+          ) : (
+            <Navigate to="/admin/login" />
+          )
+        }
+      />
+
+      <Route path="wallet" element={<Navigate to="/admin/finance" replace />} />
+
+      <Route
+        path="commissions"
+        element={
+          isAuthenticated && role === "ADMIN" ? (
+            <AdminCommissions />
+          ) : (
+            <Navigate to="/admin/login" />
+          )
+        }
       />
 
       <Route path="*" element={<Navigate to="login" />} />
