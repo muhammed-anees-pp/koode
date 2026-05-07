@@ -112,7 +112,9 @@ export const sendChatMessage = async (interviewId, text) => {
   return response.data;
 };
 
-export const getAdminWallet = async () => {
+export const getAdminFinance = async () => {
   const response = await axiosInstance.get("finance/wallet/");
   return response.data;
 };
+
+export const getAdminWallet = getAdminFinance;

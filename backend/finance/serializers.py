@@ -1,5 +1,8 @@
 from rest_framework import serializers
+from django.db.models import Sum
+from django.utils import timezone
 from accounts.models import User
+from appointments.models import Booking
 from .models import RazorpayOrder, Wallet, WalletTransaction
 from .services.amounts import calculate_psychologist_payout
 
@@ -186,22 +189,88 @@ WALLET SERIALIZER
 class WalletSerializer(serializers.ModelSerializer):
     role = serializers.CharField(source="user.role", read_only=True)
     transactions = serializers.SerializerMethodField()
+    finance_summary = serializers.SerializerMethodField()
 
     def get_transactions(self, obj):
         queryset = obj.transactions.select_related(
             "wallet__user",
             "booking__patient__user",
             "booking__psychologist__user",
-        ).prefetch_related("booking__razorpay_orders").all()[:25]
+        ).prefetch_related("booking__razorpay_orders").all()
+        if obj.user.role != "ADMIN":
+            queryset = queryset[:25]
         return WalletTransactionSerializer(
             queryset,
             many=True,
             context=self.context,
         ).data
 
+    def get_finance_summary(self, obj):
+        if obj.user.role != "ADMIN":
+            return None
+
+        paid_bookings = Booking.objects.filter(payment_status="PAID")
+        admin_transactions = obj.transactions.all()
+        today = timezone.localdate()
+        month_start = today.replace(day=1)
+
+        total_revenue = self._sum_transactions(
+            admin_transactions,
+            source="APPOINTMENT_PAYMENT",
+            transaction_type="CREDIT",
+        )
+        total_paid_to_psychologists = self._sum_transactions(
+            admin_transactions,
+            source="PSYCHOLOGIST_PAYOUT",
+            transaction_type="DEBIT",
+        )
+        total_refund_amount = self._sum_transactions(
+            admin_transactions,
+            source="APPOINTMENT_REFUND",
+            transaction_type="DEBIT",
+        )
+        todays_revenue = self._sum_transactions(
+            admin_transactions.filter(created_at__date=today),
+            source="APPOINTMENT_PAYMENT",
+            transaction_type="CREDIT",
+        )
+        monthly_revenue = self._sum_transactions(
+            admin_transactions.filter(created_at__date__gte=month_start, created_at__date__lte=today),
+            source="APPOINTMENT_PAYMENT",
+            transaction_type="CREDIT",
+        )
+        pending_payouts = sum(
+            calculate_psychologist_payout(booking)["psychologist_payout"]
+            for booking in paid_bookings.filter(psychologist_paid_at__isnull=True)
+        )
+
+        return {
+            "total_revenue": total_revenue,
+            "total_consultation_revenue": self._sum_bookings(paid_bookings, "consultation_fee"),
+            "total_gst_collected": self._sum_bookings(paid_bookings, "gst_amount"),
+            "platform_commission_earned": sum(
+                calculate_psychologist_payout(booking)["commission_amount"]
+                for booking in paid_bookings
+            ),
+            "total_paid_to_psychologists": total_paid_to_psychologists,
+            "pending_payouts": pending_payouts,
+            "admin_wallet_balance": obj.balance,
+            "total_refund_amount": total_refund_amount,
+            "todays_revenue": todays_revenue,
+            "monthly_revenue": monthly_revenue,
+        }
+
+    def _sum_transactions(self, queryset, source, transaction_type):
+        return queryset.filter(source=source, transaction_type=transaction_type).aggregate(
+            total=Sum("amount")
+        )["total"] or 0
+
+    def _sum_bookings(self, queryset, field):
+        return queryset.aggregate(total=Sum(field))["total"] or 0
+
     class Meta:
         model = Wallet
-        fields = ["id", "role", "balance", "transactions", "updated_at"]
+        fields = ["id", "role", "balance", "finance_summary", "transactions", "updated_at"]
 
 
 """
