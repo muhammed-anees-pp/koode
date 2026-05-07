@@ -72,6 +72,7 @@ const PatientNavbar = ({ authLink } = {}) => {
         } else if (action === 'User Profile') { navigate('/patient/profile'); }
         else if (action === 'Appointment List') { navigate('/patient/appointments'); }
         else if (action === 'Chat and Messaging') { navigate('/patient/messages'); }
+        else if (action === 'Wallet') { navigate('/patient/wallet'); }
         else if (action === 'Settings') { navigate('#'); }
     };
 

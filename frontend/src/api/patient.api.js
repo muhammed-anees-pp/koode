@@ -74,9 +74,10 @@ export const getPsychologistSlots = async (psychologistId, date) => {
   return response.data;
 };
 
-export const bookSlot = async (slotId) => {
+export const bookSlot = async ({ slotId, walletAmount = 0 }) => {
   const response = await axiosInstance.post("appointments/book/", {
     slot_id: slotId,
+    wallet_amount: walletAmount,
   });
   return response.data;
 };
@@ -89,6 +90,33 @@ export const getMyBookings = async () => {
 export const cancelPatientBooking = async (bookingId, note) => {
   const response = await axiosInstance.post(`appointments/bookings/${bookingId}/cancel/`, {
     note,
+  });
+  return response.data;
+};
+
+export const getWallet = async () => {
+  const response = await axiosInstance.get("finance/wallet/");
+  return response.data;
+};
+
+export const createWalletTopUpOrder = async (amount) => {
+  const response = await axiosInstance.post("finance/wallet/top-up/order/", { amount });
+  return response.data;
+};
+
+export const verifyWalletTopUp = async (data) => {
+  const response = await axiosInstance.post("finance/wallet/top-up/verify/", data);
+  return response.data;
+};
+
+export const verifyAppointmentPayment = async (data) => {
+  const response = await axiosInstance.post("finance/payments/appointment/verify/", data);
+  return response.data;
+};
+
+export const cancelRazorpayOrder = async (razorpayOrderId) => {
+  const response = await axiosInstance.post("finance/payments/razorpay/cancel/", {
+    razorpay_order_id: razorpayOrderId,
   });
   return response.data;
 };
