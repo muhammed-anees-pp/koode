@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     "psychologists",
     "interviews",
     "appointments",
+    "consultations",
     "notifications",
     "chat",
     "finance",
@@ -146,7 +147,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # -------------------------------------------------
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Kolkata'
 
 USE_I18N = True
 
@@ -224,6 +225,11 @@ LOGGING = {
             "propagate": False,
         },
         "appointments": {
+            "handlers": ["console", "file"],
+            "level": os.getenv("APP_LOG_LEVEL", "INFO"),
+            "propagate": False,
+        },
+        "consultations": {
             "handlers": ["console", "file"],
             "level": os.getenv("APP_LOG_LEVEL", "INFO"),
             "propagate": False,
@@ -386,6 +392,16 @@ GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID")
 # -------------------------------------------------
 ZEGO_APP_ID = os.getenv("ZEGO_APP_ID")
 ZEGO_SERVER_SECRET = os.getenv("ZEGO_SERVER_SECRET")
+ZEGO_CONSULTATION_APP_ID = os.getenv("ZEGO_CONSULTATION_APP_ID", ZEGO_APP_ID)
+ZEGO_CONSULTATION_SERVER_SECRET = os.getenv("ZEGO_CONSULTATION_SERVER_SECRET", ZEGO_SERVER_SECRET)
+ZEGO_CONSULTATION_RECORDING_ENABLED = os.getenv("ZEGO_CONSULTATION_RECORDING_ENABLED", "False") == "True"
+ZEGO_CLOUD_RECORDING_API_URL = os.getenv("ZEGO_CLOUD_RECORDING_API_URL", "https://cloudrecord-api.zego.im/")
+ZEGO_RECORDING_OUTPUT_FOLDER = os.getenv("ZEGO_RECORDING_OUTPUT_FOLDER", "consultation-recordings")
+ZEGO_RECORDING_S3_VENDOR = int(os.getenv("ZEGO_RECORDING_S3_VENDOR", "1"))
+ZEGO_RECORDING_S3_ENDPOINT = os.getenv("ZEGO_RECORDING_S3_ENDPOINT", "")
+ZEGO_RECORDING_CALLBACK_URL = os.getenv("ZEGO_RECORDING_CALLBACK_URL", "")
+ZEGO_RECORDING_CALLBACK_SECRET = os.getenv("ZEGO_RECORDING_CALLBACK_SECRET", "")
+ZEGO_RECORDING_MAX_RECORD_TIME_SECONDS = int(os.getenv("ZEGO_RECORDING_MAX_RECORD_TIME_SECONDS", "7200"))
 
 # -------------------------------------------------
 # RAZORPAY
