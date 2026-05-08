@@ -128,6 +128,11 @@ export const getPsychologistBookings = async () => {
   return response.data;
 };
 
+export const getPsychologistPatients = async () => {
+  const response = await axiosInstance.get("psychologist/patients/");
+  return response.data;
+};
+
 export const cancelPsychologistBooking = async (bookingId, note) => {
   const response = await axiosInstance.post(`appointments/bookings/${bookingId}/cancel/`, {
     note,

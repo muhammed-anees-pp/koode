@@ -1,6 +1,5 @@
 import logging
 from functools import wraps
-
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from rest_framework import status
@@ -10,12 +9,11 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from .permissions import IsPsychologist
+from appointments.models import Booking
+from consultations.models import Consultation
 from .models import PsychologistProfile, Specialization
 from .serializers import PsychologistProfileSerializer
-
-
 logger = logging.getLogger(__name__)
-
 
 def log_unexpected_errors(action):
     def decorator(func):
@@ -102,3 +100,89 @@ class PsychologistProfileView(APIView):
 
         logger.info("Psychologist profile updated for user %s", request.user.id)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+"""
+PATIENTS LIST VIEW FOR PSYCHOLOGIST
+"""
+class PsychologistPatientListView(APIView):
+    permission_classes = [IsAuthenticated, IsPsychologist]
+
+    @log_unexpected_errors("listing psychologist patients")
+    def get(self, request):
+        psychologist = get_object_or_404(PsychologistProfile, user=request.user)
+        bookings = (
+            Booking.objects.select_related("patient__user")
+            .filter(psychologist=psychologist)
+            .exclude(status="CANCELLED")
+            .order_by("-date", "-start_time", "-created_at")
+        )
+
+        patient_map = {}
+        patient_ids = []
+        for booking in bookings:
+            patient = booking.patient
+            if patient.patient_id not in patient_map:
+                patient_ids.append(patient.patient_id)
+                patient_map[patient.patient_id] = {
+                    "patient_id": patient.patient_id,
+                    "name": patient.user.full_name,
+                    "email": patient.user.email,
+                    "phone_number": patient.phone_number,
+                    "gender": patient.gender,
+                    "date_of_birth": patient.date_of_birth,
+                    "appointment_count": 0,
+                    "completed_count": 0,
+                    "upcoming_count": 0,
+                    "last_appointment": None,
+                    "next_appointment": None,
+                    "notes": [],
+                }
+
+            entry = patient_map[patient.patient_id]
+            entry["appointment_count"] += 1
+            if booking.status == "COMPLETED":
+                entry["completed_count"] += 1
+            elif booking.status in {"PENDING", "CONFIRMED"}:
+                entry["upcoming_count"] += 1
+
+            appointment = {
+                "booking_id": booking.id,
+                "date": booking.date,
+                "start_time": booking.start_time,
+                "end_time": booking.end_time,
+                "status": booking.status,
+            }
+            if entry["last_appointment"] is None:
+                entry["last_appointment"] = appointment
+            if booking.status in {"PENDING", "CONFIRMED"}:
+                entry["next_appointment"] = appointment
+
+        notes = (
+            Consultation.objects.select_related(
+                "booking__patient",
+                "booking__psychologist__user",
+            )
+            .filter(
+                booking__patient_id__in=patient_ids,
+                status="COMPLETED",
+            )
+            .order_by("-booking__date", "-booking__start_time", "-ended_at")
+        )
+
+        for consultation in notes:
+            entry = patient_map.get(consultation.booking.patient_id)
+            if not entry:
+                continue
+            entry["notes"].append({
+                "consultation_id": consultation.id,
+                "booking_id": consultation.booking_id,
+                "date": consultation.booking.date,
+                "start_time": consultation.booking.start_time,
+                "end_time": consultation.booking.end_time,
+                "psychologist_name": consultation.booking.psychologist.user.full_name,
+                "patient_note": consultation.patient_note,
+                "psychologist_note": consultation.psychologist_note,
+            })
+
+        return Response([patient_map[patient_id] for patient_id in patient_ids], status=status.HTTP_200_OK)

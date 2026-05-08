@@ -15,6 +15,7 @@ import { getApplicationStatus } from "../../api/psychologist.api";
 import PsychologistAvailability from "./pages/PsychologistAvailability";
 import PsychologistAppointments from "./pages/PsychologistAppointments";
 import PsychologistMessages from "./pages/PsychologistMessages";
+import PsychologistPatients from "./pages/PsychologistPatients";
 import PsychologistWallet from "./pages/PsychologistWallet";
 import ConsultationRoom from "../../components/consultation/ConsultationRoom";
 
@@ -162,6 +163,14 @@ const PsychologistRoutes = () => {
         element={
           isAuthenticated && role === "PSYCHOLOGIST"
             ? <PsychologistAppointments />
+            : <Navigate to="/psychologist/login" replace />
+        }
+      />
+      <Route
+        path="patients"
+        element={
+          isAuthenticated && role === "PSYCHOLOGIST"
+            ? <PsychologistPatients />
             : <Navigate to="/psychologist/login" replace />
         }
       />
