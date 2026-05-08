@@ -5,6 +5,7 @@ from django.shortcuts import get_object_or_404
 from django.conf import settings
 from .models import Availability, Booking
 from django.utils import timezone
+from zoneinfo import ZoneInfo
 from psychologists.models import PsychologistProfile
 from patients.models import PatientProfile
 from patients.permissions import IsPatient
@@ -12,6 +13,9 @@ from psychologists.permissions import IsPsychologist
 from .serializers import (
     AvailabilitySerializer, BookingSerializer, CancelBookingSerializer, CompleteBookingSerializer, CreateAvailabilitySerializer, CreateBookingSerializer, RescheduleBookingSerializer, RevokeAvailabilitySlotSerializer, is_future_slot,
 )
+
+
+INDIA_TZ = ZoneInfo("Asia/Kolkata")
 
 
 
@@ -150,7 +154,8 @@ class BookingListView(APIView):
             "slot",
             "psychologist__user",
             "patient__user",
-        ).order_by("-created_at")
+            "consultation_session",
+        ).order_by("date", "start_time", "end_time", "created_at")
 
         serializer = BookingSerializer(queryset, many=True, context={"request": request})
         return Response(serializer.data)
@@ -163,7 +168,7 @@ class BookingActionBaseView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_booking(self, request, booking_id):
-        booking = get_object_or_404(Booking.objects.select_related("patient__user", "psychologist__user", "slot"),id=booking_id,)
+        booking = get_object_or_404(Booking.objects.select_related("patient__user", "psychologist__user", "slot", "consultation_session"),id=booking_id,)
 
         if request.user.role == "PATIENT":
             patient = get_object_or_404(PatientProfile, user=request.user)
@@ -179,7 +184,7 @@ class BookingActionBaseView(APIView):
         return booking
 
     def ensure_upcoming(self, booking):
-        return booking.date >= timezone.localdate()
+        return booking.date >= timezone.localtime(timezone.now(), INDIA_TZ).date()
 
 
 """
