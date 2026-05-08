@@ -128,3 +128,8 @@ export const createCommissionRate = async (data) => {
   const response = await axiosInstance.post("finance/commission-rates/", data);
   return response.data;
 };
+
+export const fetchConsultationRecordings = async () => {
+  const response = await axiosInstance.get("consultations/recordings/");
+  return response.data;
+};
