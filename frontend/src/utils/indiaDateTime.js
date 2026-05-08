@@ -47,6 +47,19 @@ export const formatIndiaTime = (value) => {
   return `${displayHours}:${pad(minutes)} ${meridiem}`;
 };
 
+export const formatIndiaDateTime = (value) => {
+  if (!value) return "";
+
+  return new Intl.DateTimeFormat("en-IN", {
+    timeZone: INDIA_TIME_ZONE,
+    day: "2-digit",
+    month: "short",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  }).format(new Date(value));
+};
+
 export const getIndiaNowParts = () => {
   const formatter = new Intl.DateTimeFormat("en-CA", {
     timeZone: INDIA_TIME_ZONE,
@@ -84,6 +97,18 @@ export const getIndiaSlotTimestamp = (dateISO, timeValue) => {
   const [year, month, day] = dateISO.split("-").map(Number);
   const [hours = "00", minutes = "00"] = timeValue.split(":");
   return Date.UTC(year, month - 1, day, Number(hours), Number(minutes));
+};
+
+export const compareIndiaAppointmentDateTime = (left, right) => {
+  const leftStart = getIndiaSlotTimestamp(left.date, left.start_time);
+  const rightStart = getIndiaSlotTimestamp(right.date, right.start_time);
+  if (leftStart !== rightStart) return leftStart - rightStart;
+
+  const leftEnd = getIndiaSlotTimestamp(left.date, left.end_time || left.start_time);
+  const rightEnd = getIndiaSlotTimestamp(right.date, right.end_time || right.start_time);
+  if (leftEnd !== rightEnd) return leftEnd - rightEnd;
+
+  return String(left.created_at || "").localeCompare(String(right.created_at || ""));
 };
 
 export const isIndiaSlotBeyondLeadTime = (dateISO, timeValue, hoursAhead = 24) =>

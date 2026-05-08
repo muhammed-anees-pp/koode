@@ -16,6 +16,7 @@ import PatientWallet from "./pages/PatientWallet";
 import PatientPaymentConfirmed from "./pages/PatientPaymentConfirmed";
 import PatientPaymentCancelled from "./pages/PatientPaymentCancelled";
 import { useAuthStore } from "../../store/auth.store";
+import ConsultationRoom from "../../components/consultation/ConsultationRoom";
 
 
 const PatientRoutes = () => {
@@ -63,6 +64,10 @@ const PatientRoutes = () => {
       <Route
         path="appointments/:bookingId"
         element={isAuthenticated && role === "PATIENT" ? <PatientAppointmentDetail /> : <Navigate to="/patient/login" replace />}
+      />
+      <Route
+        path="consultation/:bookingId"
+        element={isAuthenticated && role === "PATIENT" ? <ConsultationRoom role="patient" /> : <Navigate to="/patient/login" replace />}
       />
       <Route
         path="messages"

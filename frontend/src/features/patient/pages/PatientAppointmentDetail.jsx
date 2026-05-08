@@ -6,7 +6,7 @@ import PatientNavbar from "../../../components/patient/Navbar/PatientNavbar";
 import PatientFooter from "../../../components/patient/Footer/PatientFooter";
 import { usePatientSessionGuard } from "../../../hooks/usePatientSessionGuard";
 import { useAuthStore } from "../../../store/auth.store";
-import { formatIndiaDate, formatIndiaTime, getIndiaTodayISO } from "../../../utils/indiaDateTime";
+import { formatIndiaDate, formatIndiaDateTime, formatIndiaTime, getIndiaTodayISO } from "../../../utils/indiaDateTime";
 
 function CancelModal({ booking, note, onChange, onClose, onSubmit, isPending, error }) {
   if (!booking) return null;
@@ -45,6 +45,41 @@ function CancelModal({ booking, note, onChange, onClose, onSubmit, isPending, er
   );
 }
 
+function PrescriptionModal({ booking, onClose }) {
+  if (!booking) return null;
+  const patientNote = booking.consultation?.patient_note || "";
+
+  return (
+    <div className="fixed inset-0 z-[1200] flex items-center justify-center bg-slate-950/50 px-4 py-6">
+      <div className="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-2xl">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-widest text-patient-primary">Prescription</p>
+            <h2 className="mt-2 text-xl font-bold text-slate-900">{booking.psychologist_name}</h2>
+            <p className="mt-1 text-sm text-slate-500">
+              {formatIndiaDate(booking.date)} - {formatIndiaTime(booking.start_time)} to {formatIndiaTime(booking.end_time)}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+            aria-label="Close prescription"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+        <p className="mt-5 max-h-[52vh] overflow-y-auto whitespace-pre-wrap rounded-2xl border border-emerald-100 bg-emerald-50/70 px-4 py-4 text-sm leading-6 text-slate-700">
+          {patientNote || "No prescription note was added for this consultation."}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export default function PatientAppointmentDetail() {
   const { bookingId } = useParams();
   const navigate = useNavigate();
@@ -54,12 +89,14 @@ export default function PatientAppointmentDetail() {
   const [cancelNote, setCancelNote] = useState("");
   const [cancelError, setCancelError] = useState("");
   const [showCancel, setShowCancel] = useState(false);
+  const [showPrescription, setShowPrescription] = useState(false);
   usePatientSessionGuard();
 
   const bookingsQuery = useQuery({
     queryKey: ["patient-appointments"],
     queryFn: getMyBookings,
     enabled: isAuthenticated && role === "PATIENT",
+    refetchInterval: 30000,
   });
 
   const today = getIndiaTodayISO();
@@ -134,7 +171,8 @@ export default function PatientAppointmentDetail() {
 
   const statusLabel = booking.status === "CONFIRMED" ? "Upcoming" : booking.status;
   const isUpcoming = booking.status !== "CANCELLED" && booking.status !== "COMPLETED" && booking.date >= today;
-  const isToday = booking.date === today;
+  const canJoinConsultation = booking.status === "CONFIRMED" && Boolean(booking.consultation?.is_open);
+  const opensAt = formatIndiaDateTime(booking.consultation?.opens_at);
 
   return (
     <div className="flex min-h-screen flex-col bg-[#f8fafc] font-['DM_Sans',sans-serif] antialiased">
@@ -272,6 +310,27 @@ export default function PatientAppointmentDetail() {
                   </div>
                 </div>
               </div>
+
+              {booking.status === "COMPLETED" ? (
+                <div className="rounded-2xl border border-emerald-100 bg-white p-6 shadow-sm">
+                  <div className="mb-3 flex items-center gap-2">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                      <path d="M14 2v6h6" />
+                      <path d="M8 13h8" />
+                      <path d="M8 17h5" />
+                    </svg>
+                    <h3 className="text-base font-bold text-slate-900">Prescription</h3>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowPrescription(true)}
+                    className="rounded-xl bg-patient-primary px-5 py-3 text-sm font-bold text-white shadow-patient-sm transition hover:bg-patient-hover"
+                  >
+                    View Prescription
+                  </button>
+                </div>
+              ) : null}
             </div>
 
             
@@ -289,9 +348,9 @@ export default function PatientAppointmentDetail() {
                         <polygon points="23 7 16 12 23 17 23 7" /><rect x="1" y="5" width="15" height="14" rx="2" />
                       </svg>
                     </div>
-                    {isToday && (
+                    {canJoinConsultation && (
                       <span className="rounded-full bg-white px-3 py-0.5 text-xs font-bold text-patient-primary">
-                        Room Link
+                        Room Open
                       </span>
                     )}
                   </div>
@@ -303,14 +362,15 @@ export default function PatientAppointmentDetail() {
 
                   <button
                     type="button"
-                    disabled={!isToday}
+                    disabled={!canJoinConsultation}
+                    onClick={() => navigate(`/patient/consultation/${booking.id}`)}
                     className={`w-full rounded-xl py-3 text-sm font-bold transition ${
-                      isToday
+                      canJoinConsultation
                         ? "bg-white text-patient-primary hover:bg-white/90"
                         : "bg-white/20 text-white/60 cursor-not-allowed"
                     }`}
                   >
-                    Join Video Call
+                    {canJoinConsultation ? "Join Video Call" : opensAt ? `Opens ${opensAt}` : "Join Video Call"}
                   </button>
                 </div>
               </div>
@@ -352,6 +412,10 @@ export default function PatientAppointmentDetail() {
         }}
         isPending={cancelMutation.isPending}
         error={cancelError}
+      />
+      <PrescriptionModal
+        booking={showPrescription ? booking : null}
+        onClose={() => setShowPrescription(false)}
       />
     </div>
   );
