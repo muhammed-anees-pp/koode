@@ -120,3 +120,23 @@ export const cancelRazorpayOrder = async (razorpayOrderId) => {
   });
   return response.data;
 };
+
+export const getConsultationDetail = async (bookingId) => {
+  const response = await axiosInstance.get(`consultations/bookings/${bookingId}/`);
+  return response.data;
+};
+
+export const getConsultationToken = async (bookingId) => {
+  const response = await axiosInstance.get(`consultations/bookings/${bookingId}/token/`);
+  return response.data;
+};
+
+export const requestConsultationJoin = async (bookingId) => {
+  const response = await axiosInstance.post(`consultations/bookings/${bookingId}/request-join/`);
+  return response.data;
+};
+
+export const exitConsultation = async (bookingId) => {
+  const response = await axiosInstance.post(`consultations/bookings/${bookingId}/exit/`);
+  return response.data;
+};

@@ -4,16 +4,16 @@ from django.utils import timezone
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from .models import Availability, AvailableSlot, Booking
-
 from chat.services.chat_service import sync_chat_room_for_booking
 from notifications.services import create_notification
 from notifications.time_formatting import format_india_slot
 from chat.services.chat_service import ensure_chat_room_for_booking
 from finance.services.amounts import calculate_booking_amounts, calculate_psychologist_payout, money
 from finance.services.bookings import (
-    complete_booking_payment,
-    credit_admin_for_booking,
-    refund_booking_to_patient,
+    complete_booking_payment, credit_admin_for_booking, refund_booking_to_patient,
+)
+from consultations.services.consultation_service import (
+    consultation_state, create_consultation_for_booking,
 )
 from finance.services.razorpay import create_razorpay_order
 from finance.services.wallets import debit_wallet, get_wallet
@@ -307,6 +307,7 @@ BOOKING SERIALIZER
 class BookingSerializer(serializers.ModelSerializer):
     slot = AvailableSlotSerializer(read_only=True)
     patient_name = serializers.CharField(source="patient.user.full_name", read_only=True)
+    patient_photo = serializers.SerializerMethodField()
     psychologist_name = serializers.CharField(source="psychologist.user.full_name", read_only=True)
     psychologist_photo = serializers.SerializerMethodField()
     psychologist_id = serializers.CharField(source="psychologist.psychologist_id", read_only=True)
@@ -316,6 +317,8 @@ class BookingSerializer(serializers.ModelSerializer):
     commission_percentage = serializers.SerializerMethodField()
     admin_commission_amount = serializers.SerializerMethodField()
     psychologist_payout_amount = serializers.SerializerMethodField()
+    consultation = serializers.SerializerMethodField()
+    consultation_history = serializers.SerializerMethodField()
 
     def get_psychologist_photo(self, obj):
         request = self.context.get("request")
@@ -326,6 +329,16 @@ class BookingSerializer(serializers.ModelSerializer):
             app = getattr(user, "application", None)
             if app and getattr(app, "profile_picture", None):
                 photo = app.profile_picture
+        if photo and request:
+            try:
+                return request.build_absolute_uri(photo.url)
+            except Exception:
+                return None
+        return None
+
+    def get_patient_photo(self, obj):
+        request = self.context.get("request")
+        photo = obj.patient.user.profile_picture if obj.patient.user.profile_picture else None
         if photo and request:
             try:
                 return request.build_absolute_uri(photo.url)
@@ -351,12 +364,46 @@ class BookingSerializer(serializers.ModelSerializer):
     def get_psychologist_payout_amount(self, obj):
         return calculate_psychologist_payout(obj)["psychologist_payout"]
 
+    def get_consultation(self, obj):
+        request = self.context.get("request")
+        return consultation_state(obj, user=getattr(request, "user", None))
+
+    def get_consultation_history(self, obj):
+        request = self.context.get("request")
+        if not request or getattr(request.user, "role", None) != "PSYCHOLOGIST":
+            return []
+
+        from consultations.models import Consultation
+
+        consultations = (
+            Consultation.objects.select_related("booking__psychologist__user")
+            .filter(
+                booking__patient_id=obj.patient_id,
+                status="COMPLETED",
+            )
+            .exclude(booking_id=obj.id)
+            .order_by("-booking__date", "-booking__start_time")[:10]
+        )
+        return [
+            {
+                "booking_id": consultation.booking_id,
+                "date": consultation.booking.date,
+                "start_time": consultation.booking.start_time,
+                "end_time": consultation.booking.end_time,
+                "psychologist_name": consultation.booking.psychologist.user.full_name,
+                "patient_note": consultation.patient_note,
+                "psychologist_note": consultation.psychologist_note,
+            }
+            for consultation in consultations
+        ]
+
     class Meta:
         model = Booking
         fields = [
             "id",
             "patient",
             "patient_name",
+            "patient_photo",
             "psychologist",
             "psychologist_id",
             "psychologist_name",
@@ -375,6 +422,8 @@ class BookingSerializer(serializers.ModelSerializer):
             "commission_percentage",
             "admin_commission_amount",
             "psychologist_payout_amount",
+            "consultation",
+            "consultation_history",
             "psychologist_paid_at",
             "meeting_link",
             "cancellation_note",
@@ -454,6 +503,7 @@ class CreateBookingSerializer(serializers.Serializer):
                 wallet_amount=wallet_amount,
                 razorpay_amount=razorpay_amount,
             )
+            create_consultation_for_booking(booking)
             if wallet_amount > 0 and locked_wallet:
                 debit_wallet(
                     locked_wallet,

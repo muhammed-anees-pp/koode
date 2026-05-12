@@ -128,6 +128,11 @@ export const getPsychologistBookings = async () => {
   return response.data;
 };
 
+export const getPsychologistPatients = async () => {
+  const response = await axiosInstance.get("psychologist/patients/");
+  return response.data;
+};
+
 export const cancelPsychologistBooking = async (bookingId, note) => {
   const response = await axiosInstance.post(`appointments/bookings/${bookingId}/cancel/`, {
     note,
@@ -147,5 +152,30 @@ export const completePsychologistBooking = async (bookingId) => {
 
 export const getPsychologistWallet = async () => {
   const response = await axiosInstance.get("finance/wallet/");
+  return response.data;
+};
+
+export const getConsultationDetail = async (bookingId) => {
+  const response = await axiosInstance.get(`consultations/bookings/${bookingId}/`);
+  return response.data;
+};
+
+export const getConsultationToken = async (bookingId) => {
+  const response = await axiosInstance.get(`consultations/bookings/${bookingId}/token/`);
+  return response.data;
+};
+
+export const psychologistEnterConsultation = async (bookingId) => {
+  const response = await axiosInstance.post(`consultations/bookings/${bookingId}/psychologist-enter/`);
+  return response.data;
+};
+
+export const approveConsultationJoin = async (bookingId) => {
+  const response = await axiosInstance.post(`consultations/bookings/${bookingId}/approve-join/`);
+  return response.data;
+};
+
+export const exitConsultation = async (bookingId) => {
+  const response = await axiosInstance.post(`consultations/bookings/${bookingId}/exit/`);
   return response.data;
 };

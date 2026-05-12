@@ -7,7 +7,9 @@ import PatientFooter from "../../../components/patient/Footer/PatientFooter";
 import { usePatientSessionGuard } from "../../../hooks/usePatientSessionGuard";
 import { useAuthStore } from "../../../store/auth.store";
 import {
+  compareIndiaAppointmentDateTime,
   formatIndiaDate,
+  formatIndiaDateTime,
   formatIndiaTime,
   getIndiaTodayISO,
 } from "../../../utils/indiaDateTime";
@@ -97,10 +99,10 @@ function AppointmentAvatar({ booking }) {
 }
 
 
-function UpcomingCard({ booking, onCancel, onOpenChat }) {
-  const isToday = booking.date === getIndiaTodayISO();
-  const canJoin = isToday;
+function UpcomingCard({ booking, onCancel, onOpenChat, onJoinConsultation }) {
+  const canJoin = booking.status === "CONFIRMED" && Boolean(booking.consultation?.is_open);
   const canChat = booking.chat_enabled || booking.status === "CONFIRMED";
+  const opensAt = formatIndiaDateTime(booking.consultation?.opens_at);
 
   return (
     <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm flex flex-col sm:flex-row sm:items-center gap-4">
@@ -149,6 +151,7 @@ function UpcomingCard({ booking, onCancel, onOpenChat }) {
         ) : null}
         <button
           type="button"
+          onClick={() => onJoinConsultation(booking)}
           className={`flex items-center justify-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
             canJoin
               ? "bg-patient-primary text-white shadow-patient-sm hover:bg-patient-hover"
@@ -159,7 +162,7 @@ function UpcomingCard({ booking, onCancel, onOpenChat }) {
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <polygon points="23 7 16 12 23 17 23 7" /><rect x="1" y="5" width="15" height="14" rx="2" />
           </svg>
-          {canJoin ? "Join Consultation" : "Wait for Link"}
+          {canJoin ? "Join Consultation" : opensAt ? `Opens ${opensAt}` : "Wait for Link"}
         </button>
         <button
           type="button"
@@ -174,7 +177,7 @@ function UpcomingCard({ booking, onCancel, onOpenChat }) {
 }
 
 
-function PastCard({ booking, onBookAgain }) {
+function PastCard({ booking, onBookAgain, onViewPrescription }) {
   const [rated, setRated] = useState(booking.rating ?? 0);
   const [hovered, setHovered] = useState(0);
 
@@ -236,20 +239,72 @@ function PastCard({ booking, onBookAgain }) {
             {rated > 0 && <span className="text-xs text-slate-400 ml-1">Rated</span>}
             {rated === 0 && <span className="text-xs text-patient-primary font-medium ml-1 hover:underline cursor-pointer">Rate Psychologist</span>}
           </div>
+
         </div>
 
-        <button
-          type="button"
-          onClick={() => onBookAgain(booking)}
-          className="flex items-center gap-1.5 flex-shrink-0 rounded-xl border border-patient-primary bg-white px-4 py-2 text-sm font-semibold text-patient-primary hover:bg-patient-light transition"
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <polyline points="23 4 23 10 17 10" /><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
-          </svg>
-          Book Again
-        </button>
+        <div className="flex flex-shrink-0 flex-col gap-2">
+          <button
+            type="button"
+            onClick={() => onBookAgain(booking)}
+            className="flex items-center justify-center gap-1.5 rounded-xl border border-patient-primary bg-white px-4 py-2 text-sm font-semibold text-patient-primary transition hover:bg-patient-light"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <polyline points="23 4 23 10 17 10" /><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+            </svg>
+            Book Again
+          </button>
+          <button
+            type="button"
+            onClick={() => onViewPrescription(booking)}
+            className="flex items-center justify-center gap-1.5 rounded-xl bg-patient-primary px-4 py-2 text-sm font-semibold text-white shadow-patient-sm transition hover:bg-patient-hover"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <path d="M14 2v6h6" />
+              <path d="M8 13h8" />
+              <path d="M8 17h5" />
+            </svg>
+            Prescription
+          </button>
+        </div>
       </div>
     </article>
+  );
+}
+
+function PrescriptionModal({ booking, onClose }) {
+  if (!booking) return null;
+  const patientNote = booking.consultation?.patient_note || "";
+
+  return (
+    <div className="fixed inset-0 z-[1200] flex items-center justify-center bg-slate-950/50 px-4 py-6">
+      <div className="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-2xl">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-widest text-patient-primary">Prescription</p>
+            <h2 className="mt-2 text-xl font-bold text-slate-900">{booking.psychologist_name}</h2>
+            <p className="mt-1 text-sm text-slate-500">
+              {formatIndiaDate(booking.date)} - {formatIndiaTime(booking.start_time)} to {formatIndiaTime(booking.end_time)}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+            aria-label="Close prescription"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+
+        <p className="mt-5 max-h-[52vh] overflow-y-auto whitespace-pre-wrap rounded-2xl border border-emerald-100 bg-emerald-50/70 px-4 py-4 text-sm leading-6 text-slate-700">
+          {patientNote || "No prescription note was added for this consultation."}
+        </p>
+      </div>
+    </div>
   );
 }
 
@@ -370,6 +425,7 @@ export default function PatientAppointments() {
   const [cancelNote, setCancelNote] = useState("");
   const [cancelError, setCancelError] = useState("");
   const [reasonTarget, setReasonTarget] = useState(null);
+  const [prescriptionTarget, setPrescriptionTarget] = useState(null);
   const [dateFilter, setDateFilter] = useState(DATE_FILTER_UPCOMING[0]);
   const [searchQuery, setSearchQuery] = useState("");
   usePatientSessionGuard();
@@ -378,6 +434,7 @@ export default function PatientAppointments() {
     queryKey: ["patient-appointments"],
     queryFn: getMyBookings,
     enabled: isAuthenticated && role === "PATIENT",
+    refetchInterval: 30000,
   });
 
   const today = useMemo(() => getIndiaTodayISO(), []);
@@ -402,7 +459,7 @@ export default function PatientAppointments() {
       list = list.filter((b) => b.psychologist_name?.toLowerCase().includes(q));
     }
 
-    return list;
+    return [...list].sort(compareIndiaAppointmentDateTime);
   }, [activeTab, bookingsQuery.data, today, searchQuery]);
 
   const cancelMutation = useMutation({
@@ -448,6 +505,10 @@ export default function PatientAppointments() {
 
   const handleOpenChat = (booking) => {
     navigate(`/patient/messages?appointment=${booking.id}`);
+  };
+
+  const handleJoinConsultation = (booking) => {
+    navigate(`/patient/consultation/${booking.id}`);
   };
 
 
@@ -583,6 +644,7 @@ export default function PatientAppointments() {
                       booking={booking}
                       onCancel={openCancelModal}
                       onOpenChat={handleOpenChat}
+                      onJoinConsultation={handleJoinConsultation}
                     />
                   );
                 }
@@ -592,6 +654,7 @@ export default function PatientAppointments() {
                       key={booking.id}
                       booking={booking}
                       onBookAgain={handleBookAgain}
+                      onViewPrescription={setPrescriptionTarget}
                     />
                   );
                 }
@@ -623,6 +686,11 @@ export default function PatientAppointments() {
       <CancellationReasonModal
         booking={reasonTarget}
         onClose={() => setReasonTarget(null)}
+      />
+
+      <PrescriptionModal
+        booking={prescriptionTarget}
+        onClose={() => setPrescriptionTarget(null)}
       />
 
     </div>

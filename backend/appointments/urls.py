@@ -1,6 +1,7 @@
 from django.urls import path
 from .views import (
-    BookingListView, CancelBookingView, CompleteBookingView, CreateAvailabilityView, CreateBookingView, PsychologistAvailabilityListView, PsychologistSlotListView, RescheduleBookingView, RevokeAvailabilitySlotView,
+    BookingListView, CancelBookingView, CompleteBookingView, CreateAvailabilityView, CreateBookingView, PsychologistAvailabilityListView, PsychologistSlotListView, 
+    RescheduleBookingView, RevokeAvailabilitySlotView,
 )
 
 urlpatterns = [
