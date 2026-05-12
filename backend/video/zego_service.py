@@ -44,6 +44,20 @@ def generate_consultation_zego_token(user_id):
 """
 CONSULTATION RECORDING
 """
+class ZegoRecordingError(Exception):
+    def __init__(self, message, *, status_code=None, response_body=None):
+        super().__init__(message)
+        self.status_code = status_code
+        self.response_body = response_body
+
+    def to_metadata(self):
+        return {
+            "message": str(self),
+            "status_code": self.status_code,
+            "response_body": self.response_body,
+        }
+
+
 def _recording_signature(app_id, nonce, server_secret, timestamp):
     raw = f"{app_id}{nonce}{server_secret}{timestamp}"
     return hashlib.md5(raw.encode("utf-8")).hexdigest()
@@ -78,7 +92,7 @@ def _recording_storage_params():
         "AccessKeyId": settings.AWS_ACCESS_KEY_ID,
         "AccessKeySecret": settings.AWS_SECRET_ACCESS_KEY,
     }
-    if settings.ZEGO_RECORDING_S3_ENDPOINT:
+    if settings.ZEGO_RECORDING_S3_VENDOR == 10 and settings.ZEGO_RECORDING_S3_ENDPOINT:
         storage["EndPoint"] = settings.ZEGO_RECORDING_S3_ENDPOINT
     return storage
 
@@ -161,7 +175,12 @@ def start_consultation_recording(room_id, client_task_id):
         json=body,
         timeout=15,
     )
-    response.raise_for_status()
+    if not response.ok:
+        raise ZegoRecordingError(
+            "ZEGO StartRecord request failed.",
+            status_code=response.status_code,
+            response_body=response.text[:2000],
+        )
     return response.json()
 
 
@@ -182,5 +201,10 @@ def stop_consultation_recording(task_id):
         json={"TaskId": task_id},
         timeout=15,
     )
-    response.raise_for_status()
+    if not response.ok:
+        raise ZegoRecordingError(
+            "ZEGO StopRecord request failed.",
+            status_code=response.status_code,
+            response_body=response.text[:2000],
+        )
     return response.json()

@@ -18,7 +18,7 @@ from finance.services.bookings import complete_booking_payment
 from patients.permissions import IsPatient
 from psychologists.permissions import IsPsychologist
 from video.zego_service import (
-    generate_consultation_zego_token, start_consultation_recording, stop_consultation_recording, verify_recording_callback_signature,
+    ZegoRecordingError, generate_consultation_zego_token, start_consultation_recording, stop_consultation_recording, verify_recording_callback_signature,
 )
 
 
@@ -124,6 +124,10 @@ class ConsultationPsychologistEnterView(ConsultationActionBaseView):
                 else:
                     consultation.recording_status = "NOT_STARTED" if result.get("skipped") else "FAILED"
                 consultation.save(update_fields=["zego_recording_task_id", "recording_status", "recording_metadata", "updated_at"])
+            except ZegoRecordingError as exc:
+                consultation.recording_status = "FAILED"
+                consultation.recording_metadata = {"start_error": exc.to_metadata()}
+                consultation.save(update_fields=["recording_status", "recording_metadata", "updated_at"])
             except Exception as exc:
                 consultation.recording_status = "FAILED"
                 consultation.recording_metadata = {"start_error": str(exc)}
@@ -239,6 +243,12 @@ class ConsultationExitView(ConsultationActionBaseView):
                 metadata["stop"] = result
                 consultation.recording_metadata = metadata
                 consultation.recording_status = "STOPPING" if result.get("Code") == 0 else "FAILED"
+                consultation.save(update_fields=["recording_status", "recording_metadata", "updated_at"])
+            except ZegoRecordingError as exc:
+                metadata = consultation.recording_metadata or {}
+                metadata["stop_error"] = exc.to_metadata()
+                consultation.recording_metadata = metadata
+                consultation.recording_status = "FAILED"
                 consultation.save(update_fields=["recording_status", "recording_metadata", "updated_at"])
             except Exception as exc:
                 metadata = consultation.recording_metadata or {}

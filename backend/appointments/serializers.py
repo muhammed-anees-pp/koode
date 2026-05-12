@@ -307,6 +307,7 @@ BOOKING SERIALIZER
 class BookingSerializer(serializers.ModelSerializer):
     slot = AvailableSlotSerializer(read_only=True)
     patient_name = serializers.CharField(source="patient.user.full_name", read_only=True)
+    patient_photo = serializers.SerializerMethodField()
     psychologist_name = serializers.CharField(source="psychologist.user.full_name", read_only=True)
     psychologist_photo = serializers.SerializerMethodField()
     psychologist_id = serializers.CharField(source="psychologist.psychologist_id", read_only=True)
@@ -328,6 +329,16 @@ class BookingSerializer(serializers.ModelSerializer):
             app = getattr(user, "application", None)
             if app and getattr(app, "profile_picture", None):
                 photo = app.profile_picture
+        if photo and request:
+            try:
+                return request.build_absolute_uri(photo.url)
+            except Exception:
+                return None
+        return None
+
+    def get_patient_photo(self, obj):
+        request = self.context.get("request")
+        photo = obj.patient.user.profile_picture if obj.patient.user.profile_picture else None
         if photo and request:
             try:
                 return request.build_absolute_uri(photo.url)
@@ -392,6 +403,7 @@ class BookingSerializer(serializers.ModelSerializer):
             "id",
             "patient",
             "patient_name",
+            "patient_photo",
             "psychologist",
             "psychologist_id",
             "psychologist_name",

@@ -14,6 +14,7 @@ import {
   saveConsultationNotes,
   sendConsultationMessage,
 } from "../../api/consultation.api";
+import { resolveMediaUrl } from "../../utils/url";
 
 const formatMessageTime = (value) =>
   new Intl.DateTimeFormat("en-IN", {
@@ -22,6 +23,44 @@ const formatMessageTime = (value) =>
     minute: "2-digit",
     hour12: true,
   }).format(new Date(value));
+
+const cameraExtraInfo = (cameraOn) => JSON.stringify({ cameraOn });
+
+const parseCameraExtraInfo = (extraInfo) => {
+  if (!extraInfo) return true;
+  try {
+    const parsed = JSON.parse(extraInfo);
+    return parsed.cameraOn !== false;
+  } catch {
+    return true;
+  }
+};
+
+const getInitials = (name = "") => {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  return parts.slice(0, 2).map((part) => part[0]?.toUpperCase()).join("");
+};
+
+const VideoAvatar = ({ name, photo, compact = false }) => {
+  const photoUrl = resolveMediaUrl(photo);
+  return (
+    <div className="absolute inset-0 flex items-center justify-center bg-slate-950">
+      <div className={`flex flex-col items-center ${compact ? "gap-2" : "gap-4"}`}>
+        <div className={`${compact ? "h-16 w-16" : "h-28 w-28 md:h-36 md:w-36"} overflow-hidden rounded-full border border-white/15 bg-gradient-to-br from-emerald-500 to-sky-600 shadow-2xl`}>
+          {photoUrl ? (
+            <img src={photoUrl} alt={name || "Profile"} className="h-full w-full object-cover" />
+          ) : (
+            <div className={`${compact ? "text-xl" : "text-4xl md:text-5xl"} flex h-full w-full items-center justify-center font-bold text-white`}>
+              {getInitials(name)}
+            </div>
+          )}
+        </div>
+        {!compact ? <p className="text-sm font-semibold text-slate-200">{name}</p> : null}
+      </div>
+    </div>
+  );
+};
 
 const MicIcon = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -288,12 +327,15 @@ export default function ConsultationRoom({ role }) {
   const { bookingId } = useParams();
   const navigate = useNavigate();
   const authRole = useAuthStore((s) => s.role);
+  const authUser = useAuthStore((s) => s.user);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const mediaDevicesSupported = typeof navigator !== "undefined" && Boolean(navigator.mediaDevices?.getUserMedia);
   const [previewStream, setPreviewStream] = useState(null);
   const [localStream, setLocalStream] = useState(null);
   const localStreamRef = useRef(null);
   const [remoteStreamID, setRemoteStreamID] = useState(null);
+  const remoteStreamIDRef = useRef(null);
+  const [remoteCamOn, setRemoteCamOn] = useState(true);
   const [micOn, setMicOn] = useState(true);
   const [camOn, setCamOn] = useState(true);
   const [phase, setPhase] = useState("preview");
@@ -319,6 +361,10 @@ export default function ConsultationRoom({ role }) {
   const booking = detailQuery.data?.booking;
   const consultation = detailQuery.data?.consultation;
   const expectedRole = role === "patient" ? "PATIENT" : "PSYCHOLOGIST";
+  const localName = authUser?.full_name || (role === "patient" ? booking?.patient_name : booking?.psychologist_name) || "You";
+  const localPhoto = authUser?.profile_picture || (role === "psychologist" ? booking?.psychologist_photo : booking?.patient_photo);
+  const remoteName = role === "patient" ? booking?.psychologist_name : booking?.patient_name;
+  const remotePhoto = role === "patient" ? booking?.psychologist_photo : booking?.patient_photo;
 
   const stopPreviewStream = useCallback(() => {
     previewStreamRef.current?.getTracks().forEach((track) => track.stop());
@@ -357,6 +403,10 @@ export default function ConsultationRoom({ role }) {
   }, [localStream]);
 
   useEffect(() => {
+    remoteStreamIDRef.current = remoteStreamID;
+  }, [remoteStreamID]);
+
+  useEffect(() => {
     if (!remoteStreamID || !engineRef.current) return;
     const attach = async () => {
       const stream = await engineRef.current.startPlayingStream(remoteStreamID);
@@ -364,6 +414,13 @@ export default function ConsultationRoom({ role }) {
     };
     attach().catch((err) => setError(err?.message || "Unable to play remote stream."));
   }, [remoteStreamID]);
+
+  const updateLocalCameraExtraInfo = useCallback((cameraOn) => {
+    const engine = engineRef.current;
+    const streamID = localStreamIdRef.current;
+    if (!engine || !streamID) return;
+    engine.setStreamExtraInfo(streamID, cameraExtraInfo(cameraOn)).catch(() => {});
+  }, []);
 
   const cleanupRoom = useCallback(async () => {
     const engine = engineRef.current;
@@ -378,8 +435,10 @@ export default function ConsultationRoom({ role }) {
     }
     localStreamIdRef.current = null;
     localStreamRef.current = null;
+    remoteStreamIDRef.current = null;
     setLocalStream(null);
     setRemoteStreamID(null);
+    setRemoteCamOn(true);
   }, []);
 
   useEffect(() => () => { cleanupRoom(); }, [cleanupRoom]);
@@ -396,13 +455,29 @@ export default function ConsultationRoom({ role }) {
     engine.on("roomStreamUpdate", (_roomID, updateType, streamList) => {
       if (updateType === "ADD") {
         const remote = streamList.find((stream) => stream.streamID !== localStreamIdRef.current);
-        if (remote) setRemoteStreamID(remote.streamID);
+        if (remote) {
+          remoteStreamIDRef.current = remote.streamID;
+          setRemoteStreamID(remote.streamID);
+          setRemoteCamOn(parseCameraExtraInfo(remote.extraInfo));
+        }
       }
       if (updateType === "DELETE") {
         streamList.forEach((stream) => {
-          setRemoteStreamID((current) => current === stream.streamID ? null : current);
+          if (remoteStreamIDRef.current === stream.streamID) {
+            remoteStreamIDRef.current = null;
+            setRemoteCamOn(true);
+            setRemoteStreamID(null);
+          }
         });
       }
+    });
+    engine.on("streamExtraInfoUpdate", (_roomID, streamList) => {
+      streamList.forEach((stream) => {
+        if (remoteStreamIDRef.current === stream.streamID) setRemoteCamOn(parseCameraExtraInfo(stream.extraInfo));
+      });
+    });
+    engine.on("remoteCameraStatusUpdate", (streamID, status) => {
+      if (remoteStreamIDRef.current === streamID) setRemoteCamOn(status === "OPEN");
     });
     const loggedIn = await engine.loginRoom(tokenData.room_id, tokenData.token, {
       userID: tokenData.user_id,
@@ -416,6 +491,7 @@ export default function ConsultationRoom({ role }) {
     await engine.startPublishingStream(streamID, zegoStream);
     if (!micOn) engine.mutePublishStreamAudio(zegoStream, true);
     if (!camOn) engine.mutePublishStreamVideo(zegoStream, true);
+    await engine.setStreamExtraInfo(streamID, cameraExtraInfo(camOn)).catch(() => {});
     setLocalStream(zegoStream);
     setPhase("call");
   }, [bookingId, camOn, micOn, role, stopPreviewStream]);
@@ -487,8 +563,11 @@ export default function ConsultationRoom({ role }) {
       engineRef.current.mutePublishStreamAudio(localStream, micOn);
       setMicOn((value) => !value);
     } else {
-      engineRef.current.mutePublishStreamVideo(localStream, camOn);
-      setCamOn((value) => !value);
+      const nextCamOn = !camOn;
+      const updated = engineRef.current.mutePublishStreamVideo(localStream, camOn);
+      if (updated === false) return;
+      setCamOn(nextCamOn);
+      updateLocalCameraExtraInfo(nextCamOn);
     }
   };
 
@@ -516,8 +595,9 @@ export default function ConsultationRoom({ role }) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-950 px-4 py-8 text-white">
         <div className="grid w-full max-w-5xl gap-6 lg:grid-cols-[1fr_360px]">
-          <div className="overflow-hidden rounded-[28px] border border-white/10 bg-black">
-            <video ref={previewVideoRef} autoPlay muted playsInline className="aspect-video w-full bg-black object-cover" />
+          <div className="relative aspect-video overflow-hidden rounded-[28px] border border-white/10 bg-black">
+            <video ref={previewVideoRef} autoPlay muted playsInline className={`h-full w-full bg-black object-cover ${camOn ? "" : "opacity-0"}`} />
+            {!camOn ? <VideoAvatar name={localName} photo={localPhoto} /> : null}
           </div>
           <div className="rounded-[28px] border border-white/10 bg-white/10 p-6 backdrop-blur">
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Waiting Room</p>
@@ -555,14 +635,18 @@ export default function ConsultationRoom({ role }) {
     <div className="flex h-screen overflow-hidden bg-black">
       <div className="relative flex-1 bg-slate-950">
         {remoteStreamID ? (
-          <video ref={remoteVideoRef} autoPlay playsInline className="absolute inset-0 h-full w-full object-cover" />
+          <>
+            <video ref={remoteVideoRef} autoPlay playsInline className={`absolute inset-0 h-full w-full object-cover ${remoteCamOn ? "" : "opacity-0"}`} />
+            {!remoteCamOn ? <VideoAvatar name={remoteName} photo={remotePhoto} /> : null}
+          </>
         ) : (
           <div className="absolute inset-0 flex items-center justify-center text-slate-500">
             Waiting for {role === "patient" ? "psychologist" : "patient"}...
           </div>
         )}
-        <div className="absolute right-4 top-4 w-44 overflow-hidden rounded-2xl border border-white/10 bg-slate-900">
-          <video ref={localVideoRef} autoPlay muted playsInline className="w-full object-cover" />
+        <div className="absolute right-4 top-4 aspect-video w-44 overflow-hidden rounded-2xl border border-white/10 bg-slate-900">
+          <video ref={localVideoRef} autoPlay muted playsInline className={`h-full w-full object-cover ${camOn ? "" : "opacity-0"}`} />
+          {!camOn ? <VideoAvatar name={localName} photo={localPhoto} compact /> : null}
           <div className="absolute bottom-2 left-2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-bold text-white">You</div>
         </div>
         {role === "psychologist" && consultation?.patient_requested_join ? (
