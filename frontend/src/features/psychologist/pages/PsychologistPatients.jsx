@@ -23,12 +23,12 @@ function PatientNotesModal({ patient, activeTab, onTabChange, onClose }) {
   if (!patient) return null;
 
   const notes = patient.notes ?? [];
-  const title = activeTab === "patient" ? "Patient Notes" : "Clinical Notes";
+  const title = activeTab === "patient" ? "Prescriptions" : "Consultation note";
   const field = activeTab === "patient" ? "patient_note" : "psychologist_note";
 
   return (
-    <div className="fixed inset-0 z-[1200] flex items-center justify-center bg-slate-950/50 px-4 py-6">
-      <div className="flex max-h-[88vh] w-full max-w-3xl flex-col rounded-[28px] bg-white shadow-2xl">
+    <div className="fixed inset-0 z-[1200] flex items-center justify-center bg-slate-950/50 px-4 py-6" onClick={onClose}>
+      <div className="flex max-h-[88vh] w-full max-w-3xl flex-col rounded-[28px] bg-white shadow-2xl" onClick={(event) => event.stopPropagation()}>
         <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.14em] text-psycho-primary">
@@ -63,7 +63,7 @@ function PatientNotesModal({ patient, activeTab, onTabChange, onClose }) {
                   : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
               }`}
             >
-              Clinical Notes
+              Consultation note
             </button>
             <button
               type="button"
@@ -74,7 +74,7 @@ function PatientNotesModal({ patient, activeTab, onTabChange, onClose }) {
                   : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
               }`}
             >
-              Patient Notes
+              Prescriptions
             </button>
           </div>
         </div>
@@ -86,7 +86,7 @@ function PatientNotesModal({ patient, activeTab, onTabChange, onClose }) {
 
           {notes.length === 0 ? (
             <div className="mt-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-5 py-8 text-sm text-slate-500">
-              No completed consultation notes are available for this patient.
+              No completed consultation records are available for this patient.
             </div>
           ) : (
             <div className="mt-4 space-y-3">
@@ -220,7 +220,7 @@ export default function PsychologistPatients() {
             <div className="mb-8">
               <h1 className="text-2xl font-bold text-slate-900">Patients</h1>
               <p className="mt-1 text-sm text-slate-500">
-                Review patients who booked sessions with you and their consultation notes.
+                Review patients who booked sessions with you and their consultation records.
               </p>
               <div className="mt-3 h-1 w-10 rounded-full bg-psycho-primary" />
             </div>
@@ -324,7 +324,7 @@ export default function PsychologistPatients() {
                           onClick={() => openNotes(patient, "clinical")}
                           className="rounded-full border border-sky-200 bg-sky-50 px-4 py-2 text-sm font-semibold text-sky-700 transition hover:bg-sky-100"
                         >
-                          Clinical Notes
+                          Consultation note
                         </button>
                         {patient.summary?.summary ? (
                           <button
@@ -340,7 +340,7 @@ export default function PsychologistPatients() {
                           onClick={() => openNotes(patient, "patient")}
                           className="rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100"
                         >
-                          Patient Notes
+                          Prescriptions
                         </button>
                       </div>
                     </div>

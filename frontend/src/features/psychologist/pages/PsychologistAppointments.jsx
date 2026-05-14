@@ -309,12 +309,12 @@ function ConsultationNoteModal({ booking, noteType, onClose }) {
   const patientNote = booking.consultation?.patient_note || "";
   const psychologistNote = booking.consultation?.psychologist_note || "";
   const isPatientNote = noteType === "patient";
-  const title = isPatientNote ? "Patient Note" : "Clinical Note";
+  const title = isPatientNote ? "Prescription" : "Consultation note";
   const content = isPatientNote ? patientNote : psychologistNote;
 
   return (
-    <div className="fixed inset-0 z-[1200] flex items-center justify-center bg-slate-950/50 px-4 py-6">
-      <div className="w-full max-w-2xl rounded-[28px] bg-white p-6 shadow-2xl">
+    <div className="fixed inset-0 z-[1200] flex items-center justify-center bg-slate-950/50 px-4 py-6" onClick={onClose}>
+      <div className="w-full max-w-2xl rounded-[28px] bg-white p-6 shadow-2xl" onClick={(event) => event.stopPropagation()}>
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className={`text-xs font-bold uppercase tracking-[0.14em] ${isPatientNote ? "text-emerald-700" : "text-sky-700"}`}>
@@ -356,14 +356,14 @@ function ConsultationNoteButtons({ booking, onOpenNote }) {
         onClick={() => onOpenNote(booking, "patient")}
         className="rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100"
       >
-        Patient Note
+        Prescription
       </button>
       <button
         type="button"
         onClick={() => onOpenNote(booking, "clinical")}
         className="rounded-full border border-sky-200 bg-sky-50 px-4 py-2 text-sm font-semibold text-sky-700 transition hover:bg-sky-100"
       >
-        Clinical Note
+        Consultation note
       </button>
     </div>
   );
