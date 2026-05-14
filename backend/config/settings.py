@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     "interviews",
     "appointments",
     "consultations",
+    "patient_summary",
     "notifications",
     "chat",
     "finance",
@@ -402,6 +403,17 @@ ZEGO_RECORDING_S3_ENDPOINT = os.getenv("ZEGO_RECORDING_S3_ENDPOINT")
 ZEGO_RECORDING_CALLBACK_URL = os.getenv("ZEGO_RECORDING_CALLBACK_URL")
 ZEGO_RECORDING_CALLBACK_SECRET = os.getenv("ZEGO_RECORDING_CALLBACK_SECRET")
 ZEGO_RECORDING_MAX_RECORD_TIME_SECONDS = int(os.getenv("ZEGO_RECORDING_MAX_RECORD_TIME_SECONDS", "7200"))
+
+# -------------------------------------------------
+# MISTRAL AI
+# -------------------------------------------------
+MISTRAL_API_KEY = os.getenv("MISTRAL_API_KEY", "")
+MISTRAL_API_URL = os.getenv(
+    "MISTRAL_API_URL",
+    "https://api.mistral.ai/v1/chat/completions",
+)
+MISTRAL_MODEL = os.getenv("MISTRAL_MODEL", "mistral-small-latest")
+MISTRAL_TIMEOUT_SECONDS = int(os.getenv("MISTRAL_TIMEOUT_SECONDS", "30"))
 
 # -------------------------------------------------
 # RAZORPAY
