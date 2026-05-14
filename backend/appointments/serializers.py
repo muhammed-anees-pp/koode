@@ -9,12 +9,10 @@ from notifications.services import create_notification
 from notifications.time_formatting import format_india_slot
 from chat.services.chat_service import ensure_chat_room_for_booking
 from finance.services.amounts import calculate_booking_amounts, calculate_psychologist_payout, money
-from finance.services.bookings import (
-    complete_booking_payment, credit_admin_for_booking, refund_booking_to_patient,
-)
-from consultations.services.consultation_service import (
-    consultation_state, create_consultation_for_booking,
-)
+from finance.services.bookings import ( complete_booking_payment, credit_admin_for_booking, refund_booking_to_patient,)
+from consultations.services.consultation_service import (consultation_state, create_consultation_for_booking,)
+from patient_summary.serializers import patient_summary_payload
+from patient_summary.services.summary_service import update_patient_summary_for_consultation
 from finance.services.razorpay import create_razorpay_order
 from finance.services.wallets import debit_wallet, get_wallet
 
@@ -319,6 +317,7 @@ class BookingSerializer(serializers.ModelSerializer):
     psychologist_payout_amount = serializers.SerializerMethodField()
     consultation = serializers.SerializerMethodField()
     consultation_history = serializers.SerializerMethodField()
+    patient_summary = serializers.SerializerMethodField()
 
     def get_psychologist_photo(self, obj):
         request = self.context.get("request")
@@ -397,6 +396,12 @@ class BookingSerializer(serializers.ModelSerializer):
             for consultation in consultations
         ]
 
+    def get_patient_summary(self, obj):
+        request = self.context.get("request")
+        if not request or getattr(request.user, "role", None) != "PSYCHOLOGIST":
+            return None
+        return patient_summary_payload(obj.patient)
+
     class Meta:
         model = Booking
         fields = [
@@ -424,6 +429,7 @@ class BookingSerializer(serializers.ModelSerializer):
             "psychologist_payout_amount",
             "consultation",
             "consultation_history",
+            "patient_summary",
             "psychologist_paid_at",
             "meeting_link",
             "cancellation_note",
@@ -605,6 +611,7 @@ COMPLETE BOOKING
 class CompleteBookingSerializer(serializers.Serializer):
     def save(self, **kwargs):
         booking = self.context["booking"]
+        completed_consultation = None
 
         with transaction.atomic():
             locked_booking = Booking.objects.select_for_update().get(id=booking.id)
@@ -618,8 +625,16 @@ class CompleteBookingSerializer(serializers.Serializer):
             complete_booking_payment(locked_booking)
             locked_booking.status = "COMPLETED"
             locked_booking.save(update_fields=["status"])
+            if hasattr(locked_booking, "consultation_session"):
+                consultation = locked_booking.consultation_session
+                consultation.status = "COMPLETED"
+                consultation.ended_at = timezone.now()
+                consultation.save(update_fields=["status", "ended_at", "updated_at"])
+                completed_consultation = consultation
 
         sync_chat_room_for_booking(locked_booking)
+        if completed_consultation:
+            update_patient_summary_for_consultation(completed_consultation)
         return locked_booking
 
 

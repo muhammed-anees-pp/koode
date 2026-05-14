@@ -11,6 +11,7 @@ from rest_framework.response import Response
 from .permissions import IsPsychologist
 from appointments.models import Booking
 from consultations.models import Consultation
+from patient_summary.serializers import patient_summary_payload
 from .models import PsychologistProfile, Specialization
 from .serializers import PsychologistProfileSerializer
 logger = logging.getLogger(__name__)
@@ -112,7 +113,7 @@ class PsychologistPatientListView(APIView):
     def get(self, request):
         psychologist = get_object_or_404(PsychologistProfile, user=request.user)
         bookings = (
-            Booking.objects.select_related("patient__user")
+            Booking.objects.select_related("patient__user", "patient__summary_report")
             .filter(psychologist=psychologist)
             .exclude(status="CANCELLED")
             .order_by("-date", "-start_time", "-created_at")
@@ -137,6 +138,7 @@ class PsychologistPatientListView(APIView):
                     "last_appointment": None,
                     "next_appointment": None,
                     "notes": [],
+                    "summary": patient_summary_payload(patient),
                 }
 
             entry = patient_map[patient.patient_id]

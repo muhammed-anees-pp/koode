@@ -11,7 +11,8 @@ from patients.models import PatientProfile
 from patients.permissions import IsPatient
 from psychologists.permissions import IsPsychologist
 from .serializers import (
-    AvailabilitySerializer, BookingSerializer, CancelBookingSerializer, CompleteBookingSerializer, CreateAvailabilitySerializer, CreateBookingSerializer, RescheduleBookingSerializer, RevokeAvailabilitySlotSerializer, is_future_slot,
+    AvailabilitySerializer, BookingSerializer, CancelBookingSerializer, CompleteBookingSerializer, CreateAvailabilitySerializer, 
+    CreateBookingSerializer, RescheduleBookingSerializer, RevokeAvailabilitySlotSerializer, is_future_slot,
 )
 
 
@@ -154,6 +155,7 @@ class BookingListView(APIView):
             "slot",
             "psychologist__user",
             "patient__user",
+            "patient__summary_report",
             "consultation_session",
         ).order_by("date", "start_time", "end_time", "created_at")
 
@@ -168,7 +170,7 @@ class BookingActionBaseView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_booking(self, request, booking_id):
-        booking = get_object_or_404(Booking.objects.select_related("patient__user", "psychologist__user", "slot", "consultation_session"),id=booking_id,)
+        booking = get_object_or_404(Booking.objects.select_related("patient__user", "patient__summary_report", "psychologist__user", "slot", "consultation_session"),id=booking_id,)
 
         if request.user.role == "PATIENT":
             patient = get_object_or_404(PatientProfile, user=request.user)
