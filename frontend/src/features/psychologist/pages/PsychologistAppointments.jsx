@@ -369,6 +369,50 @@ function ConsultationNoteButtons({ booking, onOpenNote }) {
   );
 }
 
+function PatientSummaryModal({ booking, onClose }) {
+  const summary = booking?.patient_summary?.summary || "";
+  if (!booking || !summary) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-[1200] flex items-center justify-center bg-slate-950/50 px-4 py-6"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-2xl rounded-[28px] bg-white p-6 shadow-2xl"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.14em] text-psycho-primary">
+              Patient Summary
+            </p>
+            <h2 className="mt-2 text-2xl font-bold text-slate-900">{booking.patient_name}</h2>
+            <p className="mt-2 text-sm text-slate-600">
+              Available from previous completed consultations.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-full p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
+            aria-label="Close summary"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+
+        <p className="mt-6 max-h-[58vh] overflow-y-auto whitespace-pre-wrap rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm leading-6 text-slate-700">
+          {summary}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export default function PsychologistAppointments() {
   usePsychologistSessionGuard();
   const navigate = useNavigate();
@@ -387,6 +431,7 @@ export default function PsychologistAppointments() {
   const [rescheduleNote, setRescheduleNote] = useState("");
   const [rescheduleError, setRescheduleError] = useState("");
   const [noteModal, setNoteModal] = useState({ booking: null, type: null });
+  const [summaryBooking, setSummaryBooking] = useState(null);
 
   const bookingsQuery = useQuery({
     queryKey: ["psychologist-appointments"],
@@ -687,6 +732,15 @@ export default function PsychologistAppointments() {
                             >
                               Open chat
                             </button>
+                            {booking.patient_summary?.summary ? (
+                              <button
+                                type="button"
+                                onClick={() => setSummaryBooking(booking)}
+                                className="rounded-full border border-psycho-primary/20 bg-[#e8f4fd] px-4 py-2 text-sm font-semibold text-psycho-primary transition hover:bg-sky-100"
+                              >
+                                Summary
+                              </button>
+                            ) : null}
                             <button
                               type="button"
                               onClick={() => openRescheduleModal(booking)}
@@ -846,6 +900,10 @@ export default function PsychologistAppointments() {
         booking={noteModal.booking}
         noteType={noteModal.type}
         onClose={() => setNoteModal({ booking: null, type: null })}
+      />
+      <PatientSummaryModal
+        booking={summaryBooking}
+        onClose={() => setSummaryBooking(null)}
       />
 
     </div>

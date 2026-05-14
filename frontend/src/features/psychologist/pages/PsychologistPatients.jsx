@@ -113,12 +113,57 @@ function PatientNotesModal({ patient, activeTab, onTabChange, onClose }) {
   );
 }
 
+function PatientSummaryModal({ patient, onClose }) {
+  const summary = patient?.summary?.summary || "";
+  if (!patient || !summary) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-[1200] flex items-center justify-center bg-slate-950/50 px-4 py-6"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-2xl rounded-[28px] bg-white p-6 shadow-2xl"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.14em] text-psycho-primary">
+              Patient Summary
+            </p>
+            <h2 className="mt-2 text-2xl font-bold text-slate-900">{patient.name}</h2>
+            <p className="mt-2 text-sm text-slate-600">
+              {patient.patient_id} - {patient.email}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-full p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
+            aria-label="Close summary"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+
+        <p className="mt-6 max-h-[58vh] overflow-y-auto whitespace-pre-wrap rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm leading-6 text-slate-700">
+          {summary}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export default function PsychologistPatients() {
   usePsychologistSessionGuard();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState("All");
   const [sortBy, setSortBy] = useState("recent");
   const [selectedPatient, setSelectedPatient] = useState(null);
+  const [summaryPatient, setSummaryPatient] = useState(null);
   const [notesTab, setNotesTab] = useState("clinical");
 
   const patientsQuery = useQuery({
@@ -281,6 +326,15 @@ export default function PsychologistPatients() {
                         >
                           Clinical Notes
                         </button>
+                        {patient.summary?.summary ? (
+                          <button
+                            type="button"
+                            onClick={() => setSummaryPatient(patient)}
+                            className="rounded-full border border-psycho-primary/20 bg-[#e8f4fd] px-4 py-2 text-sm font-semibold text-psycho-primary transition hover:bg-sky-100"
+                          >
+                            Summary
+                          </button>
+                        ) : null}
                         <button
                           type="button"
                           onClick={() => openNotes(patient, "patient")}
@@ -303,6 +357,10 @@ export default function PsychologistPatients() {
         activeTab={notesTab}
         onTabChange={setNotesTab}
         onClose={() => setSelectedPatient(null)}
+      />
+      <PatientSummaryModal
+        patient={summaryPatient}
+        onClose={() => setSummaryPatient(null)}
       />
     </div>
   );
