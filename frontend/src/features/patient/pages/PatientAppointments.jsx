@@ -277,8 +277,8 @@ function PrescriptionModal({ booking, onClose }) {
   const patientNote = booking.consultation?.patient_note || "";
 
   return (
-    <div className="fixed inset-0 z-[1200] flex items-center justify-center bg-slate-950/50 px-4 py-6">
-      <div className="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-2xl">
+    <div className="fixed inset-0 z-[1200] flex items-center justify-center bg-slate-950/50 px-4 py-6" onClick={onClose}>
+      <div className="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-2xl" onClick={(event) => event.stopPropagation()}>
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-xs font-bold uppercase tracking-widest text-patient-primary">Prescription</p>

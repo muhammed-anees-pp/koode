@@ -274,13 +274,13 @@ const ConsultationNotesPanel = ({ booking, consultation, onSaved }) => {
   return (
     <div className="flex h-full flex-col bg-white">
       <div className="border-b border-slate-200 px-5 py-4">
-        <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Session Notes</p>
+        <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Consultation note</p>
         <h2 className="mt-1 text-sm font-bold text-slate-900">{booking?.patient_name}</h2>
       </div>
 
       <div className="flex-1 space-y-4 overflow-y-auto bg-slate-50 px-4 py-5">
         <div className="rounded-2xl border border-emerald-100 bg-white p-4 shadow-sm">
-          <p className="text-sm font-bold text-slate-900">Patient-visible note</p>
+          <p className="text-sm font-bold text-slate-900">Prescription</p>
           <p className="mt-1 text-xs leading-5 text-slate-500">
             Shared with the patient after the consultation in their appointments area.
           </p>
@@ -288,13 +288,13 @@ const ConsultationNotesPanel = ({ booking, consultation, onSaved }) => {
             value={patientNote}
             onChange={(event) => setPatientNote(event.target.value)}
             rows={7}
-            placeholder="Write the summary, care instructions, or follow-up guidance for the patient..."
+            placeholder="Write prescription, care instructions, or follow-up guidance for the patient..."
             className="mt-3 w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-emerald-300 focus:bg-white"
           />
         </div>
 
         <div className="rounded-2xl border border-sky-100 bg-white p-4 shadow-sm">
-          <p className="text-sm font-bold text-slate-900">Clinical private note</p>
+          <p className="text-sm font-bold text-slate-900">Consultation note</p>
           <p className="mt-1 text-xs leading-5 text-slate-500">
             Visible to psychologists for future sessions and continuity of care.
           </p>
@@ -302,7 +302,7 @@ const ConsultationNotesPanel = ({ booking, consultation, onSaved }) => {
             value={psychologistNote}
             onChange={(event) => setPsychologistNote(event.target.value)}
             rows={8}
-            placeholder="Keep clinical observations, context, risk flags, or next-session reminders..."
+            placeholder="Keep consultation observations, context, risk flags, or next-session reminders..."
             className="mt-3 w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-sky-300 focus:bg-white"
           />
         </div>
@@ -316,7 +316,7 @@ const ConsultationNotesPanel = ({ booking, consultation, onSaved }) => {
           disabled={saveMutation.isPending}
           className="w-full rounded-2xl bg-sky-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {saveMutation.isPending ? "Saving..." : "Save Notes"}
+          {saveMutation.isPending ? "Saving..." : "Save"}
         </button>
       </div>
     </div>
@@ -689,7 +689,7 @@ export default function ConsultationRoom({ role }) {
                       : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                   }`}
                 >
-                  Notes
+                  Consultation note
                 </button>
               </div>
               <div className="min-h-0 flex-1">

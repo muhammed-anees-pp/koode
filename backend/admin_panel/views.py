@@ -5,8 +5,11 @@ from rest_framework.permissions import IsAuthenticated
 from .permissions import IsAdminUserRole
 from patients.models import PatientProfile
 from psychologists.models import PsychologistProfile
+from consultations.models import Consultation
+from patient_summary.serializers import patient_summary_payload
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -55,7 +58,6 @@ class AdminPatientListView(APIView):
         SORT_MAP = {
             "name": "user__full_name",
             "joined_date": "created_at",
-            "status": "user__is_active",
         }
         sort_field = SORT_MAP.get(sort_by, "created_at")
         if sort_dir == "asc":
@@ -69,7 +71,6 @@ class AdminPatientListView(APIView):
         patients = queryset[start:end]
 
 
-        from datetime import date as date_type
         results = []
         for p in patients:
             pic = p.user.profile_picture
@@ -79,7 +80,7 @@ class AdminPatientListView(APIView):
                 pic_url = None
             age = None
             if p.date_of_birth:
-                today = date_type.today()
+                today = timezone.localdate()
                 dob = p.date_of_birth
                 age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
             results.append({
@@ -104,6 +105,84 @@ class AdminPatientListView(APIView):
 
 
 """
+ADMIN PATIENT DETAIL
+"""
+class AdminPatientDetailView(APIView):
+    permission_classes = [IsAuthenticated, IsAdminUserRole]
+
+    def get(self, request, patient_id):
+        profile = get_object_or_404(
+            PatientProfile.objects.select_related("user"),
+            patient_id=patient_id,
+        )
+
+        pic = profile.user.profile_picture
+        try:
+            pic_url = request.build_absolute_uri(pic.url) if pic else None
+        except Exception:
+            pic_url = None
+
+        age = None
+        if profile.date_of_birth:
+            today = timezone.localdate()
+            dob = profile.date_of_birth
+            age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
+
+        consultations = (
+            Consultation.objects.select_related("booking__psychologist__user")
+            .filter(booking__patient=profile)
+            .order_by("booking__date", "booking__start_time", "ended_at")
+        )
+
+        consultation_history = []
+        for consultation in consultations:
+            booking = consultation.booking
+            consultation_history.append({
+                "consultation_id": str(consultation.id),
+                "booking_id": str(booking.id),
+                "date": booking.date,
+                "start_time": booking.start_time,
+                "end_time": booking.end_time,
+                "booking_status": booking.status,
+                "consultation_status": consultation.status,
+                "psychologist_id": booking.psychologist.psychologist_id,
+                "psychologist_name": booking.psychologist.user.full_name,
+                "consultation_note": consultation.psychologist_note,
+                "prescription": consultation.patient_note,
+                "started_at": consultation.started_at,
+                "ended_at": consultation.ended_at,
+            })
+
+        data = {
+            "patient_id": profile.patient_id,
+            "full_name": profile.user.full_name,
+            "email": profile.user.email,
+            "profile_picture": pic_url,
+            "is_active": profile.user.is_active,
+            "is_deactivated": profile.is_deactivated,
+            "deactivated_at": profile.deactivated_at,
+            "joined_date": profile.created_at.strftime("%b %d, %Y") if profile.created_at else None,
+            "updated_date": profile.updated_at.strftime("%b %d, %Y") if profile.updated_at else None,
+            "phone_number": profile.phone_number or None,
+            "gender": profile.get_gender_display() if profile.gender else None,
+            "date_of_birth": profile.date_of_birth,
+            "age": age,
+            "emergency_contact_name": profile.emergency_contact_name or None,
+            "emergency_contact_number": profile.emergency_contact_number or None,
+            "summary": patient_summary_payload(profile),
+            "consultations": consultation_history,
+            "stats": {
+                "total_consultations": len(consultation_history),
+                "completed_consultations": sum(1 for item in consultation_history if item["consultation_status"] == "COMPLETED"),
+                "upcoming_consultations": sum(1 for item in consultation_history if item["consultation_status"] in {"SCHEDULED", "WAITING", "ONGOING"}),
+                "prescriptions": sum(1 for item in consultation_history if item["prescription"]),
+            },
+        }
+
+        return Response(data, status=status.HTTP_200_OK)
+
+
+"""
 ADMIN PATIENT SUSPEND / ACTIVATE
 """
 class AdminPatientSuspendView(APIView):
@@ -116,6 +195,11 @@ class AdminPatientSuspendView(APIView):
         user.is_active = not user.is_active
         user.save(update_fields=["is_active"])
 
+        profile.is_deactivated = not user.is_active
+        profile.active = user.is_active
+        profile.deactivated_at = timezone.now() if not user.is_active else None
+        profile.save(update_fields=["is_deactivated", "active", "deactivated_at", "updated_at"])
+
         if currently_active and not user.is_active:
             outstanding_tokens = OutstandingToken.objects.filter(user=user)
             for token in outstanding_tokens:
@@ -124,7 +208,7 @@ class AdminPatientSuspendView(APIView):
                 except Exception:
                     pass
 
-        action = "activated" if user.is_active else "suspended"
+        action = "activated" if user.is_active else "deactivated"
         return Response({
             "patient_id": patient_id,
             "is_active": user.is_active,

@@ -15,6 +15,7 @@ from consultations.services.consultation_service import (
     consultation_state_for_session, create_consultation_for_booking, is_consultation_open, user_can_access_consultation,
 )
 from finance.services.bookings import complete_booking_payment
+from patient_summary.services.summary_service import update_patient_summary_for_consultation
 from patients.permissions import IsPatient
 from psychologists.permissions import IsPsychologist
 from video.zego_service import (
@@ -257,6 +258,7 @@ class ConsultationExitView(ConsultationActionBaseView):
                 consultation.recording_status = "FAILED"
                 consultation.save(update_fields=["recording_status", "recording_metadata", "updated_at"])
 
+        update_patient_summary_for_consultation(consultation)
         return Response({"detail": "Consultation completed.", "consultation": consultation_state_for_session(consultation, user=request.user)})
 
 
@@ -284,7 +286,7 @@ class ConsultationNotesView(ConsultationActionBaseView):
 
         consultation.save(update_fields=update_fields)
         return Response({
-            "detail": "Consultation notes saved.",
+            "detail": "Consultation record saved.",
             "consultation": consultation_state_for_session(consultation, user=request.user),
         })
 

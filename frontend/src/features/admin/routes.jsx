@@ -4,6 +4,7 @@ import Dashboard from "./pages/AdminDashboard";
 import AdminForgotPassword from "./pages/AdminForgotPassword";
 import AdminResetPassword from "./pages/AdminResetPassword";
 import AdminPatientList from "./pages/AdminPatientList";
+import AdminPatientDetail from "./pages/AdminPatientDetail";
 import AdminApplicationList from "./pages/AdminApplicationList";
 import AdminApplicationDetail from "./pages/AdminApplicationDetail";
 import AdminInterviewRoom from "./pages/AdminInterviewRoom";
@@ -48,6 +49,17 @@ const AdminRoutes = () => {
         element={
           isAuthenticated && role === "ADMIN" ? (
             <AdminPatientList />
+          ) : (
+            <Navigate to="/admin/login" />
+          )
+        }
+      />
+
+      <Route
+        path="patients/:id"
+        element={
+          isAuthenticated && role === "ADMIN" ? (
+            <AdminPatientDetail />
           ) : (
             <Navigate to="/admin/login" />
           )
