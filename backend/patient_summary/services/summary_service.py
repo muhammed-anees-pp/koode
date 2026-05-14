@@ -179,7 +179,7 @@ Current summary:
 Latest finished consultation:
 Date: {consultation.booking.date}
 Psychologist: {consultation.booking.psychologist.user.full_name}
-Psychologist consultation note:
+Consultation note:
 {consultation.psychologist_note.strip()}
 
 Consulted psychologists to show in the first paragraph:

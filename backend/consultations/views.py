@@ -286,7 +286,7 @@ class ConsultationNotesView(ConsultationActionBaseView):
 
         consultation.save(update_fields=update_fields)
         return Response({
-            "detail": "Consultation notes saved.",
+            "detail": "Consultation record saved.",
             "consultation": consultation_state_for_session(consultation, user=request.user),
         })
 
