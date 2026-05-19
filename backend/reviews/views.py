@@ -1,13 +1,15 @@
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from django.db.models import Avg, Count, Q
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from appointments.models import Booking
-from consultations.models import Consultation
 from patients.models import PatientProfile
 from patients.permissions import IsPatient
+from psychologists.models import PsychologistProfile
+from psychologists.permissions import IsPsychologist
 from reviews.models import ConsultationReview
 from reviews.serializers import ConsultationReviewSerializer
 
@@ -26,13 +28,9 @@ class BookingReviewView(APIView):
             patient=patient,
         )
 
-        try:
-            consultation = booking.consultation_session
-        except Consultation.DoesNotExist:
-            consultation = None
-        if booking.status != "COMPLETED" or not consultation or consultation.status != "COMPLETED":
+        if booking.status != "COMPLETED":
             return Response(
-                {"detail": "Reviews can only be submitted after a completed consultation."},
+                {"detail": "Reviews can only be submitted after a completed appointment."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -63,3 +61,53 @@ class BookingReviewView(APIView):
             review=serializer.validated_data.get("review", ""),
         )
         return Response(ConsultationReviewSerializer(review).data, status=status.HTTP_201_CREATED)
+
+
+"""
+PSYCHOLOGIST REVIEW DASHBOARD
+"""
+class PsychologistReviewDashboardView(APIView):
+    permission_classes = [IsAuthenticated, IsPsychologist]
+
+    def get(self, request):
+        psychologist = get_object_or_404(PsychologistProfile, user=request.user)
+        reviews = ConsultationReview.objects.filter(psychologist=psychologist).order_by("-submitted_at")
+
+        now = timezone.localtime()
+        month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+        summary = reviews.aggregate(
+            overall_rating=Avg("rating"),
+            total_reviews=Count("id"),
+            this_month_rating=Avg("rating", filter=Q(submitted_at__gte=month_start)),
+            low_ratings=Count("id", filter=Q(rating__lte=2)),
+        )
+
+        rating_counts = {
+            item["rating"]: item["count"]
+            for item in reviews.order_by().values("rating").annotate(count=Count("id"))
+        }
+
+        payload = {
+            "summary": {
+                "overall_rating": round(summary["overall_rating"], 1) if summary["overall_rating"] else None,
+                "total_reviews": summary["total_reviews"] or 0,
+                "this_month_rating": round(summary["this_month_rating"], 1) if summary["this_month_rating"] else None,
+                "low_ratings": summary["low_ratings"] or 0,
+            },
+            "rating_breakdown": [
+                {"rating": rating, "count": rating_counts.get(rating, 0)}
+                for rating in range(5, 0, -1)
+            ],
+            "reviews": [
+                {
+                    "id": str(review.id),
+                    "rating": review.rating,
+                    "review": review.review,
+                    "submitted_at": review.submitted_at,
+                }
+                for review in reviews
+            ],
+        }
+
+        return Response(payload, status=status.HTTP_200_OK)
