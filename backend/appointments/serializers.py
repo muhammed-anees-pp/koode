@@ -13,6 +13,8 @@ from finance.services.bookings import ( complete_booking_payment, credit_admin_f
 from consultations.services.consultation_service import (consultation_state, create_consultation_for_booking,)
 from patient_summary.serializers import patient_summary_payload
 from patient_summary.services.summary_service import update_patient_summary_for_consultation
+from reviews.models import ConsultationReview
+from reviews.serializers import review_payload
 from finance.services.razorpay import create_razorpay_order
 from finance.services.wallets import debit_wallet, get_wallet
 
@@ -318,6 +320,7 @@ class BookingSerializer(serializers.ModelSerializer):
     consultation = serializers.SerializerMethodField()
     consultation_history = serializers.SerializerMethodField()
     patient_summary = serializers.SerializerMethodField()
+    review = serializers.SerializerMethodField()
 
     def get_psychologist_photo(self, obj):
         request = self.context.get("request")
@@ -402,6 +405,13 @@ class BookingSerializer(serializers.ModelSerializer):
             return None
         return patient_summary_payload(obj.patient)
 
+    def get_review(self, obj):
+        try:
+            review = obj.review
+        except ConsultationReview.DoesNotExist:
+            review = None
+        return review_payload(review)
+
     class Meta:
         model = Booking
         fields = [
@@ -430,6 +440,7 @@ class BookingSerializer(serializers.ModelSerializer):
             "consultation",
             "consultation_history",
             "patient_summary",
+            "review",
             "psychologist_paid_at",
             "meeting_link",
             "cancellation_note",

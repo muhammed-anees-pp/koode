@@ -1,9 +1,15 @@
 import logging
 from functools import wraps
 from django.core.exceptions import ObjectDoesNotExist
+from django.db import DatabaseError
+from django.db.models import Q
+from django.db.models import Avg
 from django.http import Http404
 from django.shortcuts import get_object_or_404
+from appointments.models import AvailableSlot
 from psychologists.models import PsychologistProfile
+from reviews.models import ConsultationReview
+from notifications.time_formatting import INDIA_TZ, format_india_date, format_india_time
 from rest_framework import status
 from rest_framework.exceptions import APIException
 from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
@@ -11,6 +17,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from django.utils import timezone
 from .models import PatientProfile
 from .serializers import PatientProfileSerializer
 
@@ -45,6 +52,99 @@ def build_absolute_file_url(request, file_field, context):
     except Exception:
         logger.exception("Failed to build file URL for %s", context)
         return None
+
+
+def next_available_slot_payload(psychologist):
+    now = timezone.now().astimezone(INDIA_TZ)
+    slot = (
+        AvailableSlot.objects.select_related("availability")
+        .filter(
+            availability__psychologist=psychologist,
+            is_booked=False,
+        )
+        .filter(
+            Q(availability__date__gt=now.date())
+            | Q(availability__date=now.date(), start_time__gt=now.time())
+        )
+        .order_by("availability__date", "start_time", "end_time")
+        .first()
+    )
+
+    if not slot:
+        return None
+
+    slot_date = slot.availability.date
+    if slot_date == now.date():
+        date_label = "Today"
+    elif slot_date == (now.date() + timezone.timedelta(days=1)):
+        date_label = "Tomorrow"
+    else:
+        date_label = format_india_date(slot_date)
+
+    return {
+        "id": str(slot.id),
+        "date": slot_date,
+        "start_time": slot.start_time,
+        "end_time": slot.end_time,
+        "label": f"{date_label}, {format_india_time(slot.start_time)}",
+    }
+
+
+def psychologist_review_summary(psychologist):
+    empty_summary = {
+        "average_rating": None,
+        "rated_patient_count": 0,
+        "review_count": 0,
+        "reviews": [],
+    }
+
+    reviews = ConsultationReview.objects.filter(psychologist=psychologist)
+    try:
+        patient_averages = list(
+            reviews.values("patient_id").annotate(average_rating=Avg("rating"))
+        )
+    except DatabaseError:
+        logger.exception("Unable to load review summary for psychologist %s", psychologist.psychologist_id)
+        return empty_summary
+
+    average_rating = None
+    if patient_averages:
+        average_rating = round(
+            sum(float(item["average_rating"]) for item in patient_averages) / len(patient_averages),
+            3,
+        )
+
+    latest_by_patient = {}
+    latest_reviews = (
+        reviews.select_related("patient__user", "booking")
+        .order_by("-updated_at", "-submitted_at")
+    )
+    for review in latest_reviews:
+        if review.patient_id in latest_by_patient:
+            continue
+        latest_by_patient[review.patient_id] = review
+
+    visible_reviews = []
+    for review in latest_by_patient.values():
+        if not review.review.strip():
+            continue
+        visible_reviews.append({
+            "id": str(review.id),
+            "patient_id": review.patient_id,
+            "patient_name": review.patient.user.full_name,
+            "rating": review.rating,
+            "review": review.review,
+            "submitted_at": review.submitted_at,
+            "updated_at": review.updated_at,
+            "appointment_date": review.booking.date,
+        })
+
+    return {
+        "average_rating": average_rating,
+        "rated_patient_count": len(patient_averages),
+        "review_count": reviews.count(),
+        "reviews": visible_reviews,
+    }
 
 """
 PATIENT PROFILE VIEW
@@ -132,9 +232,12 @@ class PatientTherapistListView(APIView):
                 "profile_picture": pic_url,
                 "job_title": p.job_title,
                 "years_of_experience": p.years_of_experience,
+                "total_experience_hours": p.total_experience_hours,
                 "consultation_fee": str(p.consultation_fee) if p.consultation_fee else None,
                 "specializations": specializations,
+                "next_available_slot": next_available_slot_payload(p),
                 "audio_intro": audio_url,
+                "ratings": psychologist_review_summary(p),
             })
 
         logger.info("Returned %s active therapists for patient listing", len(results))
@@ -170,6 +273,10 @@ class PatientTherapistDetailView(APIView):
         audio_url = build_absolute_file_url(request, profile.audio_intro, f"psychologist {profile.psychologist_id} audio intro")
 
         specializations = [s.name for s in profile.specializations.all()]
+        specialization_details = [
+            {"name": s.name, "description": s.description}
+            for s in profile.specializations.all()
+        ]
 
         data = {
             "psychologist_id": profile.psychologist_id,
@@ -181,7 +288,9 @@ class PatientTherapistDetailView(APIView):
             "highest_education": profile.highest_education,
             "about": profile.about,
             "specializations": specializations,
+            "specialization_details": specialization_details,
             "audio_intro": audio_url,
+            "ratings": psychologist_review_summary(profile),
         }
 
         logger.info("Returned therapist detail for psychologist %s", psychologist_id)
