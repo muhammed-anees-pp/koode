@@ -8,6 +8,7 @@ import ReviewModal, { Stars } from "../../../components/patient/ReviewModal";
 import { usePatientSessionGuard } from "../../../hooks/usePatientSessionGuard";
 import { useAuthStore } from "../../../store/auth.store";
 import {
+  addDaysToISO,
   compareIndiaAppointmentDateTime,
   formatIndiaDate,
   formatIndiaDateTime,
@@ -16,10 +17,17 @@ import {
 } from "../../../utils/indiaDateTime";
 
 const TABS = ["Upcoming", "Past", "Cancelled"];
+const APPOINTMENTS_PER_PAGE = 8;
 
 const DATE_FILTER_UPCOMING = ["Next 7 Days", "Next 30 Days", "All Upcoming"];
 const DATE_FILTER_PAST = ["Last 7 Days", "Last 30 Days", "All Past"];
 
+const sortAppointmentsForTab = (appointments, activeTab) => {
+  const direction = activeTab === "Past" || activeTab === "Cancelled" ? -1 : 1;
+  return [...appointments].sort(
+    (left, right) => direction * compareIndiaAppointmentDateTime(left, right)
+  );
+};
 
 function CancelBookingModal({ booking, note, onChange, onClose, onSubmit, isPending, error }) {
   if (!booking) return null;
@@ -412,6 +420,76 @@ function CancelledCard({ booking, onBookAgain, onViewReason }) {
   );
 }
 
+function PaginationControls({ currentPage, totalPages, totalItems, pageSize, onPageChange }) {
+  if (totalPages <= 1) return null;
+
+  const start = (currentPage - 1) * pageSize + 1;
+  const end = Math.min(currentPage * pageSize, totalItems);
+  const visiblePages = Array.from({ length: totalPages }, (_, index) => index + 1)
+    .filter((page) => page === 1 || page === totalPages || Math.abs(page - currentPage) <= 1)
+    .reduce((items, page, index, pages) => {
+      if (index > 0 && page - pages[index - 1] > 1) items.push("...");
+      items.push(page);
+      return items;
+    }, []);
+
+  return (
+    <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <p className="text-sm text-slate-500">
+        Showing{" "}
+        <span className="font-semibold text-slate-700">{start}-{end}</span>
+        {" "}of{" "}
+        <span className="font-semibold text-slate-700">{totalItems}</span>
+      </p>
+
+      <div className="flex items-center gap-1.5">
+        <button
+          type="button"
+          disabled={currentPage === 1}
+          onClick={() => onPageChange(currentPage - 1)}
+          className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+          aria-label="Previous page"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+        </button>
+
+        {visiblePages.map((item, index) =>
+          item === "..." ? (
+            <span key={`ellipsis-${index}`} className="px-1 text-sm text-slate-400">...</span>
+          ) : (
+            <button
+              key={item}
+              type="button"
+              onClick={() => onPageChange(item)}
+              className={`h-9 min-w-[36px] rounded-xl border px-3 text-sm font-semibold transition ${
+                currentPage === item
+                  ? "border-patient-primary bg-patient-primary text-white shadow-patient-sm"
+                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+              }`}
+            >
+              {item}
+            </button>
+          )
+        )}
+
+        <button
+          type="button"
+          disabled={currentPage === totalPages}
+          onClick={() => onPageChange(currentPage + 1)}
+          className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+          aria-label="Next page"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  );
+}
+
 
 export default function PatientAppointments() {
   const navigate = useNavigate();
@@ -428,6 +506,7 @@ export default function PatientAppointments() {
   const [reviewError, setReviewError] = useState("");
   const [dateFilter, setDateFilter] = useState(DATE_FILTER_UPCOMING[0]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
   usePatientSessionGuard();
 
   const bookingsQuery = useQuery({
@@ -462,12 +541,22 @@ export default function PatientAppointments() {
     let list;
     if (activeTab === "Past") {
       list = all.filter((b) => b.status === "COMPLETED");
+      if (dateFilter === "Last 7 Days") {
+        list = list.filter((b) => b.date >= addDaysToISO(today, -7));
+      } else if (dateFilter === "Last 30 Days") {
+        list = list.filter((b) => b.date >= addDaysToISO(today, -30));
+      }
     } else if (activeTab === "Cancelled") {
       list = all.filter((b) => b.status === "CANCELLED");
     } else {
       list = all.filter(
         (b) => b.date >= today && b.status !== "COMPLETED" && b.status !== "CANCELLED"
       );
+      if (dateFilter === "Next 7 Days") {
+        list = list.filter((b) => b.date <= addDaysToISO(today, 7));
+      } else if (dateFilter === "Next 30 Days") {
+        list = list.filter((b) => b.date <= addDaysToISO(today, 30));
+      }
     }
 
     
@@ -476,8 +565,15 @@ export default function PatientAppointments() {
       list = list.filter((b) => b.psychologist_name?.toLowerCase().includes(q));
     }
 
-    return [...list].sort(compareIndiaAppointmentDateTime);
-  }, [activeTab, bookingsQuery.data, today, searchQuery]);
+    return sortAppointmentsForTab(list, activeTab);
+  }, [activeTab, bookingsQuery.data, today, searchQuery, dateFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredBookings.length / APPOINTMENTS_PER_PAGE));
+  const safePage = Math.min(currentPage, totalPages);
+  const paginatedBookings = useMemo(
+    () => filteredBookings.slice((safePage - 1) * APPOINTMENTS_PER_PAGE, safePage * APPOINTMENTS_PER_PAGE),
+    [filteredBookings, safePage]
+  );
 
   const cancelMutation = useMutation({
     mutationFn: ({ bookingId, note }) => cancelPatientBooking(bookingId, note),
@@ -602,6 +698,7 @@ export default function PatientAppointments() {
                 onClick={() => {
                   setActiveTab(tab);
                   setSearchQuery("");
+                  setCurrentPage(1);
                   setDateFilter(tab === "Past" ? DATE_FILTER_PAST[0] : DATE_FILTER_UPCOMING[0]);
                 }}
                 className={`rounded-full px-5 py-2 text-sm font-semibold transition ${
@@ -623,7 +720,10 @@ export default function PatientAppointments() {
                 <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Filter by Date</p>
                 <select
                   value={dateFilter}
-                  onChange={(e) => setDateFilter(e.target.value)}
+                  onChange={(e) => {
+                    setDateFilter(e.target.value);
+                    setCurrentPage(1);
+                  }}
                   className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700 outline-none focus:border-patient-primary focus:ring-1 focus:ring-patient-primary/30 transition"
                 >
                   {dateFilterOptions.map((opt) => (
@@ -642,7 +742,10 @@ export default function PatientAppointments() {
                   <input
                     type="text"
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      setCurrentPage(1);
+                    }}
                     placeholder="Search name..."
                     className="w-full rounded-xl border border-slate-200 bg-white pl-9 pr-4 py-2.5 text-sm text-slate-700 outline-none focus:border-patient-primary focus:ring-1 focus:ring-patient-primary/30 transition"
                   />
@@ -690,7 +793,7 @@ export default function PatientAppointments() {
 
             
             {!bookingsQuery.isLoading && !bookingsQuery.isError &&
-              filteredBookings.map((booking) => {
+              paginatedBookings.map((booking) => {
                 if (activeTab === "Upcoming") {
                   return (
                     <UpcomingCard
@@ -723,6 +826,16 @@ export default function PatientAppointments() {
                 );
               })}
           </div>
+
+          {!bookingsQuery.isLoading && !bookingsQuery.isError && filteredBookings.length > 0 ? (
+            <PaginationControls
+              currentPage={safePage}
+              totalPages={totalPages}
+              totalItems={filteredBookings.length}
+              pageSize={APPOINTMENTS_PER_PAGE}
+              onPageChange={setCurrentPage}
+            />
+          ) : null}
         </div>
       </main>
 
@@ -749,6 +862,7 @@ export default function PatientAppointments() {
       />
 
       <ReviewModal
+        key={reviewTarget?.id || "patient-review-modal"}
         booking={reviewTarget}
         onClose={closeReviewModal}
         onSubmit={({ rating, review }) => reviewMutation.mutate({ bookingId: reviewTarget.id, rating, review })}

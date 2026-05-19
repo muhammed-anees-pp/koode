@@ -26,8 +26,15 @@ const STATUS_STYLES = {
   COMPLETED: "bg-slate-100 text-slate-700 border-slate-200",
 };
 
-const FILTER_OPTIONS = ["Upcoming", "Completed", "Cancelled"];
+const FILTER_OPTIONS = ["Upcoming", "Past", "Cancelled"];
 const ITEMS_PER_PAGE = 8;
+const sortAppointmentsForFilter = (appointments, activeFilter) => {
+  const direction = activeFilter === "Past" || activeFilter === "Cancelled" ? -1 : 1;
+  return [...appointments].sort(
+    (left, right) => direction * compareIndiaAppointmentDateTime(left, right)
+  );
+};
+
 const formatDateInputValue = (value) => {
   const [year, month, day] = value.split("-");
   return `${day}/${month}/${year}`;
@@ -443,7 +450,7 @@ export default function PsychologistAppointments() {
   const filteredBookings = useMemo(() => {
     let bookings = bookingsQuery.data ?? [];
 
-    if (activeFilter === "Completed") {
+    if (activeFilter === "Past") {
       bookings = bookings.filter((b) => b.status === "COMPLETED");
     } else if (activeFilter === "Cancelled") {
       bookings = bookings.filter((b) => b.status === "CANCELLED");
@@ -462,13 +469,14 @@ export default function PsychologistAppointments() {
       bookings = bookings.filter((b) => b.date === dateFilter);
     }
 
-    return [...bookings].sort(compareIndiaAppointmentDateTime);
+    return sortAppointmentsForFilter(bookings, activeFilter);
   }, [activeFilter, bookingsQuery.data, today, searchQuery, dateFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filteredBookings.length / ITEMS_PER_PAGE));
+  const safePage = Math.min(currentPage, totalPages);
   const paginatedBookings = useMemo(
-    () => filteredBookings.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE),
-    [filteredBookings, currentPage]
+    () => filteredBookings.slice((safePage - 1) * ITEMS_PER_PAGE, safePage * ITEMS_PER_PAGE),
+    [filteredBookings, safePage]
   );
 
   const cancelMutation = useMutation({
@@ -793,7 +801,7 @@ export default function PsychologistAppointments() {
                   <p className="text-sm text-slate-500">
                     Showing{" "}
                     <span className="font-semibold text-slate-700">
-                      {(currentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, filteredBookings.length)}
+                      {(safePage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(safePage * ITEMS_PER_PAGE, filteredBookings.length)}
                     </span>
                     {" "}of{" "}
                     <span className="font-semibold text-slate-700">{filteredBookings.length}</span>
@@ -802,8 +810,8 @@ export default function PsychologistAppointments() {
                   <div className="flex items-center gap-1.5">
                     <button
                       type="button"
-                      disabled={currentPage === 1}
-                      onClick={() => setCurrentPage((p) => p - 1)}
+                      disabled={safePage === 1}
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                       className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -812,7 +820,7 @@ export default function PsychologistAppointments() {
                     </button>
 
                     {Array.from({ length: totalPages }, (_, i) => i + 1)
-                      .filter((p) => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1)
+                      .filter((p) => p === 1 || p === totalPages || Math.abs(p - safePage) <= 1)
                       .reduce((acc, p, idx, arr) => {
                         if (idx > 0 && p - arr[idx - 1] > 1) acc.push("...");
                         acc.push(p);
@@ -827,7 +835,7 @@ export default function PsychologistAppointments() {
                             type="button"
                             onClick={() => setCurrentPage(item)}
                             className={`h-9 min-w-[36px] rounded-xl border px-3 text-sm font-semibold transition ${
-                              currentPage === item
+                              safePage === item
                                 ? "border-psycho-primary bg-psycho-primary text-white shadow-[0_2px_10px_rgba(17,136,216,0.25)]"
                                 : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
                             }`}
@@ -840,8 +848,8 @@ export default function PsychologistAppointments() {
                     
                     <button
                       type="button"
-                      disabled={currentPage === totalPages}
-                      onClick={() => setCurrentPage((p) => p + 1)}
+                      disabled={safePage === totalPages}
+                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                       className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

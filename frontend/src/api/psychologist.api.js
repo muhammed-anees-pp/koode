@@ -155,6 +155,11 @@ export const getPsychologistWallet = async () => {
   return response.data;
 };
 
+export const getPsychologistReviewDashboard = async () => {
+  const response = await axiosInstance.get("reviews/psychologist/dashboard/");
+  return response.data;
+};
+
 export const getConsultationDetail = async (bookingId) => {
   const response = await axiosInstance.get(`consultations/bookings/${bookingId}/`);
   return response.data;

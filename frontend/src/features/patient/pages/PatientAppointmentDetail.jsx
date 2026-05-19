@@ -470,6 +470,7 @@ export default function PatientAppointmentDetail() {
         onClose={() => setShowPrescription(false)}
       />
       <ReviewModal
+        key={booking.id}
         booking={showReview ? booking : null}
         onClose={() => { setShowReview(false); setReviewError(""); }}
         onSubmit={({ rating, review }) => reviewMutation.mutate({ rating, review })}

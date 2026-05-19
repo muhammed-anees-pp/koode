@@ -35,7 +35,7 @@ export default function ReviewModal({ booking, onClose, onSubmit, isPending, err
   useEffect(() => {
     setRating(existingReview?.rating || 0);
     setReview(existingReview?.review || "");
-  }, [existingReview?.id, existingReview?.rating, existingReview?.review]);
+  }, [booking?.id, existingReview?.id, existingReview?.rating, existingReview?.review]);
 
   if (!booking) return null;
 
