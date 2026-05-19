@@ -1,9 +1,10 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { cancelPatientBooking, getMyBookings } from "../../../api/patient.api";
+import { cancelPatientBooking, getMyBookings, submitBookingReview } from "../../../api/patient.api";
 import PatientNavbar from "../../../components/patient/Navbar/PatientNavbar";
 import PatientFooter from "../../../components/patient/Footer/PatientFooter";
+import ReviewModal, { Stars } from "../../../components/patient/ReviewModal";
 import { usePatientSessionGuard } from "../../../hooks/usePatientSessionGuard";
 import { useAuthStore } from "../../../store/auth.store";
 import {
@@ -177,10 +178,9 @@ function UpcomingCard({ booking, onCancel, onOpenChat, onJoinConsultation }) {
 }
 
 
-function PastCard({ booking, onBookAgain, onViewPrescription }) {
-  const [rated, setRated] = useState(booking.rating ?? 0);
-  const [hovered, setHovered] = useState(0);
-
+function PastCard({ booking, onBookAgain, onViewPrescription, onOpenReview }) {
+  const existingReview = booking.review;
+  const reviewLabel = existingReview ? (existingReview.can_edit ? "Edit Review" : "View Review") : "Rate & Review";
   return (
     <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
       <div className="flex items-start gap-4">
@@ -198,7 +198,7 @@ function PastCard({ booking, onBookAgain, onViewPrescription }) {
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
                 </svg>
               </button>
-              <button type="button" className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-amber-400 hover:bg-amber-50 transition" title="Rate session">
+              <button type="button" onClick={() => onOpenReview(booking)} className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-amber-400 hover:bg-amber-50 transition" title={reviewLabel}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                 </svg>
@@ -220,24 +220,22 @@ function PastCard({ booking, onBookAgain, onViewPrescription }) {
           </div>
 
           
-          <div className="flex items-center gap-1 mt-3">
-            {Array.from({ length: 5 }).map((_, i) => {
-              const filled = i < (hovered || rated);
-              return (
-                <button
-                  key={i} type="button"
-                  onClick={() => setRated(i + 1)}
-                  onMouseEnter={() => setHovered(i + 1)}
-                  onMouseLeave={() => setHovered(0)}
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill={filled ? "#f59e0b" : "none"} stroke={filled ? "#f59e0b" : "#d1d5db"} strokeWidth="1.5">
-                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                  </svg>
-                </button>
-              );
-            })}
-            {rated > 0 && <span className="text-xs text-slate-400 ml-1">Rated</span>}
-            {rated === 0 && <span className="text-xs text-patient-primary font-medium ml-1 hover:underline cursor-pointer">Rate Psychologist</span>}
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            {existingReview ? (
+              <>
+                <Stars value={existingReview.rating} readOnly size={18} />
+                <span className="text-xs text-slate-400">Rated</span>
+              </>
+            ) : (
+              <span className="text-xs font-medium text-slate-500">No rating submitted yet.</span>
+            )}
+            <button
+              type="button"
+              onClick={() => onOpenReview(booking)}
+              className="text-xs font-semibold text-patient-primary transition hover:underline"
+            >
+              {reviewLabel}
+            </button>
           </div>
 
         </div>
@@ -426,6 +424,8 @@ export default function PatientAppointments() {
   const [cancelError, setCancelError] = useState("");
   const [reasonTarget, setReasonTarget] = useState(null);
   const [prescriptionTarget, setPrescriptionTarget] = useState(null);
+  const [reviewTarget, setReviewTarget] = useState(null);
+  const [reviewError, setReviewError] = useState("");
   const [dateFilter, setDateFilter] = useState(DATE_FILTER_UPCOMING[0]);
   const [searchQuery, setSearchQuery] = useState("");
   usePatientSessionGuard();
@@ -436,6 +436,23 @@ export default function PatientAppointments() {
     enabled: isAuthenticated && role === "PATIENT",
     refetchInterval: 30000,
   });
+
+  useEffect(() => {
+    const completed = (bookingsQuery.data ?? [])
+      .filter((booking) => booking.status === "COMPLETED" && !booking.review)
+      .sort((left, right) => compareIndiaAppointmentDateTime(right, left));
+    const promptTarget = completed.find((booking) => {
+      try {
+        return window.sessionStorage.getItem(`review_prompt_dismissed_${booking.id}`) !== "1";
+      } catch {
+        return true;
+      }
+    });
+    if (!reviewTarget && promptTarget) {
+      setReviewTarget(promptTarget);
+      setReviewError("");
+    }
+  }, [bookingsQuery.data, reviewTarget]);
 
   const today = useMemo(() => getIndiaTodayISO(), []);
 
@@ -481,6 +498,31 @@ export default function PatientAppointments() {
     },
   });
 
+  const reviewMutation = useMutation({
+    mutationFn: ({ bookingId, rating, review }) => submitBookingReview({ bookingId, rating, review }),
+    onSuccess: async () => {
+      if (reviewTarget) {
+        try {
+          window.sessionStorage.setItem(`review_prompt_dismissed_${reviewTarget.id}`, "1");
+        } catch {
+          // Ignore storage issues; the saved review will still come from the API.
+        }
+      }
+      setReviewTarget(null);
+      setReviewError("");
+      await queryClient.invalidateQueries({ queryKey: ["patient-appointments"] });
+    },
+    onError: (error) => {
+      const apiError = error?.response?.data;
+      setReviewError(
+        apiError?.rating?.[0] ||
+        apiError?.review?.[0] ||
+        apiError?.detail ||
+        "Unable to save your review."
+      );
+    },
+  });
+
   const openCancelModal = (booking) => {
     setCancelTarget(booking);
     setCancelNote("");
@@ -509,6 +551,18 @@ export default function PatientAppointments() {
 
   const handleJoinConsultation = (booking) => {
     navigate(`/patient/consultation/${booking.id}`);
+  };
+
+  const closeReviewModal = () => {
+    if (reviewTarget && !reviewTarget.review) {
+      try {
+        window.sessionStorage.setItem(`review_prompt_dismissed_${reviewTarget.id}`, "1");
+      } catch {
+        // Ignore storage issues; the completed appointments section still offers review entry.
+      }
+    }
+    setReviewTarget(null);
+    setReviewError("");
   };
 
 
@@ -655,6 +709,7 @@ export default function PatientAppointments() {
                       booking={booking}
                       onBookAgain={handleBookAgain}
                       onViewPrescription={setPrescriptionTarget}
+                      onOpenReview={(target) => { setReviewTarget(target); setReviewError(""); }}
                     />
                   );
                 }
@@ -691,6 +746,14 @@ export default function PatientAppointments() {
       <PrescriptionModal
         booking={prescriptionTarget}
         onClose={() => setPrescriptionTarget(null)}
+      />
+
+      <ReviewModal
+        booking={reviewTarget}
+        onClose={closeReviewModal}
+        onSubmit={({ rating, review }) => reviewMutation.mutate({ bookingId: reviewTarget.id, rating, review })}
+        isPending={reviewMutation.isPending}
+        error={reviewError}
       />
 
     </div>

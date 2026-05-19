@@ -254,6 +254,14 @@ export default function PatientBooking() {
     });
   };
 
+  const handleBack = () => {
+    if (window.history.state?.idx > 0) {
+      navigate(-1);
+      return;
+    }
+    navigate(`/patient/therapists/${id}`);
+  };
+
   const handleBook = () => {
     if (!selectedSlotId) {
       setFeedback({ type: "error", text: "Select a slot before booking." });
@@ -309,11 +317,23 @@ export default function PatientBooking() {
       <main className="flex-1 px-6 pt-[7rem] pb-24">
         <div className="mx-auto max-w-[1200px]">
           
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-slate-900">Slot Selection &amp; Booking</h1>
-            <p className="mt-1 text-sm text-slate-500">
-              Secure your path to wellness. Choose a time that works best for you.
-            </p>
+          <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-slate-900">Slot Selection &amp; Booking</h1>
+              <p className="mt-1 text-sm text-slate-500">
+                Secure your path to wellness. Choose a time that works best for you.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleBack}
+              className="inline-flex w-fit items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 shadow-sm transition hover:border-patient-primary/40 hover:bg-patient-light hover:text-patient-primary"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+              Back
+            </button>
           </div>
 
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_1.8fr]">

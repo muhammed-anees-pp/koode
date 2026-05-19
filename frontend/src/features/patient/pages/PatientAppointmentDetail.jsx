@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { cancelPatientBooking, getMyBookings } from "../../../api/patient.api";
+import { cancelPatientBooking, getMyBookings, submitBookingReview } from "../../../api/patient.api";
 import PatientNavbar from "../../../components/patient/Navbar/PatientNavbar";
 import PatientFooter from "../../../components/patient/Footer/PatientFooter";
+import ReviewModal, { Stars } from "../../../components/patient/ReviewModal";
 import { usePatientSessionGuard } from "../../../hooks/usePatientSessionGuard";
 import { useAuthStore } from "../../../store/auth.store";
 import { formatIndiaDate, formatIndiaDateTime, formatIndiaTime, getIndiaTodayISO } from "../../../utils/indiaDateTime";
@@ -90,6 +91,8 @@ export default function PatientAppointmentDetail() {
   const [cancelError, setCancelError] = useState("");
   const [showCancel, setShowCancel] = useState(false);
   const [showPrescription, setShowPrescription] = useState(false);
+  const [showReview, setShowReview] = useState(false);
+  const [reviewError, setReviewError] = useState("");
   usePatientSessionGuard();
 
   const bookingsQuery = useQuery({
@@ -114,6 +117,24 @@ export default function PatientAppointmentDetail() {
       const message =
         apiError?.note?.[0] || apiError?.non_field_errors?.[0] || apiError?.detail || "Unable to cancel.";
       setCancelError(message);
+    },
+  });
+
+  const reviewMutation = useMutation({
+    mutationFn: ({ rating, review }) => submitBookingReview({ bookingId, rating, review }),
+    onSuccess: async () => {
+      setShowReview(false);
+      setReviewError("");
+      await queryClient.invalidateQueries({ queryKey: ["patient-appointments"] });
+    },
+    onError: (error) => {
+      const apiError = error?.response?.data;
+      setReviewError(
+        apiError?.rating?.[0] ||
+        apiError?.review?.[0] ||
+        apiError?.detail ||
+        "Unable to save your review."
+      );
     },
   });
 
@@ -173,6 +194,7 @@ export default function PatientAppointmentDetail() {
   const isUpcoming = booking.status !== "CANCELLED" && booking.status !== "COMPLETED" && booking.date >= today;
   const canJoinConsultation = booking.status === "CONFIRMED" && Boolean(booking.consultation?.is_open);
   const opensAt = formatIndiaDateTime(booking.consultation?.opens_at);
+  const reviewLabel = booking.review ? (booking.review.can_edit ? "Edit Review" : "View Review") : "Rate & Review";
 
   return (
     <div className="flex min-h-screen flex-col bg-[#f8fafc] font-['DM_Sans',sans-serif] antialiased">
@@ -331,6 +353,36 @@ export default function PatientAppointmentDetail() {
                   </button>
                 </div>
               ) : null}
+
+              {booking.status === "COMPLETED" ? (
+                <div className="rounded-2xl border border-amber-100 bg-white p-6 shadow-sm">
+                  <div className="mb-3 flex items-center gap-2">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2">
+                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                    </svg>
+                    <h3 className="text-base font-bold text-slate-900">Review</h3>
+                  </div>
+                  {booking.review ? (
+                    <div className="mb-4">
+                      <Stars value={booking.review.rating} readOnly size={19} />
+                      {booking.review.review ? (
+                        <p className="mt-3 whitespace-pre-wrap rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-700">
+                          {booking.review.review}
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : (
+                    <p className="mb-4 text-sm text-slate-500">Share your experience from this consultation.</p>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => { setShowReview(true); setReviewError(""); }}
+                    className="rounded-xl bg-amber-500 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-amber-600"
+                  >
+                    {reviewLabel}
+                  </button>
+                </div>
+              ) : null}
             </div>
 
             
@@ -416,6 +468,13 @@ export default function PatientAppointmentDetail() {
       <PrescriptionModal
         booking={showPrescription ? booking : null}
         onClose={() => setShowPrescription(false)}
+      />
+      <ReviewModal
+        booking={showReview ? booking : null}
+        onClose={() => { setShowReview(false); setReviewError(""); }}
+        onSubmit={({ rating, review }) => reviewMutation.mutate({ rating, review })}
+        isPending={reviewMutation.isPending}
+        error={reviewError}
       />
     </div>
   );

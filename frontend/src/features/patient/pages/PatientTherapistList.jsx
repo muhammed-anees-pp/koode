@@ -5,26 +5,64 @@ import { fetchPatientTherapists, fetchSpecializations } from "../../../api/patie
 import PatientNavbar from "../../../components/patient/Navbar/PatientNavbar";
 import PatientFooter from "../../../components/patient/Footer/PatientFooter";
 
-const BARS = 28;
-const BAR_HEIGHTS = Array.from({ length: BARS }, () =>
-  Math.max(18, Math.floor(Math.random() * 82))
-);
+const BAR_HEIGHTS = [
+  34, 58, 42, 76, 52, 88, 46, 68, 38, 82, 56, 94, 48, 72, 44, 86, 60, 40,
+  78, 50, 92, 62, 36, 74, 54, 84, 46, 66, 90, 52, 70, 44, 80, 58, 96, 48,
+  64, 42, 76, 56, 88, 46,
+];
 
-function Waveform({ isPlaying }) {
+const formatRating = (value) => {
+  if (value == null) return "New";
+  return Number(value).toFixed(1);
+};
+
+const formatSessionCharge = (value) => {
+  const amount = Number(value);
+  if (!Number.isFinite(amount) || amount <= 0) return "Fee unavailable";
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: amount % 1 === 0 ? 0 : 2,
+  }).format(amount);
+};
+
+function Waveform({ isPlaying, progress = 0, disabled = false }) {
+  const normalizedProgress = Math.max(0, Math.min(progress, 1));
+  const activeBars = Math.max(1, Math.ceil(normalizedProgress * BAR_HEIGHTS.length));
+
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 2.5, height: 28, flex: 1, overflow: "hidden" }}>
+    <div
+      aria-hidden="true"
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 3,
+        height: 36,
+        width: "100%",
+        minWidth: 0,
+        flex: "1 1 auto",
+        overflow: "hidden",
+      }}
+    >
       {BAR_HEIGHTS.map((h, i) => (
         <div
           key={i}
           style={{
-            width: 3,
+            flex: "1 1 0",
+            minWidth: 2,
+            maxWidth: 6,
             height: `${h}%`,
-            background: "#1a1a1a",
+            background: disabled
+              ? "#cbd5d9"
+              : i < activeBars
+                ? "linear-gradient(180deg, #00897b 0%, #26c6da 100%)"
+                : "#d9e6e4",
             borderRadius: 100,
-            flexShrink: 0,
-            opacity: isPlaying ? 1 : 0.55,
-            transform: isPlaying ? `scaleY(${0.6 + Math.sin(i) * 0.4})` : "scaleY(1)",
-            transition: `transform ${0.3 + (i % 5) * 0.07}s ease, opacity 0.3s`,
+            opacity: disabled ? 0.65 : 1,
+            transformOrigin: "center",
+            animation: isPlaying ? `waveformPulse ${0.75 + (i % 6) * 0.08}s ease-in-out infinite` : "none",
+            animationDelay: `${i * 0.035}s`,
+            transition: "background 0.25s ease, opacity 0.25s ease",
           }}
         />
       ))}
@@ -50,29 +88,63 @@ const TherapistCard = ({ therapist }) => {
     if (!el) return;
     const onTime = () => setCurrentTime(el.currentTime);
     const onLoaded = () => setDuration(el.duration);
+    const onPlay = () => setIsPlaying(true);
+    const onPause = () => setIsPlaying(false);
+    const onEnded = () => {
+      setIsPlaying(false);
+      setCurrentTime(0);
+    };
     el.addEventListener("timeupdate", onTime);
     el.addEventListener("loadedmetadata", onLoaded);
+    el.addEventListener("play", onPlay);
+    el.addEventListener("pause", onPause);
+    el.addEventListener("ended", onEnded);
     return () => {
       el.removeEventListener("timeupdate", onTime);
       el.removeEventListener("loadedmetadata", onLoaded);
+      el.removeEventListener("play", onPlay);
+      el.removeEventListener("pause", onPause);
+      el.removeEventListener("ended", onEnded);
     };
   }, []);
 
   const togglePlay = (e) => {
     e.stopPropagation();
     if (!audioRef.current) return;
-    isPlaying ? audioRef.current.pause() : audioRef.current.play().catch(() => {});
-    setIsPlaying((p) => !p);
+    if (isPlaying) {
+      audioRef.current.pause();
+      return;
+    }
+    audioRef.current.play().catch(() => setIsPlaying(false));
   };
 
-  const handleBook = (e) => {
+  const handleQuickView = (e) => {
     e.stopPropagation();
     navigate(`/patient/therapists/${therapist.psychologist_id}`);
   };
 
-  const therapyHours = therapist.years_of_experience
-    ? `${therapist.years_of_experience * 250}+`
-    : "250+";
+  const handleBook = (e) => {
+    e.stopPropagation();
+    const nextSlot = therapist.next_available_slot;
+    if (nextSlot?.date && nextSlot?.id) {
+      navigate(`/patient/therapists/${therapist.psychologist_id}/book?date=${nextSlot.date}&slot=${nextSlot.id}`);
+      return;
+    }
+    navigate(`/patient/therapists/${therapist.psychologist_id}`);
+  };
+
+  const years = Number(therapist.years_of_experience || 0);
+  const experienceLabel = years > 0
+    ? `${years} year${years === 1 ? "" : "s"} experience`
+    : "Experience not listed";
+  const therapyHours = Number(therapist.total_experience_hours || 0);
+  const therapyHoursLabel = therapyHours > 0
+    ? `${Math.round(therapyHours).toLocaleString("en-IN")} therapy hour${Math.round(therapyHours) === 1 ? "" : "s"}`
+    : null;
+  const rating = therapist.ratings?.average_rating;
+  const nextSlot = therapist.next_available_slot;
+  const hasAudioIntro = Boolean(therapist.audio_intro);
+  const waveformProgress = duration ? currentTime / duration : 0;
 
   return (
     <div
@@ -104,6 +176,14 @@ const TherapistCard = ({ therapist }) => {
           <p style={{ fontSize: 13, color: "#777", margin: "3px 0 0" }}>
             {therapist.job_title || "Consultant Psychologist"}
           </p>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "#fff8e1", border: "1px solid #fde68a", borderRadius: 999, padding: "3px 8px", fontSize: 12, fontWeight: 700, color: "#92400e" }}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+              </svg>
+              {formatRating(rating)}
+            </span>
+          </div>
         </div>
         <div style={{ width: 62, height: 62, borderRadius: "50%", overflow: "hidden", flexShrink: 0, background: "#c8d8d8", border: "2.5px solid #fff", boxShadow: "0 2px 8px rgba(0,0,0,0.12)" }}>
           {therapist.profile_picture ? (
@@ -118,7 +198,7 @@ const TherapistCard = ({ therapist }) => {
 
 
       <button
-        onClick={handleBook}
+        onClick={handleQuickView}
         style={{ alignSelf: "flex-start", display: "inline-flex", alignItems: "center", gap: 6, background: "#fff", border: "1.5px solid #dde4e4", borderRadius: 100, padding: "5px 14px", fontSize: 13, fontWeight: 600, color: "#222", cursor: "pointer", marginBottom: 18 }}
       >
         Quick View
@@ -130,7 +210,20 @@ const TherapistCard = ({ therapist }) => {
 
 
       <div style={{ marginBottom: 14 }}>
-        <p style={{ fontSize: 12, color: "#888", marginBottom: 8 }}>{therapyHours} Therapy Hours in:</p>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, color: "#0f766e", fontWeight: 700 }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
+            </svg>
+            {experienceLabel}
+          </span>
+          {therapyHoursLabel && (
+            <span style={{ fontSize: 12, color: "#64748b", fontWeight: 600 }}>
+              {therapyHoursLabel}
+            </span>
+          )}
+        </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
           {therapist.specializations?.slice(0, 3).map((spec, idx) => (
             <span key={idx} style={{ background: "#fff", border: "1.5px solid #dde4e4", borderRadius: 100, padding: "4px 12px", fontSize: 12, fontWeight: 500, color: "#444" }}>
@@ -145,11 +238,31 @@ const TherapistCard = ({ therapist }) => {
         </div>
       </div>
 
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14, background: "#ffffff", border: "1.5px solid #e3eceb", borderRadius: 16, padding: "12px 14px", marginBottom: 14 }}>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 8, minWidth: 0, fontSize: 12, color: "#64748b", fontWeight: 700 }}>
+          <span style={{ width: 26, height: 26, borderRadius: "50%", background: "#ecfdf5", color: "#00897b", display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M6 3h12" />
+              <path d="M6 8h12" />
+              <path d="M6 13h8" />
+              <path d="M6 3c6.5 0 6.5 10 0 10" />
+              <path d="M6 13l8 8" />
+            </svg>
+          </span>
+          Session charge
+        </span>
+        <span style={{ color: "#111827", fontSize: 16, fontWeight: 800, whiteSpace: "nowrap" }}>
+          {formatSessionCharge(therapist.consultation_fee)}
+          <span style={{ color: "#94a3b8", fontSize: 12, fontWeight: 700, marginLeft: 4 }}>/ session</span>
+        </span>
+      </div>
 
-      <div style={{ background: "#fff", borderRadius: 100, padding: "8px 14px 8px 8px", display: "flex", alignItems: "center", gap: 10, marginBottom: 18, border: "1.5px solid #e8efef" }}>
+      <div style={{ background: "#fff", borderRadius: 18, padding: "9px 14px 9px 9px", display: "flex", alignItems: "center", gap: 11, marginBottom: 18, border: "1.5px solid #e8efef", minWidth: 0 }}>
         <button
           onClick={togglePlay}
-          style={{ width: 36, height: 36, borderRadius: "50%", border: "1.5px solid #dde4e4", background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}
+          disabled={!hasAudioIntro}
+          aria-label={isPlaying ? "Pause audio intro" : "Play audio intro"}
+          style={{ width: 38, height: 38, borderRadius: "50%", border: "1.5px solid #d7e4e2", background: hasAudioIntro ? "#111" : "#f1f5f9", color: hasAudioIntro ? "#fff" : "#94a3b8", display: "flex", alignItems: "center", justifyContent: "center", cursor: hasAudioIntro ? "pointer" : "not-allowed", flexShrink: 0 }}
         >
           {isPlaying ? (
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" /><rect x="14" y="4" width="4" height="16" /></svg>
@@ -157,12 +270,12 @@ const TherapistCard = ({ therapist }) => {
             <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3" /></svg>
           )}
         </button>
-        <Waveform isPlaying={isPlaying} />
-        <span style={{ fontSize: 12, color: "#888", fontWeight: 500, flexShrink: 0 }}>
-          {duration ? fmt(duration - currentTime) : "1:34"}
+        <Waveform isPlaying={isPlaying} progress={waveformProgress} disabled={!hasAudioIntro} />
+        <span style={{ fontSize: 12, color: "#64748b", fontWeight: 700, flexShrink: 0, minWidth: 34, textAlign: "right" }}>
+          {hasAudioIntro ? (duration ? fmt(Math.max(duration - currentTime, 0)) : "0:00") : "--:--"}
         </span>
         {therapist.audio_intro && (
-          <audio ref={audioRef} src={therapist.audio_intro} onEnded={() => { setIsPlaying(false); setCurrentTime(0); }} style={{ display: "none" }} />
+          <audio ref={audioRef} src={therapist.audio_intro} style={{ display: "none" }} />
         )}
       </div>
 
@@ -174,7 +287,7 @@ const TherapistCard = ({ therapist }) => {
         <div>
           <p style={{ fontSize: 11, color: "#aaa", margin: "0 0 2px" }}>Next available slot:</p>
           <p style={{ fontSize: 13, color: "#00897b", fontWeight: 600, margin: 0 }}>
-            {therapist.next_available_slot || "Today, 7:30 PM"}
+            {nextSlot?.label || "No upcoming slots"}
           </p>
         </div>
         <button
@@ -228,7 +341,7 @@ export default function PatientTherapistList() {
   const sortRef = useRef(null);
   const filterRef = useRef(null);
 
-  const allTherapists = data?.results || [];
+  const allTherapists = useMemo(() => data?.results || [], [data]);
   const allSpecs = useMemo(() => {
     if (specsData?.length) return specsData.map((s) => s.name);
     const set = new Set();
@@ -446,6 +559,7 @@ export default function PatientTherapistList() {
 
       <style>{`
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        @keyframes waveformPulse { 0%, 100% { transform: scaleY(0.78); } 50% { transform: scaleY(1.08); } }
         input::placeholder { color: #bbb; }
       `}</style>
 
