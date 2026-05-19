@@ -58,6 +58,19 @@ export const togglePsychologistSuspension = async (psychologistId) => {
   return response.data;
 };
 
+export const fetchAdminReviews = async ({
+  page = 1,
+  pageSize = 10,
+  search = "",
+  rating = "all",
+} = {}) => {
+  const params = new URLSearchParams({ page, page_size: pageSize });
+  if (search) params.append("search", search);
+  if (rating !== "all") params.append("rating", rating);
+  const response = await axiosInstance.get(`reviews/admin/?${params}`);
+  return response.data;
+};
+
 export const fetchAdminApplications = async ({ search = "", filterStatus = "all", sortBy = "date", sortDir = "desc" } = {}) => {
   const params = new URLSearchParams({ sort_by: sortBy, sort_dir: sortDir });
   if (search) params.append("search", search);

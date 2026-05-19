@@ -77,7 +77,7 @@ function useDropdown() {
         document.addEventListener("mousedown", handler);
         return () => document.removeEventListener("mousedown", handler);
     }, []);
-    return { open, setOpen, ref };
+    return [open, setOpen, ref];
 }
 
 const SORT_OPTIONS = [
@@ -89,6 +89,8 @@ const SORT_OPTIONS = [
     { label: "Experience (Low → High)", sortBy: "experience", sortDir: "asc" },
     { label: "Fee (High → Low)", sortBy: "fee", sortDir: "desc" },
     { label: "Fee (Low → High)", sortBy: "fee", sortDir: "asc" },
+    { label: "Rating (High → Low)", sortBy: "rating", sortDir: "desc" },
+    { label: "Rating (Low → High)", sortBy: "rating", sortDir: "asc" },
     { label: "Active first", sortBy: "status", sortDir: "desc" },
     { label: "Suspended first", sortBy: "status", sortDir: "asc" },
 ];
@@ -113,8 +115,8 @@ export default function AdminPsychologistList() {
     const [sortDir, setSortDir] = useState("desc");
     const [filterStatus, setFilterStatus] = useState("all");
     const [suspendTarget, setSuspendTarget] = useState(null);
-    const filterDropdown = useDropdown();
-    const sortDropdown = useDropdown();
+    const [filterOpen, setFilterOpen, filterRef] = useDropdown();
+    const [sortOpen, setSortOpen, sortRef] = useDropdown();
     const queryClient = useQueryClient();
     const navigate = useNavigate();
 
@@ -125,8 +127,8 @@ export default function AdminPsychologistList() {
         window._aplPsySearchTimer = setTimeout(() => { setSearch(val); setPage(1); }, 350);
     }, []);
 
-    const applySort = (opt) => { setSortBy(opt.sortBy); setSortDir(opt.sortDir); setPage(1); sortDropdown.setOpen(false); };
-    const applyFilter = (val) => { setFilterStatus(val); setPage(1); filterDropdown.setOpen(false); };
+    const applySort = (opt) => { setSortBy(opt.sortBy); setSortDir(opt.sortDir); setPage(1); setSortOpen(false); };
+    const applyFilter = (val) => { setFilterStatus(val); setPage(1); setFilterOpen(false); };
 
     const { data, isLoading, isError } = useQuery({
         queryKey: ["admin-psychologists", page, pageSize, search, sortBy, sortDir, filterStatus],
@@ -154,6 +156,12 @@ export default function AdminPsychologistList() {
         </span>
     );
 
+    const RatingBadge = ({ rating }) => (
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/25 bg-amber-500/10 px-3 py-1 text-[12px] font-semibold text-amber-300">
+            {rating ? `${rating} ★` : "No rating"}
+        </span>
+    );
+
     return (
         <div className="flex min-h-screen bg-admin-gradient font-['DM_Sans',sans-serif]">
             <Sidebar />
@@ -172,12 +180,12 @@ export default function AdminPsychologistList() {
                         </div>
 
                         <div className="flex items-center gap-2">
-                            <div className="relative" ref={filterDropdown.ref}>
-                                <button className={btnOutlineCls(filterStatus !== "all")} onClick={() => { filterDropdown.setOpen(o => !o); sortDropdown.setOpen(false); }}>
+                            <div className="relative" ref={filterRef}>
+                                <button className={btnOutlineCls(filterStatus !== "all")} onClick={() => { setFilterOpen(o => !o); setSortOpen(false); }}>
                                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" /></svg>
                                     {filterStatus !== "all" ? activeFilterLabel : "Filter"}
                                 </button>
-                                {filterDropdown.open && (
+                                {filterOpen && (
                                     <div className="absolute right-0 top-[calc(100%+6px)] w-[200px] bg-[#161b22] border border-slate-800 rounded-[12px] shadow-admin-card overflow-hidden z-20 animate-fade-in">
                                         <p className="text-[11px] font-bold text-slate-500 uppercase tracking-[0.08em] px-4 py-2">Status</p>
                                         {FILTER_OPTIONS.map(opt => (
@@ -190,12 +198,12 @@ export default function AdminPsychologistList() {
                                 )}
                             </div>
 
-                            <div className="relative" ref={sortDropdown.ref}>
-                                <button className={btnOutlineCls(sortBy !== "joined_date" || sortDir !== "desc")} onClick={() => { sortDropdown.setOpen(o => !o); filterDropdown.setOpen(false); }}>
+                            <div className="relative" ref={sortRef}>
+                                <button className={btnOutlineCls(sortBy !== "joined_date" || sortDir !== "desc")} onClick={() => { setSortOpen(o => !o); setFilterOpen(false); }}>
                                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" /></svg>
                                     Sort
                                 </button>
-                                {sortDropdown.open && (
+                                {sortOpen && (
                                     <div className="absolute right-0 top-[calc(100%+6px)] w-[230px] bg-[#161b22] border border-slate-800 rounded-[12px] shadow-admin-card overflow-hidden z-20 animate-fade-in">
                                         <p className="text-[11px] font-bold text-slate-500 uppercase tracking-[0.08em] px-4 py-2">Sort by</p>
                                         {SORT_OPTIONS.map(opt => (
@@ -222,19 +230,24 @@ export default function AdminPsychologistList() {
                                     <th className={thCls}>Email</th>
                                     <th className={thCls}>Experience</th>
                                     <th className={thCls}>Fee</th>
+                                    <th className={thCls}>Rating</th>
                                     <th className={thCls}>Status</th>
                                     <th className={thCls}>Joined Date</th>
                                     <th className={thCls}>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {isLoading && <tr><td colSpan={7} className="text-center py-16 text-slate-500 text-sm">Loading psychologists…</td></tr>}
-                                {isError && <tr><td colSpan={7} className="text-center py-16 text-red-400 text-sm">Failed to load. Please refresh.</td></tr>}
+                                {isLoading && <tr><td colSpan={8} className="text-center py-16 text-slate-500 text-sm">Loading psychologists…</td></tr>}
+                                {isError && <tr><td colSpan={8} className="text-center py-16 text-red-400 text-sm">Failed to load. Please refresh.</td></tr>}
                                 {!isLoading && !isError && psychologists.length === 0 && (
-                                    <tr><td colSpan={7} className="text-center py-16 text-slate-500 text-sm">No psychologists found{search ? ` for "${search}"` : ""}.</td></tr>
+                                    <tr><td colSpan={8} className="text-center py-16 text-slate-500 text-sm">No psychologists found{search ? ` for "${search}"` : ""}.</td></tr>
                                 )}
                                 {psychologists.map((p) => (
-                                    <tr key={p.psychologist_id} className="border-b border-slate-700/30 transition-colors hover:bg-slate-800/20">
+                                    <tr
+                                        key={p.psychologist_id}
+                                        className="cursor-pointer border-b border-slate-700/30 transition-colors hover:bg-slate-800/20"
+                                        onClick={() => navigate(`/admin/psychologists/${p.psychologist_id}`)}
+                                    >
                                         <td className={tdCls}>
                                             <div className="flex items-center gap-3">
                                                 <PsychologistAvatar name={p.full_name} photo={p.profile_picture} />
@@ -251,17 +264,18 @@ export default function AdminPsychologistList() {
                                         <td className={`${tdCls} text-slate-400`}>
                                             {p.consultation_fee ? `₹${p.consultation_fee}` : "—"}
                                         </td>
+                                        <td className={tdCls}><RatingBadge rating={p.average_rating} /></td>
                                         <td className={tdCls}><StatusBadge active={p.is_active} /></td>
                                         <td className={`${tdCls} text-slate-400`}>{p.joined_date}</td>
                                         <td className={tdCls}>
                                             <div className="flex items-center gap-1.5">
-                                                <button className="w-8 h-8 bg-slate-800 border border-slate-700 rounded-lg flex items-center justify-center text-slate-400 cursor-pointer transition-all duration-200 hover:bg-slate-700 hover:text-slate-200" title="View psychologist" onClick={() => navigate(`/admin/psychologists/${p.psychologist_id}`)}>
+                                                <button className="w-8 h-8 bg-slate-800 border border-slate-700 rounded-lg flex items-center justify-center text-slate-400 cursor-pointer transition-all duration-200 hover:bg-slate-700 hover:text-slate-200" title="View psychologist" onClick={(event) => { event.stopPropagation(); navigate(`/admin/psychologists/${p.psychologist_id}`); }}>
                                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
                                                 </button>
                                                 <button
                                                     className={`w-8 h-8 rounded-lg border flex items-center justify-center cursor-pointer transition-all duration-200 ${!p.is_active ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20" : "bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20"}`}
                                                     title={p.is_active ? "Suspend psychologist" : "Activate psychologist"}
-                                                    onClick={() => setSuspendTarget(p)}
+                                                    onClick={(event) => { event.stopPropagation(); setSuspendTarget(p); }}
                                                 >
                                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                                         <circle cx="12" cy="12" r="10" />
