@@ -7,7 +7,7 @@ from patients.models import PatientProfile
 from psychologists.models import PsychologistProfile
 from consultations.models import Consultation
 from patient_summary.serializers import patient_summary_payload
-from django.db.models import Q
+from django.db.models import Avg, Count, Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
@@ -232,7 +232,10 @@ class AdminPsychologistListView(APIView):
         sort_dir = request.query_params.get("sort_dir", "desc")
         filter_status = request.query_params.get("filter_status", "all")
 
-        queryset = PsychologistProfile.objects.select_related("user").prefetch_related("specializations")
+        queryset = PsychologistProfile.objects.select_related("user").prefetch_related("specializations").annotate(
+            average_rating=Avg("consultation_reviews__rating"),
+            review_count=Count("consultation_reviews"),
+        )
 
         if filter_status == "active":
             queryset = queryset.filter(user__is_active=True)
@@ -252,6 +255,7 @@ class AdminPsychologistListView(APIView):
             "status": "user__is_active",
             "experience": "years_of_experience",
             "fee": "consultation_fee",
+            "rating": "average_rating",
         }
 
         sort_field = SORT_MAP.get(sort_by, "created_at")
@@ -290,6 +294,8 @@ class AdminPsychologistListView(APIView):
                 "job_title": p.job_title,
                 "years_of_experience": p.years_of_experience,
                 "consultation_fee": str(p.consultation_fee),
+                "average_rating": round(p.average_rating, 1) if p.average_rating else None,
+                "review_count": p.review_count,
                 "specializations": specializations,
                 "joined_date": p.created_at.strftime("%b %d, %Y") if p.created_at else None,
             })
@@ -311,7 +317,10 @@ class AdminPsychologistDetailView(APIView):
 
     def get(self, request, psychologist_id):
         profile = get_object_or_404(
-            PsychologistProfile.objects.select_related("user").prefetch_related("specializations"),
+            PsychologistProfile.objects.select_related("user").prefetch_related("specializations").annotate(
+                average_rating=Avg("consultation_reviews__rating"),
+                review_count=Count("consultation_reviews"),
+            ),
             psychologist_id=psychologist_id
         )
 
@@ -349,6 +358,8 @@ class AdminPsychologistDetailView(APIView):
             "job_title": profile.job_title,
             "years_of_experience": profile.years_of_experience,
             "consultation_fee": str(profile.consultation_fee) if profile.consultation_fee else None,
+            "average_rating": round(profile.average_rating, 1) if profile.average_rating else None,
+            "review_count": profile.review_count,
             "highest_education": profile.highest_education,
             "about": profile.about,
             "street_address": profile.street_address,
@@ -362,7 +373,6 @@ class AdminPsychologistDetailView(APIView):
         }
 
         return Response(data, status=status.HTTP_200_OK)
-
 
 """
 ADMIN PSYCHOLOGIST SUSPEND / ACTIVATE

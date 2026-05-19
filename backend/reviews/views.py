@@ -6,8 +6,10 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from appointments.models import Booking
+from admin_panel.permissions import IsAdminUserRole
 from patients.models import PatientProfile
 from patients.permissions import IsPatient
+from patient_summary.serializers import patient_summary_payload
 from psychologists.models import PsychologistProfile
 from psychologists.permissions import IsPsychologist
 from reviews.models import ConsultationReview
@@ -111,3 +113,108 @@ class PsychologistReviewDashboardView(APIView):
         }
 
         return Response(payload, status=status.HTTP_200_OK)
+
+
+def admin_review_payload(review):
+    booking = review.booking
+    patient = review.patient
+    psychologist = review.psychologist
+    consultation = getattr(booking, "consultation_session", None)
+    specializations = [item.name for item in psychologist.specializations.all()]
+    psychologist_average = getattr(review, "psychologist_average_rating", None)
+
+    return {
+        "id": str(review.id),
+        "rating": review.rating,
+        "review": review.review,
+        "submitted_at": review.submitted_at,
+        "updated_at": review.updated_at,
+        "slot": {
+            "date": booking.date,
+            "start_time": booking.start_time,
+            "end_time": booking.end_time,
+        },
+        "patient": {
+            "patient_id": patient.patient_id,
+            "full_name": patient.user.full_name,
+            "email": patient.user.email,
+            "phone_number": patient.phone_number or None,
+        },
+        "psychologist": {
+            "psychologist_id": psychologist.psychologist_id,
+            "full_name": psychologist.user.full_name,
+            "email": psychologist.user.email,
+            "phone_number": psychologist.phone_number or None,
+            "specialization": ", ".join(specializations) if specializations else psychologist.job_title,
+            "average_rating": round(psychologist_average, 1) if psychologist_average else None,
+            "review_count": getattr(review, "psychologist_review_count", 0),
+        },
+        "consultation": {
+            "notes": consultation.psychologist_note if consultation else "",
+            "prescription": consultation.patient_note if consultation else "",
+            "patient_summary": patient_summary_payload(patient),
+        },
+    }
+
+
+"""
+ADMIN REVIEWS
+"""
+class AdminReviewListView(APIView):
+    permission_classes = [IsAuthenticated, IsAdminUserRole]
+
+    def get(self, request):
+        search = request.query_params.get("search", "").strip()
+        rating = request.query_params.get("rating", "").strip()
+        page = int(request.query_params.get("page", 1))
+        page_size = int(request.query_params.get("page_size", 10))
+
+        queryset = ConsultationReview.objects.select_related(
+            "booking__consultation_session",
+            "patient__user",
+            "patient__summary_report",
+            "psychologist__user",
+        ).prefetch_related("psychologist__specializations").annotate(
+            psychologist_average_rating=Avg("psychologist__consultation_reviews__rating"),
+            psychologist_review_count=Count("psychologist__consultation_reviews"),
+        ).order_by("-submitted_at")
+
+        if search:
+            queryset = queryset.filter(
+                Q(patient__user__full_name__icontains=search) |
+                Q(patient__user__email__icontains=search) |
+                Q(patient__patient_id__icontains=search) |
+                Q(psychologist__user__full_name__icontains=search) |
+                Q(psychologist__user__email__icontains=search) |
+                Q(psychologist__psychologist_id__icontains=search)
+            )
+
+        if rating in {"1", "2", "3", "4", "5"}:
+            queryset = queryset.filter(rating=int(rating))
+
+        today = timezone.localdate()
+        summary = ConsultationReview.objects.aggregate(
+            average_rating=Avg("rating"),
+            total_reviews=Count("id"),
+            reviews_today=Count("id", filter=Q(submitted_at__date=today)),
+            low_ratings=Count("id", filter=Q(rating__lte=2)),
+        )
+
+        total = queryset.count()
+        start = (page - 1) * page_size
+        end = start + page_size
+        reviews = queryset[start:end]
+
+        return Response({
+            "summary": {
+                "average_rating": round(summary["average_rating"], 1) if summary["average_rating"] else None,
+                "total_reviews": summary["total_reviews"] or 0,
+                "reviews_today": summary["reviews_today"] or 0,
+                "low_ratings": summary["low_ratings"] or 0,
+            },
+            "results": [admin_review_payload(review) for review in reviews],
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+            "total_pages": max(1, (total + page_size - 1) // page_size),
+        }, status=status.HTTP_200_OK)
