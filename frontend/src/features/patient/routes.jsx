@@ -16,80 +16,90 @@ import PatientMessages from "./pages/PatientMessages";
 import PatientWallet from "./pages/PatientWallet";
 import PatientPaymentConfirmed from "./pages/PatientPaymentConfirmed";
 import PatientPaymentCancelled from "./pages/PatientPaymentCancelled";
+import PatientChatbot from "./pages/PatientChatbot";
 import { useAuthStore } from "../../store/auth.store";
 import ConsultationRoom from "../../components/consultation/ConsultationRoom";
+import PatientChatbotWidget from "../../components/patient/Chatbot/PatientChatbotWidget";
 
 
 const PatientRoutes = () => {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const role = useAuthStore((s) => s.role);
+  const isPatient = isAuthenticated && role === "PATIENT";
 
   return (
-    <Routes>
-      <Route
-        path="signup"
-        element={isAuthenticated && role === "PATIENT" ? <Navigate to="/patient/home" replace /> : <PatientSignup />}
-      />
-      <Route path="verification-sent" element={<VerificationSent />} />
-      <Route path="verify-email" element={<VerificationSent />} />
-      <Route path="verify-success" element={<VerificationSent />} />
-      <Route path="verify-error" element={<VerificationSent />} />
-      <Route
-        path="login"
-        element={isAuthenticated && role === "PATIENT" ? <Navigate to="/patient/home" replace /> : <PatientLogin />}
-      />
-      <Route
-        path="forgot-password"
-        element={isAuthenticated && role === "PATIENT" ? <Navigate to="/patient/home" replace /> : <PatientForgotPassword />
-        }
-      />
-      <Route
-        path="reset-password"
-        element={isAuthenticated && role === "PATIENT" ? <Navigate to="/patient/home" replace /> : <PatientResetPassword />}
-      />
-      <Route path="home" element={<PatientHome />} />
-      <Route
-        path="profile"
-        element={isAuthenticated && role === "PATIENT" ? <PatientProfile /> : <Navigate to="/patient/login" replace />}
-      />
-      <Route path="therapists" element={<PatientTherapistList />} />
-      <Route path="find-psychologist" element={<PatientPsychologistFinder />} />
-      <Route path="services/:specialization" element={<PatientTherapistList />} />
-      <Route path="therapists/:id" element={<PatientTherapistDetail />} />
-      <Route
-        path="therapists/:id/book"
-        element={isAuthenticated && role === "PATIENT" ? <PatientBooking /> : <Navigate to="/patient/login" replace />}
-      />
-      <Route
-        path="appointments"
-        element={isAuthenticated && role === "PATIENT" ? <PatientAppointments /> : <Navigate to="/patient/login" replace />}
-      />
-      <Route
-        path="appointments/:bookingId"
-        element={isAuthenticated && role === "PATIENT" ? <PatientAppointmentDetail /> : <Navigate to="/patient/login" replace />}
-      />
-      <Route
-        path="consultation/:bookingId"
-        element={isAuthenticated && role === "PATIENT" ? <ConsultationRoom role="patient" /> : <Navigate to="/patient/login" replace />}
-      />
-      <Route
-        path="messages"
-        element={isAuthenticated && role === "PATIENT" ? <PatientMessages /> : <Navigate to="/patient/login" replace />}
-      />
-      <Route
-        path="wallet"
-        element={isAuthenticated && role === "PATIENT" ? <PatientWallet /> : <Navigate to="/patient/login" replace />}
-      />
-      <Route
-        path="payment-confirmed"
-        element={isAuthenticated && role === "PATIENT" ? <PatientPaymentConfirmed /> : <Navigate to="/patient/login" replace />}
-      />
-      <Route
-        path="payment-cancelled"
-        element={isAuthenticated && role === "PATIENT" ? <PatientPaymentCancelled /> : <Navigate to="/patient/login" replace />}
-      />
-      <Route path="*" element={<Navigate to="home" />} />
-    </Routes>
+    <>
+      <Routes>
+        <Route
+          path="signup"
+          element={isPatient ? <Navigate to="/patient/home" replace /> : <PatientSignup />}
+        />
+        <Route path="verification-sent" element={<VerificationSent />} />
+        <Route path="verify-email" element={<VerificationSent />} />
+        <Route path="verify-success" element={<VerificationSent />} />
+        <Route path="verify-error" element={<VerificationSent />} />
+        <Route
+          path="login"
+          element={isPatient ? <Navigate to="/patient/home" replace /> : <PatientLogin />}
+        />
+        <Route
+          path="forgot-password"
+          element={isPatient ? <Navigate to="/patient/home" replace /> : <PatientForgotPassword />
+          }
+        />
+        <Route
+          path="reset-password"
+          element={isPatient ? <Navigate to="/patient/home" replace /> : <PatientResetPassword />}
+        />
+        <Route path="home" element={<PatientHome />} />
+        <Route
+          path="profile"
+          element={isPatient ? <PatientProfile /> : <Navigate to="/patient/login" replace />}
+        />
+        <Route path="therapists" element={<PatientTherapistList />} />
+        <Route path="find-psychologist" element={<PatientPsychologistFinder />} />
+        <Route path="services/:specialization" element={<PatientTherapistList />} />
+        <Route path="therapists/:id" element={<PatientTherapistDetail />} />
+        <Route
+          path="therapists/:id/book"
+          element={isPatient ? <PatientBooking /> : <Navigate to="/patient/login" replace />}
+        />
+        <Route
+          path="appointments"
+          element={isPatient ? <PatientAppointments /> : <Navigate to="/patient/login" replace />}
+        />
+        <Route
+          path="appointments/:bookingId"
+          element={isPatient ? <PatientAppointmentDetail /> : <Navigate to="/patient/login" replace />}
+        />
+        <Route
+          path="consultation/:bookingId"
+          element={isPatient ? <ConsultationRoom role="patient" /> : <Navigate to="/patient/login" replace />}
+        />
+        <Route
+          path="messages"
+          element={isPatient ? <PatientMessages /> : <Navigate to="/patient/login" replace />}
+        />
+        <Route
+          path="chatbot"
+          element={isPatient ? <PatientChatbot /> : <Navigate to="/patient/login" replace />}
+        />
+        <Route
+          path="wallet"
+          element={isPatient ? <PatientWallet /> : <Navigate to="/patient/login" replace />}
+        />
+        <Route
+          path="payment-confirmed"
+          element={isPatient ? <PatientPaymentConfirmed /> : <Navigate to="/patient/login" replace />}
+        />
+        <Route
+          path="payment-cancelled"
+          element={isPatient ? <PatientPaymentCancelled /> : <Navigate to="/patient/login" replace />}
+        />
+        <Route path="*" element={<Navigate to="home" />} />
+      </Routes>
+      {isPatient && <PatientChatbotWidget />}
+    </>
   );
 };
 
