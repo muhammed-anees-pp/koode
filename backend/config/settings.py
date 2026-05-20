@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     "psychologist_finder",
     "notifications",
     "chat",
+    "chatbot",
     "finance",
     "reviews",
 ]
