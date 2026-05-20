@@ -3,17 +3,18 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchChatbotMessages, sendChatbotMessage } from "../../../api/chatbot.api";
 
 const quickPrompts = [
-  "How can I book an appointment?",
+  "Book consultation",
+  "Show booking steps",
+  "Manage consultation",
   "What does a clinical psychologist do?",
-  "Can I reschedule my consultation?",
-  "Which department should I choose?",
 ];
 
 const botIntro = {
   id: "intro",
   role: "BOT",
   content:
-    "Hi, I am Koode Assistant. Ask me about booking, consultations, departments, platform support, or basic mental wellness guidance.",
+    "Hi, I am Koode Assistant. I can help with booking, consultations, departments, payments, and wellness guidance.",
+  quick_replies: quickPrompts,
 };
 
 const BotIcon = ({ className = "h-5 w-5" }) => (
@@ -83,19 +84,40 @@ const MessageIcon = () => (
   </svg>
 );
 
-const MessageBubble = ({ message }) => {
+const MessageBubble = ({ message, onQuickReply, disabled, showQuickReplies }) => {
   const isUser = message.role === "USER";
+  const quickReplies =
+    showQuickReplies && !isUser && Array.isArray(message.quick_replies)
+      ? message.quick_replies
+      : [];
 
   return (
     <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
-      <div
-        className={`max-w-[82%] rounded-[18px] px-4 py-3 text-sm leading-5 shadow-sm ${
-          isUser
-            ? "rounded-br-md bg-patient-primary text-white"
-            : "rounded-bl-md bg-[#f1f5f9] text-[#1f2937]"
-        }`}
-      >
-        {message.content}
+      <div className={`flex max-w-[86%] flex-col gap-2 ${isUser ? "items-end" : "items-start"}`}>
+        <div
+          className={`whitespace-pre-line rounded-[18px] px-4 py-3 text-sm leading-5 shadow-sm ${
+            isUser
+              ? "rounded-br-md bg-patient-primary text-white"
+              : "rounded-bl-md bg-[#f1f5f9] text-[#1f2937]"
+          }`}
+        >
+          {message.content}
+        </div>
+        {quickReplies.length > 0 && (
+          <div className="flex flex-wrap justify-end gap-2">
+            {quickReplies.map((reply) => (
+              <button
+                key={`${message.id}-${reply}`}
+                type="button"
+                onClick={() => onQuickReply(reply)}
+                className="rounded-full border border-patient-primary/70 bg-white px-3.5 py-2 text-left text-xs font-bold text-patient-primary transition hover:bg-patient-primary hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={disabled}
+              >
+                {reply}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -119,6 +141,10 @@ export default function PatientChatbotWidget({ defaultOpen = false }) {
     return storedMessages.length > 0 ? storedMessages : [botIntro];
   }, [data?.messages]);
 
+  const latestBotMessageId = useMemo(() => {
+    return [...visibleMessages].reverse().find((item) => item.role === "BOT")?.id;
+  }, [visibleMessages]);
+
   const appendMessage = (newMessage) => {
     queryClient.setQueryData(["chatbot-messages"], (current) => ({
       conversation_id: current?.conversation_id,
@@ -126,10 +152,21 @@ export default function PatientChatbotWidget({ defaultOpen = false }) {
     }));
   };
 
+  const appendMessages = (newMessages) => {
+    queryClient.setQueryData(["chatbot-messages"], (current) => ({
+      conversation_id: current?.conversation_id,
+      messages: [...(current?.messages || []), ...newMessages],
+    }));
+  };
+
   const mutation = useMutation({
     mutationFn: sendChatbotMessage,
     onSuccess: (payload) => {
-      appendMessage(payload.reply);
+      const botReplies =
+        Array.isArray(payload.replies) && payload.replies.length > 0
+          ? payload.replies
+          : [payload.reply].filter(Boolean);
+      appendMessages(botReplies);
     },
     onError: () => {
       appendMessage({
@@ -202,24 +239,14 @@ export default function PatientChatbotWidget({ defaultOpen = false }) {
             <div className="mb-1 text-center text-xs font-semibold text-[#94a3b8]">Today</div>
 
             {visibleMessages.map((item) => (
-              <MessageBubble key={item.id} message={item} />
+              <MessageBubble
+                key={item.id}
+                message={item}
+                onQuickReply={submitMessage}
+                disabled={mutation.isPending}
+                showQuickReplies={item.id === latestBotMessageId}
+              />
             ))}
-
-            {visibleMessages.length <= 1 && (
-              <div className="flex flex-wrap justify-end gap-2 pt-2">
-                {quickPrompts.map((prompt) => (
-                  <button
-                    key={prompt}
-                    type="button"
-                    onClick={() => submitMessage(prompt)}
-                    className="rounded-full border border-patient-primary/70 bg-white px-3.5 py-2 text-right text-xs font-bold text-patient-primary transition hover:bg-patient-primary hover:text-white disabled:opacity-60"
-                    disabled={mutation.isPending}
-                  >
-                    {prompt}
-                  </button>
-                ))}
-              </div>
-            )}
 
             {mutation.isPending && (
               <div className="flex justify-start">
