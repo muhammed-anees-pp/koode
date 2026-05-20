@@ -66,6 +66,19 @@ export const fetchSpecializations = async () => {
   return response.data;
 };
 
+export const fetchPsychologistFinderQuestions = async () => {
+  const response = await axiosInstance.get("psychologist-finder/questions/");
+  return response.data;
+};
+
+export const submitPsychologistFinderAnswers = async ({ answers, concernText = "" }) => {
+  const response = await axiosInstance.post("psychologist-finder/recommend/", {
+    answers,
+    concern_text: concernText,
+  });
+  return response.data;
+};
+
 
 export const getPsychologistSlots = async (psychologistId, date) => {
   const response = await axiosInstance.get(

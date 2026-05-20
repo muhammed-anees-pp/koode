@@ -23,10 +23,10 @@ const publicFeatures = [
 ];
 
 const dashboardTiles = [
-  { icon: (<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>), title: "Find a Therapist", desc: "Browse verified, licensed therapists and find the right fit for you.", action: "Explore →" },
-  { icon: (<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>), title: "Book a Session", desc: "Schedule a therapy session at a time that works for you.", action: "Book Now →" },
-  { icon: (<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg>), title: "My Journey", desc: "Track your mood, reflect on progress, and see how far you've come.", action: "View Progress →" },
-  { icon: (<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>), title: "Secure Chat", desc: "Message your therapist anytime between sessions, safely and privately.", action: "Open Chat →" },
+  { icon: (<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M5 16 3 21l5-2 8.5-8.5a2.1 2.1 0 0 0-3-3L5 16Z" /><path d="m15 5 4 4" /><path d="m12 3 1 2 2 1-2 1-1 2-1-2-2-1 2-1 1-2Z" /></svg>), title: "Find Psychologist", desc: "Match with AI based on your needs and see the right department.", action: "New AI", to: "/patient/find-psychologist", featured: true },
+  { icon: (<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>), title: "Browse Therapists", desc: "Browse verified, licensed therapists and find the right fit for you.", action: "Explore →", to: "/patient/therapists" },
+  { icon: (<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>), title: "Book a Session", desc: "Schedule a therapy session at a time that works for you.", action: "Book Now →", to: "/patient/therapists" },
+  { icon: (<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>), title: "Secure Chat", desc: "Message your therapist anytime between sessions, safely and privately.", action: "Open Chat →", to: "/patient/messages" },
 ];
 
 export default function PatientHome() {
@@ -51,16 +51,21 @@ export default function PatientHome() {
 
           <div className="grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-5 animate-[phFadeUp_0.5s_ease_0.1s_both]">
             {dashboardTiles.map((tile) => (
-              <div key={tile.title} className="bg-white border border-ui-200 rounded-[16px] p-7 flex items-start gap-[1.1rem] cursor-pointer transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_10px_30px_rgba(26,190,170,0.1)] hover:border-[rgba(26,190,170,0.3)]">
-                <div className="w-[52px] h-[52px] flex-shrink-0 bg-gradient-to-br from-[rgba(26,190,170,0.08)] to-[rgba(20,160,144,0.1)] rounded-[13px] flex items-center justify-center text-patient-primary transition-all duration-200">
+              <Link key={tile.title} to={tile.to} className={`relative bg-white border border-ui-200 rounded-[16px] p-7 flex items-start gap-[1.1rem] cursor-pointer no-underline transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_10px_30px_rgba(26,190,170,0.1)] hover:border-[rgba(26,190,170,0.3)] ${tile.featured ? "md:col-span-2 shadow-[0_8px_26px_rgba(15,23,42,0.05)]" : ""}`}>
+                {tile.featured && (
+                  <span className="absolute right-6 top-6 rounded-[10px] bg-[#9a3ff2] px-4 py-2 text-xs font-extrabold text-white">
+                    New AI
+                  </span>
+                )}
+                <div className={`w-[52px] h-[52px] flex-shrink-0 rounded-[13px] flex items-center justify-center transition-all duration-200 ${tile.featured ? "bg-[#ecdcff] text-[#9a3ff2]" : "bg-gradient-to-br from-[rgba(26,190,170,0.08)] to-[rgba(20,160,144,0.1)] text-patient-primary"}`}>
                   {tile.icon}
                 </div>
-                <div className="flex flex-col gap-1 min-w-0">
+                <div className="flex flex-col gap-1 min-w-0 pr-16">
                   <h3 className="font-outfit text-base font-bold text-[#0f172a] tracking-tight">{tile.title}</h3>
                   <p className="text-[0.85rem] text-ui-500 leading-[1.55]">{tile.desc}</p>
                   <span className="text-[0.82rem] font-semibold text-patient-primary mt-1 transition-all duration-200">{tile.action}</span>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         </main>

@@ -8,6 +8,7 @@ import VerificationSent from "./pages/VerificationSent";
 import PatientProfile from "./pages/PatientProfile";
 import PatientTherapistList from "./pages/PatientTherapistList";
 import PatientTherapistDetail from "./pages/PatientTherapistDetail";
+import PatientPsychologistFinder from "./pages/PatientPsychologistFinder";
 import PatientBooking from "./pages/PatientBooking";
 import PatientAppointments from "./pages/PatientAppointments";
 import PatientAppointmentDetail from "./pages/PatientAppointmentDetail";
@@ -52,6 +53,8 @@ const PatientRoutes = () => {
         element={isAuthenticated && role === "PATIENT" ? <PatientProfile /> : <Navigate to="/patient/login" replace />}
       />
       <Route path="therapists" element={<PatientTherapistList />} />
+      <Route path="find-psychologist" element={<PatientPsychologistFinder />} />
+      <Route path="services/:specialization" element={<PatientTherapistList />} />
       <Route path="therapists/:id" element={<PatientTherapistDetail />} />
       <Route
         path="therapists/:id/book"

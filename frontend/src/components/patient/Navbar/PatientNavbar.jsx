@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuthStore } from "../../../store/auth.store";
-import { patientLogout } from "../../../api/patient.api";
+import { fetchSpecializations, patientLogout } from "../../../api/patient.api";
 import NotificationBell from "../../notifications/NotificationBell";
 import logo from "../../../assets/patient-logo.png";
 
@@ -15,6 +16,8 @@ const dropdownItemCls = "block px-5 py-[10px] text-[0.875rem] font-medium text-u
 const mobileNavLinkCls = "block py-[14px] px-6 text-base font-medium text-ui-700 no-underline border-b border-ui-100 transition-all duration-200 hover:text-patient-primary hover:bg-[rgba(26,190,170,0.05)] hover:pl-9";
 const mobileNavItemCls = "block py-[10px] px-8 text-[0.9rem] text-ui-500 no-underline transition-all duration-200 hover:text-patient-primary hover:bg-[rgba(26,190,170,0.05)]";
 const profileMenuItemCls = "w-full flex items-center gap-3 px-5 py-[10px] text-[0.875rem] font-medium text-ui-700 bg-transparent border-none cursor-pointer text-left transition-all duration-200 hover:bg-[rgba(26,190,170,0.06)] hover:text-patient-primary";
+
+const specializationPath = (name) => `/patient/services/${encodeURIComponent(name)}`;
 
 const AvatarContent = ({ user, hasCustomAvatar, textSize }) => (
     <div className="w-full h-full relative">
@@ -46,17 +49,20 @@ const PatientNavbar = ({ authLink } = {}) => {
     const isLoggedIn = isAuthenticated && role === "PATIENT";
     const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
     const [isServicesDropdownOpen, setIsServicesDropdownOpen] = useState(false);
-    const [isConcernDropdownOpen, setIsConcernDropdownOpen] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const profileDropdownRef = useRef(null);
     const servicesDropdownRef = useRef(null);
-    const concernDropdownRef = useRef(null);
+
+    const { data: specializations = [] } = useQuery({
+        queryKey: ["specializations"],
+        queryFn: fetchSpecializations,
+        staleTime: 5 * 60 * 1000,
+    });
 
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target)) setIsProfileDropdownOpen(false);
             if (servicesDropdownRef.current && !servicesDropdownRef.current.contains(event.target)) setIsServicesDropdownOpen(false);
-            if (concernDropdownRef.current && !concernDropdownRef.current.contains(event.target)) setIsConcernDropdownOpen(false);
         };
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -101,30 +107,21 @@ const PatientNavbar = ({ authLink } = {}) => {
                                 </svg>
                             </button>
                             {isServicesDropdownOpen && (
-                                <div className="absolute top-[calc(100%+12px)] left-1/2 -translate-x-1/2 w-[200px] bg-white border border-ui-200 rounded-[12px] shadow-[0_8px_24px_rgba(0,0,0,0.1)] py-2 z-50 animate-dropdown overflow-hidden">
-                                    <a href="#therapy" className={dropdownItemCls}>Individual Therapy</a>
-                                    <a href="#couples" className={dropdownItemCls}>Couples Therapy</a>
-                                    <a href="#family" className={dropdownItemCls}>Family Therapy</a>
-                                    <a href="#group" className={dropdownItemCls}>Group Therapy</a>
-                                </div>
-                            )}
-                        </div>
-
-                        
-                        <div className="relative" ref={concernDropdownRef}>
-                            <button className={activeNavCls(isConcernDropdownOpen) + ' flex items-center gap-1'} onClick={() => setIsConcernDropdownOpen(!isConcernDropdownOpen)}>
-                                Concern
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={`transition-transform duration-200 ${isConcernDropdownOpen ? 'rotate-180' : ''}`}>
-                                    <polyline points="6 9 12 15 18 9" />
-                                </svg>
-                            </button>
-                            {isConcernDropdownOpen && (
-                                <div className="absolute top-[calc(100%+12px)] left-1/2 -translate-x-1/2 w-[200px] bg-white border border-ui-200 rounded-[12px] shadow-[0_8px_24px_rgba(0,0,0,0.1)] py-2 z-50 animate-dropdown overflow-hidden">
-                                    <a href="#anxiety" className={dropdownItemCls}>Anxiety</a>
-                                    <a href="#depression" className={dropdownItemCls}>Depression</a>
-                                    <a href="#stress" className={dropdownItemCls}>Stress Management</a>
-                                    <a href="#relationships" className={dropdownItemCls}>Relationships</a>
-                                    <a href="#trauma" className={dropdownItemCls}>Trauma</a>
+                                <div className="absolute top-[calc(100%+12px)] left-1/2 -translate-x-1/2 w-[240px] max-h-[320px] overflow-y-auto bg-white border border-ui-200 rounded-[12px] shadow-[0_8px_24px_rgba(0,0,0,0.1)] py-2 z-50 animate-dropdown">
+                                    {specializations.length > 0 ? specializations.map((spec) => (
+                                        <Link
+                                            key={spec.id || spec.name}
+                                            to={specializationPath(spec.name)}
+                                            className={dropdownItemCls}
+                                            onClick={() => setIsServicesDropdownOpen(false)}
+                                        >
+                                            {spec.name}
+                                        </Link>
+                                    )) : (
+                                        <Link to="/patient/therapists" className={dropdownItemCls} onClick={() => setIsServicesDropdownOpen(false)}>
+                                            View Therapists
+                                        </Link>
+                                    )}
                                 </div>
                             )}
                         </div>
@@ -232,16 +229,20 @@ const PatientNavbar = ({ authLink } = {}) => {
                         <a href="#about" className={mobileNavLinkCls} onClick={() => setIsMobileMenuOpen(false)}>About Us</a>
 
                         <div className="px-6 pt-4 pb-1"><span className="text-[11px] font-semibold text-ui-400 uppercase tracking-[0.08em]">Services</span></div>
-                        <a href="#therapy" className={mobileNavItemCls} onClick={() => setIsMobileMenuOpen(false)}>Individual Therapy</a>
-                        <a href="#couples" className={mobileNavItemCls} onClick={() => setIsMobileMenuOpen(false)}>Couples Therapy</a>
-                        <a href="#family" className={mobileNavItemCls} onClick={() => setIsMobileMenuOpen(false)}>Family Therapy</a>
-                        <a href="#group" className={mobileNavItemCls} onClick={() => setIsMobileMenuOpen(false)}>Group Therapy</a>
-
-                        <div className="px-6 pt-4 pb-1"><span className="text-[11px] font-semibold text-ui-400 uppercase tracking-[0.08em]">Concern</span></div>
-                        <a href="#anxiety" className={mobileNavItemCls} onClick={() => setIsMobileMenuOpen(false)}>Anxiety</a>
-                        <a href="#depression" className={mobileNavItemCls} onClick={() => setIsMobileMenuOpen(false)}>Depression</a>
-                        <a href="#stress" className={mobileNavItemCls} onClick={() => setIsMobileMenuOpen(false)}>Stress Management</a>
-                        <a href="#relationships" className={mobileNavItemCls} onClick={() => setIsMobileMenuOpen(false)}>Relationships</a>
+                        {specializations.length > 0 ? specializations.map((spec) => (
+                            <Link
+                                key={spec.id || spec.name}
+                                to={specializationPath(spec.name)}
+                                className={mobileNavItemCls}
+                                onClick={() => setIsMobileMenuOpen(false)}
+                            >
+                                {spec.name}
+                            </Link>
+                        )) : (
+                            <Link to="/patient/therapists" className={mobileNavItemCls} onClick={() => setIsMobileMenuOpen(false)}>
+                                View Therapists
+                            </Link>
+                        )}
 
                         <Link to="/patient/therapists" className={mobileNavLinkCls} onClick={() => setIsMobileMenuOpen(false)}>Therapists</Link>
 

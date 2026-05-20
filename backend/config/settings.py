@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     "appointments",
     "consultations",
     "patient_summary",
+    "psychologist_finder",
     "notifications",
     "chat",
     "finance",

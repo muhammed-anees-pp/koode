@@ -30,6 +30,7 @@ urlpatterns = [
     path("api/interviews/", include("interviews.urls")),
     path('api/appointments/', include('appointments.urls')),
     path('api/consultations/', include('consultations.urls')),
+    path('api/psychologist-finder/', include('psychologist_finder.urls')),
     path('api/notifications/', include('notifications.urls')),
     path('api/chat/', include('chat.urls')),
     path('api/finance/', include('finance.urls')),
