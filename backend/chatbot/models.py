@@ -15,7 +15,7 @@ class ChatbotConversation(models.Model):
     class Meta:
         ordering = ["-updated_at"]
         indexes = [
-            models.Index(fields=["patient", "-updated_at"]),
+            models.Index(fields=["patient", "-updated_at"], name="chatbot_ch_patient_7699f1_idx"),
         ]
 
     def __str__(self):
@@ -36,12 +36,13 @@ class ChatbotMessage(models.Model):
     content = models.TextField()
     intent = models.CharField(max_length=80, blank=True)
     confidence = models.FloatField(default=0)
+    quick_replies = models.JSONField(default=list, blank=True)
     created_at = models.DateTimeField(default=timezone.now)
 
     class Meta:
         ordering = ["created_at"]
         indexes = [
-            models.Index(fields=["conversation", "created_at"]),
+            models.Index(fields=["conversation", "created_at"], name="chatbot_ch_convers_f5a5b4_idx"),
         ]
 
     def __str__(self):

@@ -417,6 +417,7 @@ MISTRAL_API_URL = os.getenv(
 )
 MISTRAL_MODEL = os.getenv("MISTRAL_MODEL", "mistral-small-latest")
 MISTRAL_TIMEOUT_SECONDS = int(os.getenv("MISTRAL_TIMEOUT_SECONDS", "30"))
+CHATBOT_USE_LLM_REWRITES = os.getenv("CHATBOT_USE_LLM_REWRITES", "1") == "1"
 
 # -------------------------------------------------
 # RAZORPAY

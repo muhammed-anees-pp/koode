@@ -15,4 +15,4 @@ CHAT BOT MESSAGE
 class ChatbotMessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = ChatbotMessage
-        fields = ["id", "role", "content", "intent", "confidence", "created_at"]
+        fields = ["id", "role", "content", "intent", "confidence", "quick_replies", "created_at"]
