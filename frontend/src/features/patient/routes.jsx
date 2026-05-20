@@ -52,6 +52,7 @@ const PatientRoutes = () => {
         element={isAuthenticated && role === "PATIENT" ? <PatientProfile /> : <Navigate to="/patient/login" replace />}
       />
       <Route path="therapists" element={<PatientTherapistList />} />
+      <Route path="services/:specialization" element={<PatientTherapistList />} />
       <Route path="therapists/:id" element={<PatientTherapistDetail />} />
       <Route
         path="therapists/:id/book"

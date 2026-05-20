@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { fetchPatientTherapists, fetchSpecializations } from "../../../api/patient.api";
 import PatientNavbar from "../../../components/patient/Navbar/PatientNavbar";
 import PatientFooter from "../../../components/patient/Footer/PatientFooter";
@@ -320,9 +320,24 @@ const SORT_OPTIONS = [
   { value: "exp_asc", label: "Experience: Least first" },
 ];
 
+const normalizeText = (value = "") => value.trim().toLowerCase();
+
+const readSpecializationParam = (value) => {
+  if (!value) return null;
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+};
+
 
 
 export default function PatientTherapistList() {
+  const navigate = useNavigate();
+  const { specialization } = useParams();
+  const routeSpecialization = readSpecializationParam(specialization);
+
   const { data, isLoading, isError } = useQuery({
     queryKey: ["patient-therapists"],
     queryFn: fetchPatientTherapists,
@@ -335,7 +350,6 @@ export default function PatientTherapistList() {
 
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState("default");
-  const [activeSpec, setActiveSpec] = useState(null);
   const [sortOpen, setSortOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const sortRef = useRef(null);
@@ -348,6 +362,13 @@ export default function PatientTherapistList() {
     allTherapists.forEach((t) => t.specializations?.forEach((s) => set.add(s)));
     return Array.from(set).sort();
   }, [specsData, allTherapists]);
+
+  const routeSpec = useMemo(() => {
+    if (!routeSpecialization) return null;
+    const matchedSpec = allSpecs.find((spec) => normalizeText(spec) === normalizeText(routeSpecialization));
+    return matchedSpec || routeSpecialization;
+  }, [routeSpecialization, allSpecs]);
+  const activeSpec = routeSpec;
 
   useEffect(() => {
     const handler = (e) => {
@@ -372,7 +393,7 @@ export default function PatientTherapistList() {
     }
 
     if (activeSpec) {
-      list = list.filter((t) => t.specializations?.includes(activeSpec));
+      list = list.filter((t) => t.specializations?.some((s) => normalizeText(s) === normalizeText(activeSpec)));
     }
 
     switch (sortBy) {
@@ -389,7 +410,16 @@ export default function PatientTherapistList() {
 
   const activeSortLabel = SORT_OPTIONS.find((o) => o.value === sortBy)?.label || "Sort";
   const hasFilters = search.trim() || activeSpec || sortBy !== "default";
-  const clearAll = () => { setSearch(""); setActiveSpec(null); setSortBy("default"); };
+  const clearAll = () => {
+    setSearch("");
+    setSortBy("default");
+    if (routeSpecialization) navigate("/patient/therapists");
+  };
+  const openSpecialization = (spec) => {
+    setFilterOpen(false);
+    navigate(`/patient/services/${encodeURIComponent(spec)}`);
+  };
+  const showDepartmentHeading = Boolean(routeSpec);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", background: "#fff", fontFamily: "'DM Sans', sans-serif" }}>
@@ -400,15 +430,28 @@ export default function PatientTherapistList() {
 
         <div style={{ marginBottom: 32 }}>
           <h1 style={{ fontSize: "clamp(1.8rem,3.5vw,2.6rem)", fontWeight: 800, color: "#0f172a", margin: "0 0 10px", letterSpacing: "-0.5px" }}>
-            Find the right{" "}
-            <span style={{ background: "linear-gradient(135deg,#00897b,#26c6da)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-              Therapist
-            </span>{" "}
-            for you
+            {showDepartmentHeading ? (
+              <>
+                {activeSpec}{" "}
+                <span style={{ background: "linear-gradient(135deg,#00897b,#26c6da)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+                  Psychologists
+                </span>
+              </>
+            ) : (
+              <>
+                Find the right{" "}
+                <span style={{ background: "linear-gradient(135deg,#00897b,#26c6da)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+                  Therapist
+                </span>{" "}
+                for you
+              </>
+            )}
           </h1>
-          <p style={{ fontSize: 16, color: "#64748b", maxWidth: 580, margin: 0, lineHeight: 1.6 }}>
-            Browse our licensed, verified professionals. Search, filter by specialization, and sort to find your best match.
-          </p>
+          {!showDepartmentHeading && (
+            <p style={{ fontSize: 16, color: "#64748b", maxWidth: 580, margin: 0, lineHeight: 1.6 }}>
+              Browse our licensed, verified professionals. Search, filter by specialization, and sort to find your best match.
+            </p>
+          )}
         </div>
 
         <div style={{ display: "flex", gap: 12, marginBottom: 20, flexWrap: "wrap" }}>
@@ -456,7 +499,7 @@ export default function PatientTherapistList() {
             {filterOpen && (
               <div style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, background: "#fff", border: "1.5px solid #e8efef", borderRadius: 14, boxShadow: "0 8px 32px rgba(0,0,0,0.1)", zIndex: 100, minWidth: 220, maxHeight: 280, overflowY: "auto" }}>
                 <button
-                  onClick={() => { setActiveSpec(null); setFilterOpen(false); }}
+                  onClick={() => { setFilterOpen(false); navigate("/patient/therapists"); }}
                   style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 16px", border: "none", background: !activeSpec ? "#f0faf9" : "transparent", color: !activeSpec ? "#00897b" : "#333", fontWeight: !activeSpec ? 600 : 400, fontSize: 14, cursor: "pointer" }}
                   onMouseEnter={(e) => { if (activeSpec) e.currentTarget.style.background = "#f9fbfb"; }}
                   onMouseLeave={(e) => { if (activeSpec) e.currentTarget.style.background = "transparent"; }}
@@ -466,7 +509,7 @@ export default function PatientTherapistList() {
                 {allSpecs.map((spec) => (
                   <button
                     key={spec}
-                    onClick={() => { setActiveSpec(spec); setFilterOpen(false); }}
+                    onClick={() => openSpecialization(spec)}
                     style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 16px", border: "none", background: activeSpec === spec ? "#f0faf9" : "transparent", color: activeSpec === spec ? "#00897b" : "#333", fontWeight: activeSpec === spec ? 600 : 400, fontSize: 14, cursor: "pointer" }}
                     onMouseEnter={(e) => { if (activeSpec !== spec) e.currentTarget.style.background = "#f9fbfb"; }}
                     onMouseLeave={(e) => { if (activeSpec !== spec) e.currentTarget.style.background = "transparent"; }}
