@@ -157,6 +157,7 @@ class BookingListView(APIView):
             "patient__user",
             "patient__summary_report",
             "consultation_session",
+            "review",
         ).order_by("date", "start_time", "end_time", "created_at")
 
         serializer = BookingSerializer(queryset, many=True, context={"request": request})
@@ -170,7 +171,7 @@ class BookingActionBaseView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_booking(self, request, booking_id):
-        booking = get_object_or_404(Booking.objects.select_related("patient__user", "patient__summary_report", "psychologist__user", "slot", "consultation_session"),id=booking_id,)
+        booking = get_object_or_404(Booking.objects.select_related("patient__user", "patient__summary_report", "psychologist__user", "slot", "consultation_session", "review"),id=booking_id,)
 
         if request.user.role == "PATIENT":
             patient = get_object_or_404(PatientProfile, user=request.user)

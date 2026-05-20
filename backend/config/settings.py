@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     "notifications",
     "chat",
     "finance",
+    "reviews",
 ]
 
 # -------------------------------------------------

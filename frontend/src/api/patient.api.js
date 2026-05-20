@@ -94,6 +94,14 @@ export const cancelPatientBooking = async (bookingId, note) => {
   return response.data;
 };
 
+export const submitBookingReview = async ({ bookingId, rating, review }) => {
+  const response = await axiosInstance.post(`reviews/bookings/${bookingId}/`, {
+    rating,
+    review,
+  });
+  return response.data;
+};
+
 export const getWallet = async () => {
   const response = await axiosInstance.get("finance/wallet/");
   return response.data;

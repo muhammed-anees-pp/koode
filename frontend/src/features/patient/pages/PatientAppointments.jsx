@@ -1,12 +1,14 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { cancelPatientBooking, getMyBookings } from "../../../api/patient.api";
+import { cancelPatientBooking, getMyBookings, submitBookingReview } from "../../../api/patient.api";
 import PatientNavbar from "../../../components/patient/Navbar/PatientNavbar";
 import PatientFooter from "../../../components/patient/Footer/PatientFooter";
+import ReviewModal, { Stars } from "../../../components/patient/ReviewModal";
 import { usePatientSessionGuard } from "../../../hooks/usePatientSessionGuard";
 import { useAuthStore } from "../../../store/auth.store";
 import {
+  addDaysToISO,
   compareIndiaAppointmentDateTime,
   formatIndiaDate,
   formatIndiaDateTime,
@@ -15,10 +17,17 @@ import {
 } from "../../../utils/indiaDateTime";
 
 const TABS = ["Upcoming", "Past", "Cancelled"];
+const APPOINTMENTS_PER_PAGE = 8;
 
 const DATE_FILTER_UPCOMING = ["Next 7 Days", "Next 30 Days", "All Upcoming"];
 const DATE_FILTER_PAST = ["Last 7 Days", "Last 30 Days", "All Past"];
 
+const sortAppointmentsForTab = (appointments, activeTab) => {
+  const direction = activeTab === "Past" || activeTab === "Cancelled" ? -1 : 1;
+  return [...appointments].sort(
+    (left, right) => direction * compareIndiaAppointmentDateTime(left, right)
+  );
+};
 
 function CancelBookingModal({ booking, note, onChange, onClose, onSubmit, isPending, error }) {
   if (!booking) return null;
@@ -177,10 +186,9 @@ function UpcomingCard({ booking, onCancel, onOpenChat, onJoinConsultation }) {
 }
 
 
-function PastCard({ booking, onBookAgain, onViewPrescription }) {
-  const [rated, setRated] = useState(booking.rating ?? 0);
-  const [hovered, setHovered] = useState(0);
-
+function PastCard({ booking, onBookAgain, onViewPrescription, onOpenReview }) {
+  const existingReview = booking.review;
+  const reviewLabel = existingReview ? (existingReview.can_edit ? "Edit Review" : "View Review") : "Rate & Review";
   return (
     <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
       <div className="flex items-start gap-4">
@@ -198,7 +206,7 @@ function PastCard({ booking, onBookAgain, onViewPrescription }) {
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
                 </svg>
               </button>
-              <button type="button" className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-amber-400 hover:bg-amber-50 transition" title="Rate session">
+              <button type="button" onClick={() => onOpenReview(booking)} className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-amber-400 hover:bg-amber-50 transition" title={reviewLabel}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                 </svg>
@@ -220,24 +228,22 @@ function PastCard({ booking, onBookAgain, onViewPrescription }) {
           </div>
 
           
-          <div className="flex items-center gap-1 mt-3">
-            {Array.from({ length: 5 }).map((_, i) => {
-              const filled = i < (hovered || rated);
-              return (
-                <button
-                  key={i} type="button"
-                  onClick={() => setRated(i + 1)}
-                  onMouseEnter={() => setHovered(i + 1)}
-                  onMouseLeave={() => setHovered(0)}
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill={filled ? "#f59e0b" : "none"} stroke={filled ? "#f59e0b" : "#d1d5db"} strokeWidth="1.5">
-                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                  </svg>
-                </button>
-              );
-            })}
-            {rated > 0 && <span className="text-xs text-slate-400 ml-1">Rated</span>}
-            {rated === 0 && <span className="text-xs text-patient-primary font-medium ml-1 hover:underline cursor-pointer">Rate Psychologist</span>}
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            {existingReview ? (
+              <>
+                <Stars value={existingReview.rating} readOnly size={18} />
+                <span className="text-xs text-slate-400">Rated</span>
+              </>
+            ) : (
+              <span className="text-xs font-medium text-slate-500">No rating submitted yet.</span>
+            )}
+            <button
+              type="button"
+              onClick={() => onOpenReview(booking)}
+              className="text-xs font-semibold text-patient-primary transition hover:underline"
+            >
+              {reviewLabel}
+            </button>
           </div>
 
         </div>
@@ -414,6 +420,76 @@ function CancelledCard({ booking, onBookAgain, onViewReason }) {
   );
 }
 
+function PaginationControls({ currentPage, totalPages, totalItems, pageSize, onPageChange }) {
+  if (totalPages <= 1) return null;
+
+  const start = (currentPage - 1) * pageSize + 1;
+  const end = Math.min(currentPage * pageSize, totalItems);
+  const visiblePages = Array.from({ length: totalPages }, (_, index) => index + 1)
+    .filter((page) => page === 1 || page === totalPages || Math.abs(page - currentPage) <= 1)
+    .reduce((items, page, index, pages) => {
+      if (index > 0 && page - pages[index - 1] > 1) items.push("...");
+      items.push(page);
+      return items;
+    }, []);
+
+  return (
+    <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <p className="text-sm text-slate-500">
+        Showing{" "}
+        <span className="font-semibold text-slate-700">{start}-{end}</span>
+        {" "}of{" "}
+        <span className="font-semibold text-slate-700">{totalItems}</span>
+      </p>
+
+      <div className="flex items-center gap-1.5">
+        <button
+          type="button"
+          disabled={currentPage === 1}
+          onClick={() => onPageChange(currentPage - 1)}
+          className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+          aria-label="Previous page"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+        </button>
+
+        {visiblePages.map((item, index) =>
+          item === "..." ? (
+            <span key={`ellipsis-${index}`} className="px-1 text-sm text-slate-400">...</span>
+          ) : (
+            <button
+              key={item}
+              type="button"
+              onClick={() => onPageChange(item)}
+              className={`h-9 min-w-[36px] rounded-xl border px-3 text-sm font-semibold transition ${
+                currentPage === item
+                  ? "border-patient-primary bg-patient-primary text-white shadow-patient-sm"
+                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+              }`}
+            >
+              {item}
+            </button>
+          )
+        )}
+
+        <button
+          type="button"
+          disabled={currentPage === totalPages}
+          onClick={() => onPageChange(currentPage + 1)}
+          className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+          aria-label="Next page"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  );
+}
+
 
 export default function PatientAppointments() {
   const navigate = useNavigate();
@@ -426,8 +502,11 @@ export default function PatientAppointments() {
   const [cancelError, setCancelError] = useState("");
   const [reasonTarget, setReasonTarget] = useState(null);
   const [prescriptionTarget, setPrescriptionTarget] = useState(null);
+  const [reviewTarget, setReviewTarget] = useState(null);
+  const [reviewError, setReviewError] = useState("");
   const [dateFilter, setDateFilter] = useState(DATE_FILTER_UPCOMING[0]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
   usePatientSessionGuard();
 
   const bookingsQuery = useQuery({
@@ -437,6 +516,23 @@ export default function PatientAppointments() {
     refetchInterval: 30000,
   });
 
+  useEffect(() => {
+    const completed = (bookingsQuery.data ?? [])
+      .filter((booking) => booking.status === "COMPLETED" && !booking.review)
+      .sort((left, right) => compareIndiaAppointmentDateTime(right, left));
+    const promptTarget = completed.find((booking) => {
+      try {
+        return window.sessionStorage.getItem(`review_prompt_dismissed_${booking.id}`) !== "1";
+      } catch {
+        return true;
+      }
+    });
+    if (!reviewTarget && promptTarget) {
+      setReviewTarget(promptTarget);
+      setReviewError("");
+    }
+  }, [bookingsQuery.data, reviewTarget]);
+
   const today = useMemo(() => getIndiaTodayISO(), []);
 
   const filteredBookings = useMemo(() => {
@@ -445,12 +541,22 @@ export default function PatientAppointments() {
     let list;
     if (activeTab === "Past") {
       list = all.filter((b) => b.status === "COMPLETED");
+      if (dateFilter === "Last 7 Days") {
+        list = list.filter((b) => b.date >= addDaysToISO(today, -7));
+      } else if (dateFilter === "Last 30 Days") {
+        list = list.filter((b) => b.date >= addDaysToISO(today, -30));
+      }
     } else if (activeTab === "Cancelled") {
       list = all.filter((b) => b.status === "CANCELLED");
     } else {
       list = all.filter(
         (b) => b.date >= today && b.status !== "COMPLETED" && b.status !== "CANCELLED"
       );
+      if (dateFilter === "Next 7 Days") {
+        list = list.filter((b) => b.date <= addDaysToISO(today, 7));
+      } else if (dateFilter === "Next 30 Days") {
+        list = list.filter((b) => b.date <= addDaysToISO(today, 30));
+      }
     }
 
     
@@ -459,8 +565,15 @@ export default function PatientAppointments() {
       list = list.filter((b) => b.psychologist_name?.toLowerCase().includes(q));
     }
 
-    return [...list].sort(compareIndiaAppointmentDateTime);
-  }, [activeTab, bookingsQuery.data, today, searchQuery]);
+    return sortAppointmentsForTab(list, activeTab);
+  }, [activeTab, bookingsQuery.data, today, searchQuery, dateFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredBookings.length / APPOINTMENTS_PER_PAGE));
+  const safePage = Math.min(currentPage, totalPages);
+  const paginatedBookings = useMemo(
+    () => filteredBookings.slice((safePage - 1) * APPOINTMENTS_PER_PAGE, safePage * APPOINTMENTS_PER_PAGE),
+    [filteredBookings, safePage]
+  );
 
   const cancelMutation = useMutation({
     mutationFn: ({ bookingId, note }) => cancelPatientBooking(bookingId, note),
@@ -478,6 +591,31 @@ export default function PatientAppointments() {
         apiError?.detail ||
         "Unable to cancel this appointment.";
       setCancelError(message);
+    },
+  });
+
+  const reviewMutation = useMutation({
+    mutationFn: ({ bookingId, rating, review }) => submitBookingReview({ bookingId, rating, review }),
+    onSuccess: async () => {
+      if (reviewTarget) {
+        try {
+          window.sessionStorage.setItem(`review_prompt_dismissed_${reviewTarget.id}`, "1");
+        } catch {
+          // Ignore storage issues; the saved review will still come from the API.
+        }
+      }
+      setReviewTarget(null);
+      setReviewError("");
+      await queryClient.invalidateQueries({ queryKey: ["patient-appointments"] });
+    },
+    onError: (error) => {
+      const apiError = error?.response?.data;
+      setReviewError(
+        apiError?.rating?.[0] ||
+        apiError?.review?.[0] ||
+        apiError?.detail ||
+        "Unable to save your review."
+      );
     },
   });
 
@@ -509,6 +647,18 @@ export default function PatientAppointments() {
 
   const handleJoinConsultation = (booking) => {
     navigate(`/patient/consultation/${booking.id}`);
+  };
+
+  const closeReviewModal = () => {
+    if (reviewTarget && !reviewTarget.review) {
+      try {
+        window.sessionStorage.setItem(`review_prompt_dismissed_${reviewTarget.id}`, "1");
+      } catch {
+        // Ignore storage issues; the completed appointments section still offers review entry.
+      }
+    }
+    setReviewTarget(null);
+    setReviewError("");
   };
 
 
@@ -548,6 +698,7 @@ export default function PatientAppointments() {
                 onClick={() => {
                   setActiveTab(tab);
                   setSearchQuery("");
+                  setCurrentPage(1);
                   setDateFilter(tab === "Past" ? DATE_FILTER_PAST[0] : DATE_FILTER_UPCOMING[0]);
                 }}
                 className={`rounded-full px-5 py-2 text-sm font-semibold transition ${
@@ -569,7 +720,10 @@ export default function PatientAppointments() {
                 <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Filter by Date</p>
                 <select
                   value={dateFilter}
-                  onChange={(e) => setDateFilter(e.target.value)}
+                  onChange={(e) => {
+                    setDateFilter(e.target.value);
+                    setCurrentPage(1);
+                  }}
                   className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700 outline-none focus:border-patient-primary focus:ring-1 focus:ring-patient-primary/30 transition"
                 >
                   {dateFilterOptions.map((opt) => (
@@ -588,7 +742,10 @@ export default function PatientAppointments() {
                   <input
                     type="text"
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      setCurrentPage(1);
+                    }}
                     placeholder="Search name..."
                     className="w-full rounded-xl border border-slate-200 bg-white pl-9 pr-4 py-2.5 text-sm text-slate-700 outline-none focus:border-patient-primary focus:ring-1 focus:ring-patient-primary/30 transition"
                   />
@@ -636,7 +793,7 @@ export default function PatientAppointments() {
 
             
             {!bookingsQuery.isLoading && !bookingsQuery.isError &&
-              filteredBookings.map((booking) => {
+              paginatedBookings.map((booking) => {
                 if (activeTab === "Upcoming") {
                   return (
                     <UpcomingCard
@@ -655,6 +812,7 @@ export default function PatientAppointments() {
                       booking={booking}
                       onBookAgain={handleBookAgain}
                       onViewPrescription={setPrescriptionTarget}
+                      onOpenReview={(target) => { setReviewTarget(target); setReviewError(""); }}
                     />
                   );
                 }
@@ -668,6 +826,16 @@ export default function PatientAppointments() {
                 );
               })}
           </div>
+
+          {!bookingsQuery.isLoading && !bookingsQuery.isError && filteredBookings.length > 0 ? (
+            <PaginationControls
+              currentPage={safePage}
+              totalPages={totalPages}
+              totalItems={filteredBookings.length}
+              pageSize={APPOINTMENTS_PER_PAGE}
+              onPageChange={setCurrentPage}
+            />
+          ) : null}
         </div>
       </main>
 
@@ -691,6 +859,15 @@ export default function PatientAppointments() {
       <PrescriptionModal
         booking={prescriptionTarget}
         onClose={() => setPrescriptionTarget(null)}
+      />
+
+      <ReviewModal
+        key={reviewTarget?.id || "patient-review-modal"}
+        booking={reviewTarget}
+        onClose={closeReviewModal}
+        onSubmit={({ rating, review }) => reviewMutation.mutate({ bookingId: reviewTarget.id, rating, review })}
+        isPending={reviewMutation.isPending}
+        error={reviewError}
       />
 
     </div>

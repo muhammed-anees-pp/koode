@@ -17,6 +17,7 @@ import PsychologistAppointments from "./pages/PsychologistAppointments";
 import PsychologistMessages from "./pages/PsychologistMessages";
 import PsychologistPatients from "./pages/PsychologistPatients";
 import PsychologistWallet from "./pages/PsychologistWallet";
+import PsychologistReviews from "./pages/PsychologistReviews";
 import ConsultationRoom from "../../components/consultation/ConsultationRoom";
 
 const RouteLoader = () => (
@@ -180,6 +181,14 @@ const PsychologistRoutes = () => {
           isAuthenticated && role === "PSYCHOLOGIST"
             ? <PsychologistMessages />
           : <Navigate to="/psychologist/login" replace />
+        }
+      />
+      <Route
+        path="reviews"
+        element={
+          isAuthenticated && role === "PSYCHOLOGIST"
+            ? <PsychologistReviews />
+            : <Navigate to="/psychologist/login" replace />
         }
       />
       <Route
