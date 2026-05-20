@@ -59,9 +59,9 @@ def psychologist_payload(request, profile):
 
 
 """
-FIND THERAPIST QUESTIONS VIEW
+FIND PSYCHOLOGIST QUESTIONS VIEW
 """
-class TherapistFinderQuestionsView(APIView):
+class PsychologistFinderQuestionsView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
@@ -70,9 +70,9 @@ class TherapistFinderQuestionsView(APIView):
 
 
 """
-THERAPIST FINDER RECOMMENDATION VIEW
+PSYCHOLOGIST FINDER RECOMMENDATION VIEW
 """
-class TherapistFinderRecommendationView(APIView):
+class PsychologistFinderRecommendationView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
@@ -98,7 +98,7 @@ class TherapistFinderRecommendationView(APIView):
         )
 
         psychologists = [psychologist_payload(request, profile) for profile in queryset]
-        logger.info("Therapist finder recommended %s with %s psychologists", department, len(psychologists))
+        logger.info("Psychologist finder recommended %s with %s psychologists", department, len(psychologists))
 
         return Response(
             {
