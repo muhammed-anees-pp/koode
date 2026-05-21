@@ -7,15 +7,16 @@ import {
 } from "../../api/notifications.api";
 import { useAuthStore } from "../../store/auth.store";
 import { useNotificationsStore } from "../../store/notifications.store";
+import { uppercaseMeridiem } from "../../utils/indiaDateTime";
 import { getNotificationTarget } from "../../utils/notificationNavigation";
 
 const formatNotificationTime = (value) =>
-  new Intl.DateTimeFormat("en-IN", {
+  uppercaseMeridiem(new Intl.DateTimeFormat("en-IN", {
     timeZone: "Asia/Kolkata",
     dateStyle: "medium",
     timeStyle: "short",
     hour12: true,
-  }).format(new Date(value));
+  }).format(new Date(value)));
 
 const STYLES = {
   patient: {
