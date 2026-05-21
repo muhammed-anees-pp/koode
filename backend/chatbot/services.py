@@ -9,6 +9,8 @@ from spacy.matcher import PhraseMatcher
 logger = logging.getLogger(__name__)
 
 TOKEN_RE = re.compile(r"[a-z0-9]+")
+ACTION_MESSAGE_PREFIX = "CHATBOT_ACTION::"
+FIND_PSYCHOLOGIST_ACTION = f"{ACTION_MESSAGE_PREFIX}find_psychologist"
 
 
 INTENT_KNOWLEDGE_BASE = [
@@ -17,7 +19,7 @@ INTENT_KNOWLEDGE_BASE = [
         "answer": (
             "Please follow these steps to book a consultation:\n"
             "1. Open Psychologists.\n"
-            "2. Choose a department or select a therapist.\n"
+            "2. Choose a department or select a psychologist.\n"
             "3. Pick an available consultation slot.\n"
             "4. Review the details and confirm the booking.\n"
             "5. Complete the payment if required.\n\n"
@@ -163,7 +165,7 @@ INTENT_KNOWLEDGE_BASE = [
     {
         "intent": "platform_support",
         "answer": (
-            "Koode helps you find verified psychologists, book consultations, attend secure sessions, manage appointments, use wallet payments, and message your therapist from one patient account.\n\n"
+            "Koode helps you find verified psychologists, book consultations, attend secure sessions, manage appointments, use wallet payments, and message your psychologist from one patient account.\n\n"
             "Do you have any other doubts?"
         ),
         "examples": [
@@ -380,6 +382,11 @@ def _finalize_reply(payload, source_text):
         reply = f"{task_notice}\n\n{reply}".strip()
 
     messages = _split_reply_messages(reply)
+    if payload.get("intent") == "department_explanation":
+        insert_at = len(messages)
+        if messages and "do you have any other doubts" in messages[-1].lower():
+            insert_at = len(messages) - 1
+        messages.insert(insert_at, FIND_PSYCHOLOGIST_ACTION)
 
     payload["messages"] = messages or [reply]
     payload["reply"] = "\n\n".join(payload["messages"]).strip()

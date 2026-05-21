@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { fetchChatbotMessages, sendChatbotMessage } from "../../../api/chatbot.api";
+
+const ACTION_MESSAGE_PREFIX = "CHATBOT_ACTION::";
 
 const quickPrompts = [
   "Book consultation",
@@ -84,25 +87,38 @@ const MessageIcon = () => (
   </svg>
 );
 
-const MessageBubble = ({ message, onQuickReply, disabled, showQuickReplies }) => {
+const MessageBubble = ({ message, onQuickReply, onAction, disabled, showQuickReplies }) => {
   const isUser = message.role === "USER";
+  const action = !isUser && message.content?.startsWith(ACTION_MESSAGE_PREFIX)
+    ? message.content.slice(ACTION_MESSAGE_PREFIX.length)
+    : "";
   const quickReplies =
-    showQuickReplies && !isUser && Array.isArray(message.quick_replies)
+    showQuickReplies && !isUser && !action && Array.isArray(message.quick_replies)
       ? message.quick_replies
       : [];
 
   return (
     <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
       <div className={`flex max-w-[86%] flex-col gap-2 ${isUser ? "items-end" : "items-start"}`}>
-        <div
-          className={`whitespace-pre-line rounded-[18px] px-4 py-3 text-sm leading-5 shadow-sm ${
-            isUser
-              ? "rounded-br-md bg-patient-primary text-white"
-              : "rounded-bl-md bg-[#f1f5f9] text-[#1f2937]"
-          }`}
-        >
-          {message.content}
-        </div>
+        {action === "find_psychologist" ? (
+          <button
+            type="button"
+            onClick={() => onAction(action)}
+            className="rounded-[18px] rounded-bl-md border border-patient-primary/30 bg-[#e8fbf8] px-4 py-3 text-left text-sm font-extrabold leading-5 text-patient-primary shadow-sm transition hover:border-patient-primary hover:bg-patient-primary hover:text-white"
+          >
+            Find Psychologist
+          </button>
+        ) : (
+          <div
+            className={`whitespace-pre-line rounded-[18px] px-4 py-3 text-sm leading-5 shadow-sm ${
+              isUser
+                ? "rounded-br-md bg-patient-primary text-white"
+                : "rounded-bl-md bg-[#f1f5f9] text-[#1f2937]"
+            }`}
+          >
+            {message.content}
+          </div>
+        )}
         {quickReplies.length > 0 && (
           <div className="flex flex-wrap justify-end gap-2">
             {quickReplies.map((reply) => (
@@ -124,6 +140,7 @@ const MessageBubble = ({ message, onQuickReply, disabled, showQuickReplies }) =>
 };
 
 export default function PatientChatbotWidget({ defaultOpen = false }) {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(defaultOpen);
   const [message, setMessage] = useState("");
@@ -202,6 +219,13 @@ export default function PatientChatbotWidget({ defaultOpen = false }) {
     mutation.mutate(cleanText);
   };
 
+  const handleAction = (action) => {
+    if (action === "find_psychologist") {
+      setIsOpen(false);
+      navigate("/patient/find-psychologist");
+    }
+  };
+
   return (
     <>
       {isOpen && (
@@ -243,6 +267,7 @@ export default function PatientChatbotWidget({ defaultOpen = false }) {
                 key={item.id}
                 message={item}
                 onQuickReply={submitMessage}
+                onAction={handleAction}
                 disabled={mutation.isPending}
                 showQuickReplies={item.id === latestBotMessageId}
               />
