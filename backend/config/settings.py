@@ -64,6 +64,7 @@ INSTALLED_APPS = [
     "chatbot",
     "finance",
     "reviews",
+    "complaints",
 ]
 
 # -------------------------------------------------

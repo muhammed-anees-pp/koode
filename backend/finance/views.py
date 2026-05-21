@@ -221,7 +221,8 @@ class CancelRazorpayOrderView(APIView):
                 locked_booking.slot = None
                 locked_booking.status = "CANCELLED"
                 locked_booking.notes = "Payment cancelled."
-                locked_booking.save(update_fields=["slot", "status", "notes"])
+                locked_booking.cancelled_by = request.user
+                locked_booking.save(update_fields=["slot", "status", "notes", "cancelled_by"])
                 refund_booking_to_patient(locked_booking, note="Payment cancelled.")
 
         return Response({"detail": "Payment order cancelled."})
