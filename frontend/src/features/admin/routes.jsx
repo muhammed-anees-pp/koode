@@ -12,7 +12,6 @@ import AdminPsychologistList from "./pages/AdminPsychologistList";
 import AdminPsychologistDetail from "./pages/AdminPsychologistDetail";
 import AdminCommissions from "./pages/AdminCommissions";
 import AdminWallet from "./pages/AdminWallet";
-import AdminVideoInvest from "./pages/AdminVideoInvest";
 import AdminReviews from "./pages/AdminReviews";
 import { useAuthStore } from "../../store/auth.store";
 
@@ -145,17 +144,6 @@ const AdminRoutes = () => {
         element={
           isAuthenticated && role === "ADMIN" ? (
             <AdminReviews />
-          ) : (
-            <Navigate to="/admin/login" />
-          )
-        }
-      />
-
-      <Route
-        path="video-invest"
-        element={
-          isAuthenticated && role === "ADMIN" ? (
-            <AdminVideoInvest />
           ) : (
             <Navigate to="/admin/login" />
           )

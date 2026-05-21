@@ -5,7 +5,6 @@ from django.utils import timezone
 from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from admin_panel.permissions import IsAdminUserRole
 from appointments.models import Booking
 from appointments.serializers import BookingSerializer
 from chat.services.chat_service import sync_chat_room_for_booking
@@ -18,9 +17,7 @@ from finance.services.bookings import complete_booking_payment
 from patient_summary.services.summary_service import update_patient_summary_for_consultation
 from patients.permissions import IsPatient
 from psychologists.permissions import IsPsychologist
-from video.zego_service import (
-    ZegoRecordingError, generate_consultation_zego_token, start_consultation_recording, stop_consultation_recording, verify_recording_callback_signature,
-)
+from video.zego_service import generate_consultation_zego_token
 
 
 
@@ -105,35 +102,9 @@ class ConsultationPsychologistEnterView(ConsultationActionBaseView):
                 "started_at",
                 "updated_at",
             ]
-            if not locked.zego_recording_task_id and locked.recording_status in {"NOT_STARTED", "FAILED"}:
-                locked.recording_status = "STARTING"
-                update_fields.append("recording_status")
             locked.save(update_fields=update_fields)
 
         consultation.refresh_from_db()
-        if consultation.recording_status == "STARTING" and not consultation.zego_recording_task_id:
-            try:
-                result = start_consultation_recording(
-                    consultation.room_id,
-                    f"booking_{consultation.booking.id.hex}",
-                )
-                task_id = result.get("Data", {}).get("TaskId", "")
-                consultation.recording_metadata = {"start": result}
-                if task_id:
-                    consultation.zego_recording_task_id = task_id
-                    consultation.recording_status = "RECORDING"
-                else:
-                    consultation.recording_status = "NOT_STARTED" if result.get("skipped") else "FAILED"
-                consultation.save(update_fields=["zego_recording_task_id", "recording_status", "recording_metadata", "updated_at"])
-            except ZegoRecordingError as exc:
-                consultation.recording_status = "FAILED"
-                consultation.recording_metadata = {"start_error": exc.to_metadata()}
-                consultation.save(update_fields=["recording_status", "recording_metadata", "updated_at"])
-            except Exception as exc:
-                consultation.recording_status = "FAILED"
-                consultation.recording_metadata = {"start_error": str(exc)}
-                consultation.save(update_fields=["recording_status", "recording_metadata", "updated_at"])
-
         return Response({
             "detail": "Psychologist entered consultation.",
             "consultation": consultation_state_for_session(consultation, user=request.user),
@@ -224,40 +195,17 @@ class ConsultationExitView(ConsultationActionBaseView):
             locked.patient_joined = False
             locked.patient_requested_join = False
             locked.ended_at = timezone.now()
-            locked.recording_status = "STOPPING" if locked.zego_recording_task_id else locked.recording_status
             locked.save(update_fields=[
                 "status",
                 "psychologist_joined",
                 "patient_joined",
                 "patient_requested_join",
                 "ended_at",
-                "recording_status",
                 "updated_at",
             ])
 
         consultation.refresh_from_db()
         sync_chat_room_for_booking(consultation.booking)
-        if consultation.zego_recording_task_id:
-            try:
-                result = stop_consultation_recording(consultation.zego_recording_task_id)
-                metadata = consultation.recording_metadata or {}
-                metadata["stop"] = result
-                consultation.recording_metadata = metadata
-                consultation.recording_status = "STOPPING" if result.get("Code") == 0 else "FAILED"
-                consultation.save(update_fields=["recording_status", "recording_metadata", "updated_at"])
-            except ZegoRecordingError as exc:
-                metadata = consultation.recording_metadata or {}
-                metadata["stop_error"] = exc.to_metadata()
-                consultation.recording_metadata = metadata
-                consultation.recording_status = "FAILED"
-                consultation.save(update_fields=["recording_status", "recording_metadata", "updated_at"])
-            except Exception as exc:
-                metadata = consultation.recording_metadata or {}
-                metadata["stop_error"] = str(exc)
-                consultation.recording_metadata = metadata
-                consultation.recording_status = "FAILED"
-                consultation.save(update_fields=["recording_status", "recording_metadata", "updated_at"])
-
         update_patient_summary_for_consultation(consultation)
         return Response({"detail": "Consultation completed.", "consultation": consultation_state_for_session(consultation, user=request.user)})
 
@@ -329,111 +277,3 @@ class ConsultationMessageListCreateView(ConsultationActionBaseView):
         )
         serializer = ConsultationMessageSerializer(message, context={"request": request})
         return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-
-"""
-CONSULTATOIN RECORDING
-"""
-class ConsultationRecordingCallbackView(APIView):
-    authentication_classes = []
-    permission_classes = [permissions.AllowAny]
-
-    def post(self, request):
-        payload = request.data
-        if not isinstance(payload, dict):
-            return Response({"detail": "Invalid callback payload."}, status=status.HTTP_400_BAD_REQUEST)
-
-        if not verify_recording_callback_signature(payload):
-            return Response({"detail": "Invalid callback signature."}, status=status.HTTP_403_FORBIDDEN)
-
-        task_id = str(payload.get("task_id") or "")
-        room_id = str(payload.get("room_id") or "")
-        consultation = None
-        if task_id:
-            consultation = Consultation.objects.filter(zego_recording_task_id=task_id).first()
-        if consultation is None and room_id:
-            consultation = Consultation.objects.filter(room_id=room_id).first()
-        if consultation is None:
-            return Response({"detail": "Recording callback ignored."})
-
-        detail = payload.get("detail") or {}
-        files = detail.get("file_info") or []
-        recording_file_url = ""
-        for file_info in files:
-            recording_file_url = file_info.get("file_url") or ""
-            if recording_file_url:
-                break
-
-        try:
-            event_type = int(payload.get("event_type"))
-        except (TypeError, ValueError):
-            event_type = None
-
-        metadata = consultation.recording_metadata or {}
-        callbacks = metadata.get("callbacks") or []
-        callbacks.append(payload)
-        metadata["callbacks"] = callbacks[-10:]
-        consultation.recording_metadata = metadata
-
-        update_fields = ["recording_metadata", "updated_at"]
-        if task_id and not consultation.zego_recording_task_id:
-            consultation.zego_recording_task_id = task_id
-            update_fields.append("zego_recording_task_id")
-        if recording_file_url:
-            consultation.recording_file_url = recording_file_url
-            update_fields.append("recording_file_url")
-
-        try:
-            upload_status = int(detail.get("upload_status"))
-        except (TypeError, ValueError):
-            upload_status = None
-
-        if event_type == 1 and upload_status == 1 and recording_file_url:
-            consultation.recording_status = "UPLOADED"
-            update_fields.append("recording_status")
-        elif event_type == 2:
-            consultation.recording_status = "FAILED"
-            update_fields.append("recording_status")
-        elif event_type == 7:
-            consultation.recording_status = "STOPPING"
-            update_fields.append("recording_status")
-        elif event_type == 5 and consultation.recording_status == "RECORDING":
-            consultation.recording_status = "STOPPING"
-            update_fields.append("recording_status")
-
-        consultation.save(update_fields=sorted(set(update_fields)))
-        return Response({"detail": "Recording callback accepted."})
-
-
-"""
-RECORDINGS LISTING FOR ADMIN
-"""
-class AdminConsultationRecordingListView(APIView):
-    permission_classes = [permissions.IsAuthenticated, IsAdminUserRole]
-
-    def get(self, request):
-        queryset = Consultation.objects.select_related(
-            "booking__patient__user",
-            "booking__psychologist__user",
-        ).exclude(status="SCHEDULED").order_by("-booking__date", "-booking__start_time")
-        results = []
-        for consultation in queryset:
-            booking = consultation.booking
-            results.append({
-                "id": str(consultation.id),
-                "booking_id": str(booking.id),
-                "patient_name": booking.patient.user.full_name,
-                "psychologist_name": booking.psychologist.user.full_name,
-                "date": booking.date,
-                "start_time": booking.start_time,
-                "end_time": booking.end_time,
-                "status": booking.status,
-                "consultation_status": consultation.status,
-                "started_at": consultation.started_at,
-                "ended_at": consultation.ended_at,
-                "room_id": consultation.room_id,
-                "recording_status": consultation.recording_status,
-                "recording_file_url": consultation.recording_file_url,
-                "recording_metadata": consultation.recording_metadata,
-            })
-        return Response(results)

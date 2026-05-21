@@ -85,8 +85,6 @@ def consultation_state_for_session(consultation, user=None):
         "patient_requested_join": consultation.patient_requested_join,
         "started_at": consultation.started_at,
         "ended_at": consultation.ended_at,
-        "recording_status": consultation.recording_status,
-        "recording_file_url": consultation.recording_file_url,
         "patient_note": consultation.patient_note,
     }
 

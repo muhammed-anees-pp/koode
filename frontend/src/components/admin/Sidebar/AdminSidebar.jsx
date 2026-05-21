@@ -10,10 +10,7 @@ const menuItems = {
   ],
   monitoring: [
     { name: "Appointments", path: "#", icon: (<svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M5 3V1M15 3V1M4 7H16M3 5H17C17.5523 5 18 5.44772 18 6V16C18 16.5523 17.5523 17 17 17H3C2.44772 17 2 16.5523 2 16V6C2 5.44772 2.44772 5 3 5Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>) },
-    { name: "Performance", path: "#", icon: (<svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M3 17L7 13L10 16L17 9M17 9V13M17 9H13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>) },
     { name: "Reviews", path: "/admin/reviews", icon: (<svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M10 1L12.5 6.5L18.5 7.5L14.25 11.5L15.5 17.5L10 14.5L4.5 17.5L5.75 11.5L1.5 7.5L7.5 6.5L10 1Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>) },
-    { name: "Logs Checking", path: "#", icon: (<svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M3 5H17M3 10H17M3 15H17" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>) },
-    { name: "Video Invest.", path: "/admin/video-invest", icon: (<svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M2 6C2 4.89543 2.89543 4 4 4H11C12.1046 4 13 4.89543 13 6V14C13 15.1046 12.1046 16 11 16H4C2.89543 16 2 15.1046 2 14V6Z" stroke="currentColor" strokeWidth="1.5" /><path d="M13 8L17 6V14L13 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>) },
     { name: "Complaints", path: "#", icon: (<svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M10 6V10M10 14H10.01M18 10C18 14.4183 14.4183 18 10 18C5.58172 18 2 14.4183 2 10C2 5.58172 5.58172 2 10 2C14.4183 2 18 5.58172 18 10Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>) },
   ],
   financial: [
