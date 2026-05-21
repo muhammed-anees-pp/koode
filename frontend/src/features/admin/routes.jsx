@@ -10,9 +10,13 @@ import AdminApplicationDetail from "./pages/AdminApplicationDetail";
 import AdminInterviewRoom from "./pages/AdminInterviewRoom";
 import AdminPsychologistList from "./pages/AdminPsychologistList";
 import AdminPsychologistDetail from "./pages/AdminPsychologistDetail";
+import AdminAppointments from "./pages/AdminAppointments";
+import AdminAppointmentDetail from "./pages/AdminAppointmentDetail";
 import AdminCommissions from "./pages/AdminCommissions";
 import AdminWallet from "./pages/AdminWallet";
 import AdminReviews from "./pages/AdminReviews";
+import AdminComplaints from "./pages/AdminComplaints";
+import AdminComplaintDetail from "./pages/AdminComplaintDetail";
 import { useAuthStore } from "../../store/auth.store";
 
 const AdminRoutes = () => {
@@ -89,6 +93,28 @@ const AdminRoutes = () => {
       />
 
       <Route
+        path="appointments"
+        element={
+          isAuthenticated && role === "ADMIN" ? (
+            <AdminAppointments />
+          ) : (
+            <Navigate to="/admin/login" />
+          )
+        }
+      />
+
+      <Route
+        path="appointments/:appointmentId"
+        element={
+          isAuthenticated && role === "ADMIN" ? (
+            <AdminAppointmentDetail />
+          ) : (
+            <Navigate to="/admin/login" />
+          )
+        }
+      />
+
+      <Route
         path="applications"
         element={
           isAuthenticated && role === "ADMIN" ? (
@@ -144,6 +170,28 @@ const AdminRoutes = () => {
         element={
           isAuthenticated && role === "ADMIN" ? (
             <AdminReviews />
+          ) : (
+            <Navigate to="/admin/login" />
+          )
+        }
+      />
+
+      <Route
+        path="complaints"
+        element={
+          isAuthenticated && role === "ADMIN" ? (
+            <AdminComplaints />
+          ) : (
+            <Navigate to="/admin/login" />
+          )
+        }
+      />
+
+      <Route
+        path="complaints/:complaintId"
+        element={
+          isAuthenticated && role === "ADMIN" ? (
+            <AdminComplaintDetail />
           ) : (
             <Navigate to="/admin/login" />
           )

@@ -6,10 +6,11 @@ from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from admin_panel.permissions import IsAdminUserRole
 from appointments.models import Booking
 from complaints.models import Complaint
 from complaints.serializers import (
-    ComplaintSerializer, CreateComplaintSerializer, EligibleComplaintBookingSerializer, 
+    AdminComplaintActionSerializer, ComplaintSerializer, CreateComplaintSerializer, EligibleComplaintBookingSerializer,
 )
 from complaints.services import complaint_eligibility_for_booking
 from patients.models import PatientProfile
@@ -132,6 +133,87 @@ class PatientComplaintDetailView(APIView):
         complaint = get_object_or_404(complaint_queryset(), id=complaint_id, patient=patient)
         serializer = ComplaintSerializer(complaint, context={"request": request})
         return Response(serializer.data)
+
+
+"""
+ADMIN COMPLAINT LIST VIEW
+"""
+class AdminComplaintListView(APIView):
+    permission_classes = [IsAuthenticated, IsAdminUserRole]
+
+    def get(self, request):
+        search = request.query_params.get("search", "").strip()
+        complaint_status = request.query_params.get("status", "").strip()
+        category = request.query_params.get("category", "").strip()
+        severity = request.query_params.get("severity", "").strip()
+        date = parse_date(request.query_params.get("date", "").strip())
+        page = int(request.query_params.get("page", 1))
+        page_size = int(request.query_params.get("page_size", 10))
+
+        queryset = complaint_queryset()
+        if search:
+            queryset = queryset.filter(
+                Q(complaint_id__icontains=search)
+                | Q(subject__icontains=search)
+                | Q(patient__user__full_name__icontains=search)
+                | Q(patient__user__email__icontains=search)
+                | Q(psychologist__user__full_name__icontains=search)
+                | Q(psychologist__user__email__icontains=search)
+            )
+        if complaint_status and complaint_status != "ALL":
+            queryset = queryset.filter(status=complaint_status)
+        if category and category != "ALL":
+            queryset = queryset.filter(category=category)
+        if severity and severity != "ALL":
+            queryset = queryset.filter(severity=severity)
+        if date:
+            queryset = queryset.filter(created_at__date=date)
+
+        total = queryset.count()
+        start = (page - 1) * page_size
+        end = start + page_size
+        serializer = ComplaintSerializer(queryset[start:end], many=True, context={"request": request})
+        counts = complaint_queryset().aggregate(
+            pending_review=Count("id", filter=Q(status=Complaint.STATUS_PENDING)),
+            under_review=Count("id", filter=Q(status=Complaint.STATUS_UNDER_REVIEW)),
+            response_submitted=Count("id", filter=Q(status=Complaint.STATUS_PSYCHOLOGIST_RESPONSE_SUBMITTED)),
+            resolved=Count("id", filter=Q(status=Complaint.STATUS_RESOLVED)),
+            rejected=Count("id", filter=Q(status=Complaint.STATUS_REJECTED)),
+            high_priority=Count("id", filter=Q(severity=Complaint.SEVERITY_HIGH)),
+        )
+        return Response({
+            "results": serializer.data,
+            "stats": counts,
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+            "total_pages": max(1, (total + page_size - 1) // page_size),
+        })
+
+
+"""
+ADMIN COMPLAINT DETAILS VIEW
+"""
+class AdminComplaintDetailView(APIView):
+    permission_classes = [IsAuthenticated, IsAdminUserRole]
+
+    def get(self, request, complaint_id):
+        complaint = get_object_or_404(complaint_queryset(), id=complaint_id)
+        serializer = ComplaintSerializer(complaint, context={"request": request})
+        return Response(serializer.data)
+
+    def patch(self, request, complaint_id):
+        complaint = get_object_or_404(complaint_queryset(), id=complaint_id)
+        serializer = AdminComplaintActionSerializer(
+            complaint,
+            data=request.data,
+            partial=True,
+            context={"request": request},
+        )
+        serializer.is_valid(raise_exception=True)
+        complaint = serializer.save()
+        response_serializer = ComplaintSerializer(complaint, context={"request": request})
+        return Response(response_serializer.data)
 
 
 

@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchAdminReviews } from "../../../api/admin.api";
 import Sidebar from "../../../components/admin/Sidebar/AdminSidebar";
 import Navbar from "../../../components/admin/Navbar/AdminNavbar";
+import { uppercaseMeridiem } from "../../../utils/indiaDateTime";
 
 const pageSizes = [10, 25, 50];
 const ratingOptions = [
@@ -34,12 +35,12 @@ const formatTime = (value) => {
   if (!value) return "";
   const [hours = "0", minutes = "0"] = String(value).split(":");
   const date = new Date(Date.UTC(2026, 0, 1, Number(hours), Number(minutes)));
-  return new Intl.DateTimeFormat("en-IN", {
+  return uppercaseMeridiem(new Intl.DateTimeFormat("en-IN", {
     hour: "numeric",
     minute: "2-digit",
     hour12: true,
     timeZone: "UTC",
-  }).format(date);
+  }).format(date));
 };
 
 const stars = (rating) => "★★★★★".slice(0, Number(rating || 0)) || "No rating";

@@ -77,6 +77,9 @@ class ComplaintTimelineEventSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
+"""
+PSYCHOLOGIST COMPLAINT ATTACHMENT
+"""
 class PsychologistComplaintAttachmentSerializer(ComplaintAttachmentSerializer):
     class Meta:
         model = PsychologistComplaintAttachment
@@ -84,6 +87,9 @@ class PsychologistComplaintAttachmentSerializer(ComplaintAttachmentSerializer):
         read_only_fields = ["id", "file_url", "file_name", "uploaded_at"]
 
 
+"""
+COMPLAINT BOOKING SERIALIZER AFTER CONSULTATION
+"""
 class EligibleComplaintBookingSerializer(serializers.ModelSerializer):
     psychologist_name = serializers.CharField(source="psychologist.user.full_name", read_only=True)
     psychologist_id = serializers.CharField(source="psychologist.psychologist_id", read_only=True)
@@ -119,6 +125,9 @@ class EligibleComplaintBookingSerializer(serializers.ModelSerializer):
         return self._eligibility(obj)
 
 
+"""
+COMPLAINT SERIALIZER
+"""
 class ComplaintSerializer(serializers.ModelSerializer):
     status_display = serializers.CharField(source="get_status_display", read_only=True)
     category_display = serializers.CharField(source="get_category_display", read_only=True)
@@ -187,6 +196,9 @@ class ComplaintSerializer(serializers.ModelSerializer):
         return complaint_consultation_payload(obj.booking)
 
 
+"""
+CREATE COMPLAINT SERIALIZER
+"""
 class CreateComplaintSerializer(serializers.Serializer):
     category = serializers.ChoiceField(choices=Complaint.CATEGORY_CHOICES)
     severity = serializers.ChoiceField(choices=Complaint.SEVERITY_CHOICES, required=False, default=Complaint.SEVERITY_MEDIUM)
@@ -255,6 +267,9 @@ class CreateComplaintSerializer(serializers.Serializer):
         return complaint
 
 
+"""
+ADMIN COMPLAINT ACTIONS
+"""
 class AdminComplaintActionSerializer(serializers.Serializer):
     action = serializers.ChoiceField(choices=["resolve", "reject", "send_to_psychologist", "note"])
     message = serializers.CharField(required=False, allow_blank=True, trim_whitespace=True)
@@ -357,6 +372,9 @@ class AdminComplaintActionSerializer(serializers.Serializer):
         return instance
 
 
+"""
+PSYCHOLOGIST COMPLAINT SERIALIZER
+"""
 class PsychologistComplaintSerializer(ComplaintSerializer):
     class Meta(ComplaintSerializer.Meta):
         fields = [
@@ -365,6 +383,9 @@ class PsychologistComplaintSerializer(ComplaintSerializer):
         ]
 
 
+"""
+PSYCHOLOGIST COMPLAINT RESPONSE
+"""
 class PsychologistComplaintResponseSerializer(serializers.Serializer):
     response = serializers.CharField(trim_whitespace=True)
     evidence = serializers.ListField(

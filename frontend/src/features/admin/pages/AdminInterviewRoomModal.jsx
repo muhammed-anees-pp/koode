@@ -8,6 +8,7 @@ import {
     getChatMessages,
     sendChatMessage,
 } from "../../../api/admin.api";
+import { uppercaseMeridiem } from "../../../utils/indiaDateTime";
 import { resolveMediaUrl } from "../../../utils/url";
 
 function AppAvatar({ name, photo, size = 44 }) {
@@ -117,7 +118,7 @@ function ChatPanel({ messages, onSend, inputRef }) {
                 {messages.map((m) => (
                     <div key={m.id} className={`flex flex-col ${m.is_admin ? "items-end" : "items-start"}`}>
                         <span className="text-[10px] text-slate-500 mb-1">
-                            {m.sender_name} · {new Date(m.sent_at).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
+                            {m.sender_name} · {uppercaseMeridiem(new Date(m.sent_at).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }))}
                         </span>
                         <div className={`max-w-[85%] px-3 py-2 rounded-2xl text-sm leading-relaxed ${m.is_admin
                             ? "bg-indigo-600 text-white rounded-tr-sm"
