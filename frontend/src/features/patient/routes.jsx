@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import PatientSignup from "./pages/PatientSignup";
 import PatientLogin from "./pages/PatientLogin";
 import PatientHome from "./pages/PatientHome";
@@ -23,9 +23,13 @@ import PatientChatbotWidget from "../../components/patient/Chatbot/PatientChatbo
 
 
 const PatientRoutes = () => {
+  const location = useLocation();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const role = useAuthStore((s) => s.role);
   const isPatient = isAuthenticated && role === "PATIENT";
+  const hideChatbotWidget =
+    /^\/patient\/consultation\/[^/]+\/?$/.test(location.pathname) ||
+    /^\/patient\/messages\/?$/.test(location.pathname);
 
   return (
     <>
@@ -98,7 +102,7 @@ const PatientRoutes = () => {
         />
         <Route path="*" element={<Navigate to="home" />} />
       </Routes>
-      {isPatient && <PatientChatbotWidget />}
+      {isPatient && !hideChatbotWidget && <PatientChatbotWidget />}
     </>
   );
 };
