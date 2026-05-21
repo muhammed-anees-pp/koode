@@ -63,7 +63,7 @@ QUESTION_TREE = {
                 "id": "opt_other",
                 "label": "Something else or not sure",
                 "next": "q_other",
-                "keywords": ["counseling", "therapy", "mental", "support"]
+                "keywords": ["counseling", "consultation", "mental", "support"]
             }
         ]
     },
@@ -206,12 +206,12 @@ QUESTION_TREE = {
         ]
     },
     "q_other_2": {
-        "text": "Have you seen a therapist or specialist before for this issue?",
+        "text": "Have you seen a psychologist or specialist before for this issue?",
         "helper": "Knowing your history helps in recommending the right specialist.",
         "options": [
-            {"id": "oth_2_1", "label": "Yes, currently seeing one", "next": "done", "keywords": ["ongoing therapy"]},
-            {"id": "oth_2_2", "label": "Yes, in the past", "next": "done", "keywords": ["prior therapy"]},
-            {"id": "oth_2_3", "label": "No, this is my first time", "next": "done", "keywords": ["first time", "new to therapy"]}
+            {"id": "oth_2_1", "label": "Yes, currently seeing one", "next": "done", "keywords": ["ongoing consultation"]},
+            {"id": "oth_2_2", "label": "Yes, in the past", "next": "done", "keywords": ["prior consultation"]},
+            {"id": "oth_2_3", "label": "No, this is my first time", "next": "done", "keywords": ["first time", "new to consultation"]}
         ]
     }
 }
@@ -301,9 +301,9 @@ def recommend_department(answers, concern_text=""):
     if not active_specializations:
         return {
             "department": "General Psychology",
-            "title": "General Therapy",
+            "title": "General Consultation",
             "subtitle": "Comprehensive Support",
-            "approach": "individualized therapy",
+            "approach": "individualized consultation",
             "explanation": "We couldn't find a specific active department, but our general psychologists are ready to help.",
             "nlp_matches": [],
         }
@@ -346,7 +346,7 @@ def recommend_department(answers, concern_text=""):
     return {
         "department": name,
         "title": f"{name} Support",
-        "subtitle": "Tailored Therapy Options",
+        "subtitle": "Tailored Consultation Options",
         "approach": f"approaches rooted in {name.lower()}",
         "explanation": (
             f"Based on your responses, support focused on {name.lower()} is recommended for you. "

@@ -9,8 +9,8 @@ export default function PatientFooter() {
                 <div>
                     <h4 className={colTitleCls}>Service</h4>
                     <ul className="list-none p-0 m-0 flex flex-col gap-3">
-                        <li><a href="#" className={linkCls}>Individual Therapy</a></li>
-                        <li><a href="#" className={linkCls}>Couple Therapy</a></li>
+                        <li><a href="#" className={linkCls}>Individual Consultation</a></li>
+                        <li><a href="#" className={linkCls}>Couple Consultation</a></li>
                         <li><a href="#" className={linkCls}>Family Counseling</a></li>
                         <li><a href="#" className={linkCls}>Follow Up Session</a></li>
                     </ul>

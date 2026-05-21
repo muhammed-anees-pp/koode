@@ -51,13 +51,13 @@ export const updatePatientProfile = async (data) => {
   return response.data;
 };
 
-export const fetchPatientTherapists = async () => {
-  const response = await axiosInstance.get("patient/therapists/");
+export const fetchPatientPsychologists = async () => {
+  const response = await axiosInstance.get("patient/psychologists/");
   return response.data;
 };
 
-export const fetchPatientTherapistDetail = async (id) => {
-  const response = await axiosInstance.get(`patient/therapists/${id}/`);
+export const fetchPatientPsychologistDetail = async (id) => {
+  const response = await axiosInstance.get(`patient/psychologists/${id}/`);
   return response.data;
 };
 

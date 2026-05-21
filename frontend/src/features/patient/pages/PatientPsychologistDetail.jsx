@@ -1,7 +1,7 @@
 import React, { useMemo, useRef, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { fetchPatientTherapistDetail, getPsychologistSlots } from "../../../api/patient.api";
+import { fetchPatientPsychologistDetail, getPsychologistSlots } from "../../../api/patient.api";
 import PatientNavbar from "../../../components/patient/Navbar/PatientNavbar";
 import PatientFooter from "../../../components/patient/Footer/PatientFooter";
 import { Stars } from "../../../components/patient/ReviewModal";
@@ -52,13 +52,13 @@ const specializationIconVariants = [
   ),
 ];
 
-export default function PatientTherapistDetail() {
+export default function PatientPsychologistDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const bookingPanelRef = useRef(null);
-  const { data: therapist, isLoading, isError } = useQuery({
-    queryKey: ["patient-therapist-detail", id],
-    queryFn: () => fetchPatientTherapistDetail(id),
+  const { data: psychologist, isLoading, isError } = useQuery({
+    queryKey: ["patient-psychologist-detail", id],
+    queryFn: () => fetchPatientPsychologistDetail(id),
     enabled: !!id,
   });
 
@@ -98,7 +98,7 @@ export default function PatientTherapistDetail() {
       navigate(-1);
       return;
     }
-    navigate("/patient/therapists");
+    navigate("/patient/psychologists");
   };
 
   const fetchSlots = async () => {
@@ -166,16 +166,16 @@ export default function PatientTherapistDetail() {
   const currentMonth = monthNames[today.getMonth()];
   const currentYear = today.getFullYear();
   const monthDays = getCurrentMonthDays();
-  const ratingSummary = therapist?.ratings || {};
+  const ratingSummary = psychologist?.ratings || {};
   const averageRating = ratingSummary.average_rating;
   const visibleReviews = ratingSummary.reviews || [];
   const displayedReviews = showAllReviews
     ? visibleReviews
     : visibleReviews.slice(0, INITIAL_REVIEW_COUNT);
   const hasMoreReviews = visibleReviews.length > INITIAL_REVIEW_COUNT;
-  const specializationDetails = therapist?.specialization_details?.length
-    ? therapist.specialization_details
-    : (therapist?.specializations || []).map((name) => ({ name, description: "" }));
+  const specializationDetails = psychologist?.specialization_details?.length
+    ? psychologist.specialization_details
+    : (psychologist?.specializations || []).map((name) => ({ name, description: "" }));
   const focusedOnItems = specializationDetails.filter((item) => item.description?.trim());
 
   if (isLoading) {
@@ -189,13 +189,13 @@ export default function PatientTherapistDetail() {
     );
   }
 
-  if (isError || !therapist) {
+  if (isError || !psychologist) {
     return (
       <div className="flex flex-col min-h-screen font-['DM_Sans',sans-serif] antialiased">
         <PatientNavbar />
         <main className="flex-1 max-w-[1200px] w-full mx-auto px-6 md:px-12 pt-[8rem] pb-24 text-center">
-          <h2 className="text-2xl font-bold text-slate-800">Therapist not found</h2>
-          <Link to="/patient/therapists" className="text-patient-primary hover:underline mt-4 inline-block">Back to directory</Link>
+          <h2 className="text-2xl font-bold text-slate-800">Psychologist not found</h2>
+          <Link to="/patient/psychologists" className="text-patient-primary hover:underline mt-4 inline-block">Back to directory</Link>
         </main>
       </div>
     );
@@ -228,11 +228,11 @@ export default function PatientTherapistDetail() {
               <div className="relative flex-shrink-0 self-center md:self-start">
                 <div className="h-32 w-32 rounded-full border-2 border-patient-primary bg-white p-1.5 shadow-xl shadow-patient-primary/10 md:h-40 md:w-40">
                   <div className="w-full h-full rounded-full overflow-hidden bg-slate-200">
-                    {therapist.profile_picture ? (
-                       <img src={therapist.profile_picture} alt={therapist.full_name} className="w-full h-full object-cover" />
+                    {psychologist.profile_picture ? (
+                       <img src={psychologist.profile_picture} alt={psychologist.full_name} className="w-full h-full object-cover" />
                     ) : (
                        <div className="w-full h-full bg-patient-primary flex flex-col items-center justify-center text-white text-3xl font-bold">
-                         {therapist.full_name?.charAt(0)}
+                         {psychologist.full_name?.charAt(0)}
                        </div>
                     )}
                   </div>
@@ -242,10 +242,10 @@ export default function PatientTherapistDetail() {
 
               <div className="min-w-0 flex-1 pt-1 text-center md:text-left">
                 <h1 className="font-outfit text-2xl sm:text-3xl md:text-[2.15rem] font-extrabold text-[#0f172a] tracking-tight mb-2 leading-tight">
-                  {therapist.full_name}
+                  {psychologist.full_name}
                 </h1>
                 <p className="text-patient-primary font-semibold text-sm mb-4">
-                  {therapist.job_title || "Consultant Psychologist"}
+                  {psychologist.job_title || "Consultant Psychologist"}
                 </p>
 
                 <div className="mb-4 flex flex-wrap items-center justify-center gap-2 md:justify-start">
@@ -262,16 +262,16 @@ export default function PatientTherapistDetail() {
                 </div>
                 
                 <div className="mb-6 flex flex-wrap items-center justify-center gap-3 text-xs font-semibold text-slate-500 md:justify-start">
-                  {therapist.highest_education && (
+                  {psychologist.highest_education && (
                     <div className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-white/70 px-3 py-1.5">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
-                      {therapist.highest_education.toUpperCase()}
+                      {psychologist.highest_education.toUpperCase()}
                     </div>
                   )}
-                  {therapist.years_of_experience > 0 && (
+                  {psychologist.years_of_experience > 0 && (
                     <div className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-white/70 px-3 py-1.5">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                      {therapist.years_of_experience * 1000}+ Hours of Therapy Experience
+                      {psychologist.years_of_experience * 1000}+ Hours of Consultation Experience
                     </div>
                   )}
                 </div>
@@ -290,19 +290,19 @@ export default function PatientTherapistDetail() {
                     ))}
                   </div>
                   <span className="hidden text-[0.7rem] text-slate-400 font-bold tracking-widest leading-none sm:inline">0:58</span>
-                  {therapist.audio_intro && (
-                    <audio ref={audioRef} src={therapist.audio_intro} onEnded={() => setIsPlaying(false)} className="hidden" />
+                  {psychologist.audio_intro && (
+                    <audio ref={audioRef} src={psychologist.audio_intro} onEnded={() => setIsPlaying(false)} className="hidden" />
                   )}
                 </div>
               </div>
             </div>
 
             <p className="text-[0.95rem] text-slate-600 leading-[1.8] mb-8 relative z-10 max-w-[820px]">
-              {therapist.about || "I am a dedicated professional providing a safe space to be heard and understood. I help people explore their thoughts and emotions in a respectful, non-judgmental way."}
+              {psychologist.about || "I am a dedicated professional providing a safe space to be heard and understood. I help people explore their thoughts and emotions in a respectful, non-judgmental way."}
             </p>
 
             <button
-              onClick={() => navigate(`/patient/therapists/${id}/book`)}
+              onClick={() => navigate(`/patient/psychologists/${id}/book`)}
               className="relative z-10 flex w-full items-center justify-center gap-2 rounded-full bg-slate-900 px-6 py-3 text-sm font-bold text-white transition-colors hover:bg-slate-800 sm:w-auto"
             >
               Book Now
@@ -413,7 +413,7 @@ export default function PatientTherapistDetail() {
              {[
                { q: "What is a Psychosexual Counselor?", a: "A Psychosexual Counselor is a trained professional who helps individuals and couples explore concerns related to intimacy, relationships, sexual health, and overall well-being in a safe, confidential, and non-judgmental space." },
                { q: "What kind of concerns can I discuss?", a: "You can discuss anything that affects your well-being or relationships." },
-               { q: "Will I be judged or shamed for what I share?", a: "No, therapy offers a safe, non-judgmental environment for you." }
+               { q: "Will I be judged or shamed for what I share?", a: "No, consultation offers a safe, non-judgmental environment for you." }
              ].map((faq, i) => (
                 <details key={i} className="group border border-slate-200 rounded-2xl bg-white overflow-hidden [&_summary::-webkit-details-marker]:hidden">
                   <summary className="flex items-center justify-between gap-4 p-5 font-bold text-[0.95rem] text-slate-800 cursor-pointer hover:bg-slate-50 transition-colors">
@@ -538,7 +538,7 @@ export default function PatientTherapistDetail() {
                       type="button"
                       onClick={() =>
                         navigate(
-                          `/patient/therapists/${id}/book?date=${selectedDate}&slot=${slot.id}`
+                          `/patient/psychologists/${id}/book?date=${selectedDate}&slot=${slot.id}`
                         )
                       }
                       className="rounded-xl border border-slate-200 bg-white px-3 py-3 text-center text-sm font-semibold text-slate-700 transition hover:border-patient-primary hover:bg-patient-light hover:text-patient-primary"
@@ -564,7 +564,7 @@ export default function PatientTherapistDetail() {
             <div className="flex justify-between items-center mb-6">
               <span className="text-sm font-medium text-slate-600">Consultation Fee</span>
               <div className="text-right">
-                <span className="text-xl font-extrabold text-slate-900">₹ {therapist.consultation_fee || "500"}</span>
+                <span className="text-xl font-extrabold text-slate-900">₹ {psychologist.consultation_fee || "500"}</span>
                 <span className="text-xs text-slate-400 font-medium ml-1">/ session</span>
               </div>
             </div>

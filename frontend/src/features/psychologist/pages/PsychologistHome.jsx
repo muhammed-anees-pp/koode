@@ -6,7 +6,7 @@ import { usePsychologistSessionGuard } from '../../../hooks/usePsychologistSessi
 
 const stats = [
   { value: '10K+', label: 'Patients Helped' },
-  { value: '500+', label: 'Licensed Therapists' },
+  { value: '500+', label: 'Licensed Psychologists' },
   { value: '98%', label: 'Satisfaction Rate' },
   { value: '24/7', label: 'Always Available' },
 ];
@@ -101,7 +101,7 @@ const PsychologistHome = () => {
           <section className="py-16 px-6">
             <div className="max-w-[700px] mx-auto text-center bg-white border border-blue-100 rounded-3xl px-10 py-14 shadow-sm">
               <h2 className="text-3xl font-bold text-gray-900 mb-3">Ready to transform your practice?</h2>
-              <p className="text-gray-500 text-base mb-7">Join hundreds of therapists already using Koode to deliver better care.</p>
+              <p className="text-gray-500 text-base mb-7">Join hundreds of psychologists already using Koode to deliver better care.</p>
               <button className="flex items-center gap-2 px-7 py-3.5 bg-psycho-primary text-white font-semibold text-sm rounded-full border-none cursor-pointer transition-all hover:bg-psycho-hover shadow-[0_4px_16px_rgba(17,136,216,0.3)] mx-auto">
                 Get Started Today
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></svg>

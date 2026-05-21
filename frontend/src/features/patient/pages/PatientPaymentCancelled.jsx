@@ -85,7 +85,7 @@ export default function PatientPaymentCancelled() {
             {/* Action buttons */}
             <div className="mx-6 mt-5 flex flex-col gap-3 pb-6">
               <Link
-                to="/patient/therapists"
+                to="/patient/psychologists"
                 className="flex w-full items-center justify-center gap-2 rounded-xl bg-patient-primary py-3.5 text-sm font-bold text-white transition hover:bg-patient-hover"
               >
                 <svg

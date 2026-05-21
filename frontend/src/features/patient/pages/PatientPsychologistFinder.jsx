@@ -118,14 +118,14 @@ const StepBar = ({ currentStep }) => (
   </div>
 );
 
-const TherapistMiniCard = ({ therapist }) => {
+const PsychologistMiniCard = ({ psychologist }) => {
   const navigate = useNavigate();
-  const initials = therapist.full_name?.charAt(0)?.toUpperCase() || "K";
-  const nextSlot = therapist.next_available_slot?.label || "No upcoming slots";
-  const rating = formatRating(therapist.ratings?.average_rating);
-  const years = Number(therapist.years_of_experience || 0);
+  const initials = psychologist.full_name?.charAt(0)?.toUpperCase() || "K";
+  const nextSlot = psychologist.next_available_slot?.label || "No upcoming slots";
+  const rating = formatRating(psychologist.ratings?.average_rating);
+  const years = Number(psychologist.years_of_experience || 0);
 
-  const viewProfile = () => navigate(`/patient/therapists/${therapist.psychologist_id}`);
+  const viewProfile = () => navigate(`/patient/psychologists/${psychologist.psychologist_id}`);
 
   return (
     <article className="group flex h-full flex-col overflow-hidden rounded-xl border border-[#e4edf2] bg-white shadow-[0_14px_38px_rgba(15,23,42,0.06)] transition-all duration-300 hover:-translate-y-1 hover:border-patient-primary/40 hover:shadow-[0_22px_54px_rgba(15,23,42,0.12)]">
@@ -137,15 +137,15 @@ const TherapistMiniCard = ({ therapist }) => {
               Recommended match
             </p>
             <h3 className="mt-2 truncate font-outfit text-lg font-extrabold tracking-tight text-[#0f172a]">
-              {therapist.full_name}
+              {psychologist.full_name}
             </h3>
             <p className="mt-1 line-clamp-1 text-sm font-medium text-[#64748b]">
-              {therapist.job_title || "Consultant Psychologist"}
+              {psychologist.job_title || "Consultant Psychologist"}
             </p>
           </div>
           <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-[#d9f5f1] ring-4 ring-[#effdfa]">
-            {therapist.profile_picture ? (
-              <img src={therapist.profile_picture} alt={therapist.full_name} className="h-full w-full object-cover" />
+            {psychologist.profile_picture ? (
+              <img src={psychologist.profile_picture} alt={psychologist.full_name} className="h-full w-full object-cover" />
             ) : (
               <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-patient-primary to-[#4aa3ff] text-xl font-extrabold text-white">
                 {initials}
@@ -176,14 +176,14 @@ const TherapistMiniCard = ({ therapist }) => {
         </div>
 
         <div className="mt-5 flex flex-wrap gap-2">
-          {therapist.specializations?.slice(0, 3).map((item) => (
+          {psychologist.specializations?.slice(0, 3).map((item) => (
             <span key={item} className="rounded-full bg-[#effdfa] px-3 py-1 text-xs font-bold text-[#0f766e]">
               {item}
             </span>
           ))}
-          {therapist.specializations?.length > 3 && (
+          {psychologist.specializations?.length > 3 && (
             <span className="rounded-full bg-[#f1f5f9] px-3 py-1 text-xs font-bold text-[#64748b]">
-              +{therapist.specializations.length - 3}
+              +{psychologist.specializations.length - 3}
             </span>
           )}
         </div>
@@ -191,7 +191,7 @@ const TherapistMiniCard = ({ therapist }) => {
         <div className="mt-6 space-y-3 border-t border-[#edf2f7] pt-5">
           <div className="flex items-center justify-between gap-4">
             <span className="text-xs font-extrabold uppercase tracking-[0.12em] text-[#94a3b8]">Fee</span>
-            <span className="text-sm font-extrabold text-[#0f172a]">{formatFee(therapist.consultation_fee)}</span>
+            <span className="text-sm font-extrabold text-[#0f172a]">{formatFee(psychologist.consultation_fee)}</span>
           </div>
           <div className="flex items-start justify-between gap-4">
             <span className="text-xs font-extrabold uppercase tracking-[0.12em] text-[#94a3b8]">Next slot</span>
@@ -288,7 +288,7 @@ export default function PatientPsychologistFinder() {
               <div className="max-w-[680px] animate-[phFadeUp_0.55s_ease_both]">
                 <span className="inline-flex items-center gap-2 rounded-full border border-patient-primary/20 bg-white/80 px-4 py-2 text-xs font-extrabold uppercase tracking-[0.14em] text-patient-primary shadow-sm">
                   <Icon name="spark" className="h-4 w-4" />
-                  Guided therapist matching
+                  Guided psychologist matching
                 </span>
                 <h1 className="mt-6 font-outfit text-[clamp(2.25rem,7vw,4.6rem)] font-extrabold leading-[1.02] tracking-tight text-[#0f172a]">
                   Find the right psychologist with a calmer first step.
@@ -315,7 +315,7 @@ export default function PatientPsychologistFinder() {
                     <Icon name="arrow" className="h-4 w-4" strokeWidth={2.4} />
                   </button>
                   <Link
-                    to="/patient/therapists"
+                    to="/patient/psychologists"
                     className="inline-flex items-center justify-center rounded-xl border border-[#dbe3ea] bg-white px-6 py-4 text-sm font-extrabold text-[#334155] no-underline transition hover:-translate-y-0.5 hover:border-patient-primary/40 hover:bg-[#fbfffe]"
                   >
                     Browse all psychologists
@@ -542,7 +542,7 @@ export default function PatientPsychologistFinder() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => navigate("/patient/therapists")}
+                      onClick={() => navigate("/patient/psychologists")}
                       className="inline-flex items-center justify-center rounded-xl border border-[#dbe3ea] bg-white px-6 py-3 text-sm font-extrabold text-[#334155] transition hover:bg-[#f8fafc]"
                     >
                       Browse all
@@ -566,8 +566,8 @@ export default function PatientPsychologistFinder() {
 
               {psychologists.length > 0 ? (
                 <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-                  {psychologists.map((therapist) => (
-                    <TherapistMiniCard key={therapist.psychologist_id} therapist={therapist} />
+                  {psychologists.map((psychologist) => (
+                    <PsychologistMiniCard key={psychologist.psychologist_id} psychologist={psychologist} />
                   ))}
                 </div>
               ) : (
@@ -583,7 +583,7 @@ export default function PatientPsychologistFinder() {
                   </p>
                   <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
                     <Link
-                      to="/patient/therapists"
+                      to="/patient/psychologists"
                       className="inline-flex justify-center rounded-xl bg-patient-primary px-6 py-3 text-sm font-bold text-white no-underline transition hover:bg-patient-hover"
                     >
                       Browse all psychologists
