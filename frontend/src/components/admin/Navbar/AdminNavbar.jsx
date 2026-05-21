@@ -38,7 +38,7 @@ export default function Navbar() {
   const avatarUrl = currentUser?.profile_image || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=6366f1&color=fff&size=128`;
 
   return (
-    <nav className="fixed top-0 left-[220px] right-0 h-[60px] bg-[#0B0E14] border-b border-slate-800/40 flex items-center px-6 z-[99]">
+    <nav className="fixed left-[220px] right-0 top-0 z-[99] flex h-[60px] items-center border-b border-slate-800/40 bg-[#0B0E14] px-4 sm:px-6">
       <div className="flex-1" />
 
       <div className="flex items-center gap-3">

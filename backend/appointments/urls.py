@@ -1,10 +1,12 @@
 from django.urls import path
 from .views import (
-    BookingListView, CancelBookingView, CompleteBookingView, CreateAvailabilityView, CreateBookingView, PsychologistAvailabilityListView, PsychologistSlotListView, 
+    AdminAppointmentDetailView, AdminAppointmentListView, BookingListView, CancelBookingView, CompleteBookingView, CreateAvailabilityView, CreateBookingView, PsychologistAvailabilityListView, PsychologistSlotListView, 
     RescheduleBookingView, RevokeAvailabilitySlotView,
 )
 
 urlpatterns = [
+    path("admin/", AdminAppointmentListView.as_view(), name="appointments-admin-list"),
+    path("admin/<uuid:booking_id>/", AdminAppointmentDetailView.as_view(), name="appointments-admin-detail"),
     path("availability/create/", CreateAvailabilityView.as_view(), name="appointments-create-availability"),
     path("availability/me/", PsychologistAvailabilityListView.as_view(), name="appointments-my-availability"),
     path("availability/revoke-slot/", RevokeAvailabilitySlotView.as_view(), name="appointments-revoke-availability-slot"),
