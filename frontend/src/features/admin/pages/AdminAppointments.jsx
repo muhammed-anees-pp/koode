@@ -113,36 +113,34 @@ export default function AdminAppointments() {
             <SummaryCard label="Cancelled" value={summary.cancelled} active={activeTab === "cancelled"} />
           </div>
 
-          <div className="mt-6 rounded-2xl border border-slate-700/50 bg-[#141826] p-5">
-            <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-              <div className="flex flex-wrap gap-2">
-                {tabs.map((tab) => (
-                  <button
-                    key={tab.key}
-                    type="button"
-                    onClick={() => switchTab(tab.key)}
-                    className={`rounded-xl px-5 py-2.5 text-sm font-semibold transition ${
-                      activeTab === tab.key
-                        ? "bg-admin-primary text-white"
-                        : "border border-slate-700 bg-slate-900/30 text-slate-400 hover:text-slate-100"
-                    }`}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
+          <div className="mt-6 flex flex-col gap-4">
+            <div className="flex flex-wrap gap-2">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.key}
+                  type="button"
+                  onClick={() => switchTab(tab.key)}
+                  className={`rounded-xl px-5 py-2.5 text-sm font-semibold transition ${
+                    activeTab === tab.key
+                      ? "bg-admin-primary text-white"
+                      : "border border-slate-700 bg-slate-900/30 text-slate-400 hover:text-slate-100"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
 
-              <div className="grid gap-3 sm:grid-cols-[minmax(0,360px)]">
-                <input
-                  className={inputCls}
-                  value={search}
-                  onChange={(event) => {
-                    setSearch(event.target.value);
-                    setPage(1);
-                  }}
-                  placeholder="Search appointment, patient, psychologist"
-                />
-              </div>
+            <div className="w-full max-w-md">
+              <input
+                className={inputCls}
+                value={search}
+                onChange={(event) => {
+                  setSearch(event.target.value);
+                  setPage(1);
+                }}
+                placeholder="Search appointment, patient, psychologist"
+              />
             </div>
           </div>
 
