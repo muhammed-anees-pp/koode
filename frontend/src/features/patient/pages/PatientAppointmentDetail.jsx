@@ -248,7 +248,7 @@ export default function PatientAppointmentDetail() {
                     </p>
                     <h2 className="mt-0.5 text-xl font-bold text-slate-900">{booking.psychologist_name}</h2>
                     <Link
-                      to={booking.psychologist_id ? `/patient/therapists/${booking.psychologist_id}` : "#"}
+                      to={booking.psychologist_id ? `/patient/psychologists/${booking.psychologist_id}` : "#"}
                       className="mt-1 inline-flex items-center gap-1 text-sm font-semibold text-patient-primary hover:underline"
                     >
                       View Profile
@@ -260,7 +260,7 @@ export default function PatientAppointmentDetail() {
 
                   <div className="text-right text-sm text-slate-500">
                     <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-0.5">Specialization</p>
-                    <p className="font-semibold text-slate-700">{booking.specialization || "Cognitive Behavioral Therapy"}</p>
+                    <p className="font-semibold text-slate-700">{booking.specialization || "Cognitive Behavioral Consultation"}</p>
                   </div>
                 </div>
               </div>
@@ -433,7 +433,7 @@ export default function PatientAppointmentDetail() {
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2">
                     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                   </svg>
-                  <h3 className="text-sm font-bold text-slate-800">Message Therapist</h3>
+                  <h3 className="text-sm font-bold text-slate-800">Message Psychologist</h3>
                 </div>
                 <p className="text-sm text-slate-500 mb-4">
                   Send a pre-session note or documents to {booking.psychologist_name}.

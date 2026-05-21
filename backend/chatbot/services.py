@@ -28,7 +28,7 @@ INTENT_KNOWLEDGE_BASE = [
         "examples": [
             "How can I book an appointment?",
             "How to schedule a consultation?",
-            "I want to book a therapy session",
+            "I want to book a consultation session",
             "How to choose a slot?",
         ],
         "keywords": ["book", "booking", "appointment", "schedule", "slot"],
@@ -120,7 +120,7 @@ INTENT_KNOWLEDGE_BASE = [
     {
         "intent": "clinical_psychologist",
         "answer": (
-            "Clinical psychologists support concerns such as anxiety, depression, trauma, emotional distress, behavioral issues, and coping skills through assessment and evidence-based therapy.\n\n"
+            "Clinical psychologists support concerns such as anxiety, depression, trauma, emotional distress, behavioral issues, and coping skills through assessment and evidence-based consultation.\n\n"
             "Do you have any other doubts?"
         ),
         "examples": [
@@ -135,7 +135,7 @@ INTENT_KNOWLEDGE_BASE = [
         "intent": "psychologist_role",
         "answer": (
             "A psychologist helps people understand thoughts, emotions, behavior patterns, stress, relationships, and coping difficulties. "
-            "They may provide assessment, counseling, therapy support, and guidance for improving mental well-being.\n\n"
+            "They may provide assessment, counseling, consultation support, and guidance for improving mental well-being.\n\n"
             "Do you have any other doubts?"
         ),
         "examples": [
@@ -144,7 +144,7 @@ INTENT_KNOWLEDGE_BASE = [
             "Tell me about psychologists",
             "Normally what is the role of a psychologist?",
         ],
-        "keywords": ["psychologist", "psychologists", "role", "normally", "general", "therapy", "counseling", "behaviour", "behavior"],
+        "keywords": ["psychologist", "psychologists", "role", "normally", "general", "consultation", "counseling", "behaviour", "behavior"],
         "quick_replies": ["Resolved", "I have other doubts"],
     },
     {

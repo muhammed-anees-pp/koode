@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
-import { fetchPatientTherapists, fetchSpecializations } from "../../../api/patient.api";
+import { fetchPatientPsychologists, fetchSpecializations } from "../../../api/patient.api";
 import PatientNavbar from "../../../components/patient/Navbar/PatientNavbar";
 import PatientFooter from "../../../components/patient/Footer/PatientFooter";
 
@@ -70,7 +70,7 @@ function Waveform({ isPlaying, progress = 0, disabled = false }) {
   );
 }
 
-const TherapistCard = ({ therapist }) => {
+const PsychologistCard = ({ psychologist }) => {
   const navigate = useNavigate();
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(null);
@@ -120,30 +120,30 @@ const TherapistCard = ({ therapist }) => {
 
   const handleQuickView = (e) => {
     e.stopPropagation();
-    navigate(`/patient/therapists/${therapist.psychologist_id}`);
+    navigate(`/patient/psychologists/${psychologist.psychologist_id}`);
   };
 
   const handleBook = (e) => {
     e.stopPropagation();
-    const nextSlot = therapist.next_available_slot;
+    const nextSlot = psychologist.next_available_slot;
     if (nextSlot?.date && nextSlot?.id) {
-      navigate(`/patient/therapists/${therapist.psychologist_id}/book?date=${nextSlot.date}&slot=${nextSlot.id}`);
+      navigate(`/patient/psychologists/${psychologist.psychologist_id}/book?date=${nextSlot.date}&slot=${nextSlot.id}`);
       return;
     }
-    navigate(`/patient/therapists/${therapist.psychologist_id}`);
+    navigate(`/patient/psychologists/${psychologist.psychologist_id}`);
   };
 
-  const years = Number(therapist.years_of_experience || 0);
+  const years = Number(psychologist.years_of_experience || 0);
   const experienceLabel = years > 0
     ? `${years} year${years === 1 ? "" : "s"} experience`
     : "Experience not listed";
-  const therapyHours = Number(therapist.total_experience_hours || 0);
-  const therapyHoursLabel = therapyHours > 0
-    ? `${Math.round(therapyHours).toLocaleString("en-IN")} therapy hour${Math.round(therapyHours) === 1 ? "" : "s"}`
+  const consultationHours = Number(psychologist.total_experience_hours || 0);
+  const consultationHoursLabel = consultationHours > 0
+    ? `${Math.round(consultationHours).toLocaleString("en-IN")} consultation hour${Math.round(consultationHours) === 1 ? "" : "s"}`
     : null;
-  const rating = therapist.ratings?.average_rating;
-  const nextSlot = therapist.next_available_slot;
-  const hasAudioIntro = Boolean(therapist.audio_intro);
+  const rating = psychologist.ratings?.average_rating;
+  const nextSlot = psychologist.next_available_slot;
+  const hasAudioIntro = Boolean(psychologist.audio_intro);
   const waveformProgress = duration ? currentTime / duration : 0;
 
   return (
@@ -171,10 +171,10 @@ const TherapistCard = ({ therapist }) => {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
         <div>
           <p style={{ fontWeight: 700, fontSize: 18, color: "#111", margin: 0, lineHeight: 1.3 }}>
-            {therapist.full_name}
+            {psychologist.full_name}
           </p>
           <p style={{ fontSize: 13, color: "#777", margin: "3px 0 0" }}>
-            {therapist.job_title || "Consultant Psychologist"}
+            {psychologist.job_title || "Consultant Psychologist"}
           </p>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
             <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "#fff8e1", border: "1px solid #fde68a", borderRadius: 999, padding: "3px 8px", fontSize: 12, fontWeight: 700, color: "#92400e" }}>
@@ -186,11 +186,11 @@ const TherapistCard = ({ therapist }) => {
           </div>
         </div>
         <div style={{ width: 62, height: 62, borderRadius: "50%", overflow: "hidden", flexShrink: 0, background: "#c8d8d8", border: "2.5px solid #fff", boxShadow: "0 2px 8px rgba(0,0,0,0.12)" }}>
-          {therapist.profile_picture ? (
-            <img src={therapist.profile_picture} alt={therapist.full_name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          {psychologist.profile_picture ? (
+            <img src={psychologist.profile_picture} alt={psychologist.full_name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           ) : (
             <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: "#4db6ac", color: "#fff", fontWeight: 700, fontSize: 22 }}>
-              {therapist.full_name?.charAt(0)}
+              {psychologist.full_name?.charAt(0)}
             </div>
           )}
         </div>
@@ -218,21 +218,21 @@ const TherapistCard = ({ therapist }) => {
             </svg>
             {experienceLabel}
           </span>
-          {therapyHoursLabel && (
+          {consultationHoursLabel && (
             <span style={{ fontSize: 12, color: "#64748b", fontWeight: 600 }}>
-              {therapyHoursLabel}
+              {consultationHoursLabel}
             </span>
           )}
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-          {therapist.specializations?.slice(0, 3).map((spec, idx) => (
+          {psychologist.specializations?.slice(0, 3).map((spec, idx) => (
             <span key={idx} style={{ background: "#fff", border: "1.5px solid #dde4e4", borderRadius: 100, padding: "4px 12px", fontSize: 12, fontWeight: 500, color: "#444" }}>
               {spec}
             </span>
           ))}
-          {therapist.specializations?.length > 3 && (
+          {psychologist.specializations?.length > 3 && (
             <span style={{ background: "#fff", border: "1.5px solid #dde4e4", borderRadius: 100, padding: "4px 12px", fontSize: 12, fontWeight: 500, color: "#888" }}>
-              +{therapist.specializations.length - 3}
+              +{psychologist.specializations.length - 3}
             </span>
           )}
         </div>
@@ -252,7 +252,7 @@ const TherapistCard = ({ therapist }) => {
           Session charge
         </span>
         <span style={{ color: "#111827", fontSize: 16, fontWeight: 800, whiteSpace: "nowrap" }}>
-          {formatSessionCharge(therapist.consultation_fee)}
+          {formatSessionCharge(psychologist.consultation_fee)}
           <span style={{ color: "#94a3b8", fontSize: 12, fontWeight: 700, marginLeft: 4 }}>/ session</span>
         </span>
       </div>
@@ -274,8 +274,8 @@ const TherapistCard = ({ therapist }) => {
         <span style={{ fontSize: 12, color: "#64748b", fontWeight: 700, flexShrink: 0, minWidth: 34, textAlign: "right" }}>
           {hasAudioIntro ? (duration ? fmt(Math.max(duration - currentTime, 0)) : "0:00") : "--:--"}
         </span>
-        {therapist.audio_intro && (
-          <audio ref={audioRef} src={therapist.audio_intro} style={{ display: "none" }} />
+        {psychologist.audio_intro && (
+          <audio ref={audioRef} src={psychologist.audio_intro} style={{ display: "none" }} />
         )}
       </div>
 
@@ -333,14 +333,14 @@ const readSpecializationParam = (value) => {
 
 
 
-export default function PatientTherapistList() {
+export default function PatientPsychologistList() {
   const navigate = useNavigate();
   const { specialization } = useParams();
   const routeSpecialization = readSpecializationParam(specialization);
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["patient-therapists"],
-    queryFn: fetchPatientTherapists,
+    queryKey: ["patient-psychologists"],
+    queryFn: fetchPatientPsychologists,
   });
 
   const { data: specsData } = useQuery({
@@ -355,13 +355,13 @@ export default function PatientTherapistList() {
   const sortRef = useRef(null);
   const filterRef = useRef(null);
 
-  const allTherapists = useMemo(() => data?.results || [], [data]);
+  const allPsychologists = useMemo(() => data?.results || [], [data]);
   const allSpecs = useMemo(() => {
     if (specsData?.length) return specsData.map((s) => s.name);
     const set = new Set();
-    allTherapists.forEach((t) => t.specializations?.forEach((s) => set.add(s)));
+    allPsychologists.forEach((t) => t.specializations?.forEach((s) => set.add(s)));
     return Array.from(set).sort();
-  }, [specsData, allTherapists]);
+  }, [specsData, allPsychologists]);
 
   const routeSpec = useMemo(() => {
     if (!routeSpecialization) return null;
@@ -380,7 +380,7 @@ export default function PatientTherapistList() {
   }, []);
 
   const displayed = useMemo(() => {
-    let list = [...allTherapists];
+    let list = [...allPsychologists];
 
     if (search.trim()) {
       const q = search.trim().toLowerCase();
@@ -406,14 +406,14 @@ export default function PatientTherapistList() {
       default: break;
     }
     return list;
-  }, [allTherapists, search, sortBy, activeSpec]);
+  }, [allPsychologists, search, sortBy, activeSpec]);
 
   const activeSortLabel = SORT_OPTIONS.find((o) => o.value === sortBy)?.label || "Sort";
   const hasFilters = search.trim() || activeSpec || sortBy !== "default";
   const clearAll = () => {
     setSearch("");
     setSortBy("default");
-    if (routeSpecialization) navigate("/patient/therapists");
+    if (routeSpecialization) navigate("/patient/psychologists");
   };
   const openSpecialization = (spec) => {
     setFilterOpen(false);
@@ -441,7 +441,7 @@ export default function PatientTherapistList() {
               <>
                 Find the right{" "}
                 <span style={{ background: "linear-gradient(135deg,#00897b,#26c6da)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-                  Therapist
+                  Psychologist
                 </span>{" "}
                 for you
               </>
@@ -499,7 +499,7 @@ export default function PatientTherapistList() {
             {filterOpen && (
               <div style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, background: "#fff", border: "1.5px solid #e8efef", borderRadius: 14, boxShadow: "0 8px 32px rgba(0,0,0,0.1)", zIndex: 100, minWidth: 220, maxHeight: 280, overflowY: "auto" }}>
                 <button
-                  onClick={() => { setFilterOpen(false); navigate("/patient/therapists"); }}
+                  onClick={() => { setFilterOpen(false); navigate("/patient/psychologists"); }}
                   style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 16px", border: "none", background: !activeSpec ? "#f0faf9" : "transparent", color: !activeSpec ? "#00897b" : "#333", fontWeight: !activeSpec ? 600 : 400, fontSize: 14, cursor: "pointer" }}
                   onMouseEnter={(e) => { if (activeSpec) e.currentTarget.style.background = "#f9fbfb"; }}
                   onMouseLeave={(e) => { if (activeSpec) e.currentTarget.style.background = "transparent"; }}
@@ -565,9 +565,9 @@ export default function PatientTherapistList() {
         </div>
 
 
-        {!isLoading && !isError && allTherapists.length > 0 && (
+        {!isLoading && !isError && allPsychologists.length > 0 && (
           <p style={{ fontSize: 14, color: "#888", margin: "0 0 20px" }}>
-            Showing <strong style={{ color: "#222" }}>{displayed.length}</strong> of {allTherapists.length} therapists
+            Showing <strong style={{ color: "#222" }}>{displayed.length}</strong> of {allPsychologists.length} psychologists
           </p>
         )}
 
@@ -578,7 +578,7 @@ export default function PatientTherapistList() {
           </div>
         ) : isError ? (
           <div style={{ textAlign: "center", padding: "80px 0", background: "#fff5f5", borderRadius: 16, color: "#e53e3e" }}>
-            Failed to load therapists. Please try again later.
+            Failed to load psychologists. Please try again later.
           </div>
         ) : displayed.length === 0 ? (
           <div style={{ textAlign: "center", padding: "80px 0", background: "#f4f8f8", borderRadius: 20 }}>
@@ -593,8 +593,8 @@ export default function PatientTherapistList() {
           </div>
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 24 }}>
-            {displayed.map((therapist) => (
-              <TherapistCard key={therapist.psychologist_id} therapist={therapist} />
+            {displayed.map((psychologist) => (
+              <PsychologistCard key={psychologist.psychologist_id} psychologist={psychologist} />
             ))}
           </div>
         )}

@@ -199,12 +199,12 @@ class PatientProfileView(APIView):
 
 
 """
-PATIENT THERAPIST LIST VIEW
+PATIENT PSYCHOLOGIST LIST VIEW
 """
-class PatientTherapistListView(APIView):
+class PatientPsychologistListView(APIView):
     permission_classes = [AllowAny]
 
-    @log_unexpected_errors("listing therapists for patients")
+    @log_unexpected_errors("listing psychologists for patients")
     def get(self, request):
         queryset = PsychologistProfile.objects.filter(user__is_active=True).select_related("user").prefetch_related("specializations").order_by("-created_at")
         
@@ -240,17 +240,17 @@ class PatientTherapistListView(APIView):
                 "ratings": psychologist_review_summary(p),
             })
 
-        logger.info("Returned %s active therapists for patient listing", len(results))
+        logger.info("Returned %s active psychologists for patient listing", len(results))
         return Response({"results": results}, status=status.HTTP_200_OK)
 
 
 """
-PATIENT THERAPIST DETAIL VIEW
+PATIENT PSYCHOLOGIST DETAIL VIEW
 """
-class PatientTherapistDetailView(APIView):
+class PatientPsychologistDetailView(APIView):
     permission_classes = [AllowAny]
 
-    @log_unexpected_errors("retrieving therapist detail for patients")
+    @log_unexpected_errors("retrieving psychologist detail for patients")
     def get(self, request, psychologist_id):
         profile = get_object_or_404(
             PsychologistProfile.objects.select_related("user").prefetch_related("specializations"),
@@ -293,5 +293,5 @@ class PatientTherapistDetailView(APIView):
             "ratings": psychologist_review_summary(profile),
         }
 
-        logger.info("Returned therapist detail for psychologist %s", psychologist_id)
+        logger.info("Returned psychologist detail for psychologist %s", psychologist_id)
         return Response(data, status=status.HTTP_200_OK)

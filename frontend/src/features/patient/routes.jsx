@@ -6,8 +6,8 @@ import PatientForgotPassword from "./pages/PatientForgotPassword";
 import PatientResetPassword from "./pages/PatientResetPassword";
 import VerificationSent from "./pages/VerificationSent";
 import PatientProfile from "./pages/PatientProfile";
-import PatientTherapistList from "./pages/PatientTherapistList";
-import PatientTherapistDetail from "./pages/PatientTherapistDetail";
+import PatientPsychologistList from "./pages/PatientPsychologistList";
+import PatientPsychologistDetail from "./pages/PatientPsychologistDetail";
 import PatientPsychologistFinder from "./pages/PatientPsychologistFinder";
 import PatientBooking from "./pages/PatientBooking";
 import PatientAppointments from "./pages/PatientAppointments";
@@ -60,12 +60,12 @@ const PatientRoutes = () => {
           path="profile"
           element={isPatient ? <PatientProfile /> : <Navigate to="/patient/login" replace />}
         />
-        <Route path="therapists" element={<PatientTherapistList />} />
+        <Route path="psychologists" element={<PatientPsychologistList />} />
         <Route path="find-psychologist" element={<PatientPsychologistFinder />} />
-        <Route path="services/:specialization" element={<PatientTherapistList />} />
-        <Route path="therapists/:id" element={<PatientTherapistDetail />} />
+        <Route path="services/:specialization" element={<PatientPsychologistList />} />
+        <Route path="psychologists/:id" element={<PatientPsychologistDetail />} />
         <Route
-          path="therapists/:id/book"
+          path="psychologists/:id/book"
           element={isPatient ? <PatientBooking /> : <Navigate to="/patient/login" replace />}
         />
         <Route

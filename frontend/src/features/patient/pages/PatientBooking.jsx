@@ -4,7 +4,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   bookSlot,
   cancelRazorpayOrder,
-  fetchPatientTherapistDetail,
+  fetchPatientPsychologistDetail,
   getWallet,
   getPsychologistSlots,
   verifyAppointmentPayment,
@@ -152,9 +152,9 @@ export default function PatientBooking() {
   const [feedback, setFeedback] = useState({ type: "", text: "" });
   const [useWallet, setUseWallet] = useState(false);
 
-  const therapistQuery = useQuery({
-    queryKey: ["patient-therapist-detail", id],
-    queryFn: () => fetchPatientTherapistDetail(id),
+  const psychologistQuery = useQuery({
+    queryKey: ["patient-psychologist-detail", id],
+    queryFn: () => fetchPatientPsychologistDetail(id),
     enabled: !!id,
   });
 
@@ -227,7 +227,7 @@ export default function PatientBooking() {
     return <Navigate to="/patient/login" replace />;
   }
 
-  const therapist = therapistQuery.data;
+  const psychologist = psychologistQuery.data;
   const availableSlots = slotsQuery.data ?? [];
   const selectedSlot = availableSlots.find((slot) => slot.id === selectedSlotId) ?? null;
 
@@ -259,7 +259,7 @@ export default function PatientBooking() {
       navigate(-1);
       return;
     }
-    navigate(`/patient/therapists/${id}`);
+    navigate(`/patient/psychologists/${id}`);
   };
 
   const handleBook = () => {
@@ -270,7 +270,7 @@ export default function PatientBooking() {
     bookingMutation.mutate({ slotId: selectedSlot.id, walletAmount });
   };
 
-  if (therapistQuery.isLoading) {
+  if (psychologistQuery.isLoading) {
     return (
       <div className="flex min-h-screen flex-col bg-[#f8fafc] font-['DM_Sans',sans-serif] antialiased">
         <PatientNavbar />
@@ -285,14 +285,14 @@ export default function PatientBooking() {
     );
   }
 
-  if (therapistQuery.isError || !therapist) {
+  if (psychologistQuery.isError || !psychologist) {
     return (
       <div className="flex min-h-screen flex-col bg-[#f8fafc] font-['DM_Sans',sans-serif] antialiased">
         <PatientNavbar />
         <main className="flex-1 px-6 pt-[7rem] pb-24">
           <div className="mx-auto max-w-[900px] text-center">
-            <h2 className="text-2xl font-bold text-slate-900">Therapist not found</h2>
-            <Link to="/patient/therapists" className="mt-4 inline-block text-patient-primary hover:underline">
+            <h2 className="text-2xl font-bold text-slate-900">Psychologist not found</h2>
+            <Link to="/patient/psychologists" className="mt-4 inline-block text-patient-primary hover:underline">
               Back to directory
             </Link>
           </div>
@@ -303,7 +303,7 @@ export default function PatientBooking() {
   }
 
   
-  const fee = Number(therapist.consultation_fee) || 500;
+  const fee = Number(psychologist.consultation_fee) || 500;
   const gst = Math.round(fee * 0.1);
   const total = fee + gst;
   const walletBalance = Number(walletQuery.data?.balance || 0);
@@ -429,15 +429,15 @@ export default function PatientBooking() {
                 
                 <div className="flex items-center gap-4 mb-5 pb-5 border-b border-slate-100">
                   <div className="w-14 h-14 rounded-full overflow-hidden bg-slate-100 flex-shrink-0">
-                    {therapist.profile_picture ? (
+                    {psychologist.profile_picture ? (
                       <img
-                        src={therapist.profile_picture}
-                        alt={therapist.full_name}
+                        src={psychologist.profile_picture}
+                        alt={psychologist.full_name}
                         className="w-full h-full object-cover"
                       />
                     ) : (
                       <div className="w-full h-full bg-patient-primary flex items-center justify-center text-white text-xl font-bold">
-                        {therapist.full_name?.charAt(0)}
+                        {psychologist.full_name?.charAt(0)}
                       </div>
                     )}
                   </div>
@@ -445,7 +445,7 @@ export default function PatientBooking() {
                     <p className="text-xs font-semibold text-patient-primary uppercase tracking-wider mb-0.5">
                       Psychologist
                     </p>
-                    <p className="text-base font-bold text-slate-900">{therapist.full_name}</p>
+                    <p className="text-base font-bold text-slate-900">{psychologist.full_name}</p>
                     {selectedSlot ? (
                       <p className="text-sm text-slate-500 mt-0.5">
                         {formatIndiaDate(selectedDate)} at{" "}

@@ -118,21 +118,21 @@ const PatientNavbar = ({ authLink } = {}) => {
                                             {spec.name}
                                         </Link>
                                     )) : (
-                                        <Link to="/patient/therapists" className={dropdownItemCls} onClick={() => setIsServicesDropdownOpen(false)}>
-                                            View Therapists
+                                        <Link to="/patient/psychologists" className={dropdownItemCls} onClick={() => setIsServicesDropdownOpen(false)}>
+                                            View Psychologists
                                         </Link>
                                     )}
                                 </div>
                             )}
                         </div>
 
-                        <NavLink to="/patient/therapists" className={({ isActive }) => activeNavCls(isActive)}>Therapists</NavLink>
+                        <NavLink to="/patient/psychologists" className={({ isActive }) => activeNavCls(isActive)}>Psychologists</NavLink>
                     </div>
 
                     
                     <div className="flex-none flex items-center gap-3">
                         <button className="px-5 py-2.5 bg-gradient-to-r from-patient-primary to-patient-hover text-white text-[0.875rem] font-semibold border-none rounded-[10px] cursor-pointer shadow-patient-sm transition-all duration-200 hover:shadow-patient-md hover:-translate-y-px active:translate-y-0">
-                            Book Therapy
+                            Book Consultation
                         </button>
 
                         {authLink ? (
@@ -239,15 +239,15 @@ const PatientNavbar = ({ authLink } = {}) => {
                                 {spec.name}
                             </Link>
                         )) : (
-                            <Link to="/patient/therapists" className={mobileNavItemCls} onClick={() => setIsMobileMenuOpen(false)}>
-                                View Therapists
+                            <Link to="/patient/psychologists" className={mobileNavItemCls} onClick={() => setIsMobileMenuOpen(false)}>
+                                View Psychologists
                             </Link>
                         )}
 
-                        <Link to="/patient/therapists" className={mobileNavLinkCls} onClick={() => setIsMobileMenuOpen(false)}>Therapists</Link>
+                        <Link to="/patient/psychologists" className={mobileNavLinkCls} onClick={() => setIsMobileMenuOpen(false)}>Psychologists</Link>
 
                         <div className="px-6 pt-4 pb-6 flex flex-col gap-3">
-                            <button className="w-full py-3 bg-gradient-to-r from-patient-primary to-patient-hover text-white font-semibold border-none rounded-[10px] cursor-pointer shadow-patient-sm">Book Therapy</button>
+                            <button className="w-full py-3 bg-gradient-to-r from-patient-primary to-patient-hover text-white font-semibold border-none rounded-[10px] cursor-pointer shadow-patient-sm">Book Consultation</button>
                             {!isLoggedIn && (
                                 <Link to="/patient/login" className="w-full py-3 text-center text-patient-primary font-semibold border-[1.5px] border-patient-primary rounded-[10px] no-underline transition-all duration-200 hover:bg-[rgba(26,190,170,0.06)]" onClick={() => setIsMobileMenuOpen(false)}>Login</Link>
                             )}

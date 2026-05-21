@@ -82,7 +82,7 @@ export default function PatientPaymentConfirmed() {
               </p>
             </div>
 
-            {/* ── Therapist info strip ── */}
+            {/* ── Psychologist info strip ── */}
             <div className="mx-6 mb-1 flex flex-col items-center rounded-xl border border-slate-100 bg-slate-50 px-5 py-5 text-center">
               {booking?.psychologist_photo ? (
                 <img
@@ -96,7 +96,7 @@ export default function PatientPaymentConfirmed() {
                 </div>
               )}
               <p className="mt-3 text-base font-bold text-slate-900">
-                {booking?.psychologist_name || "Your Therapist"}
+                {booking?.psychologist_name || "Your Psychologist"}
               </p>
               {booking?.specialization && (
                 <p className="mt-0.5 text-xs font-semibold text-patient-primary">
@@ -104,7 +104,7 @@ export default function PatientPaymentConfirmed() {
                 </p>
               )}
               <p className="mt-2 text-xs italic text-slate-400">
-                "Your therapist is looking forward to meeting you soon."
+                "Your psychologist is looking forward to meeting you soon."
               </p>
             </div>
 

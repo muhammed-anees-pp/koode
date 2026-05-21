@@ -635,9 +635,9 @@ export default function PatientAppointments() {
 
   const handleBookAgain = (booking) => {
     if (booking.psychologist_id) {
-      navigate(`/patient/therapists/${booking.psychologist_id}/book`);
+      navigate(`/patient/psychologists/${booking.psychologist_id}/book`);
     } else {
-      navigate("/patient/therapists");
+      navigate("/patient/psychologists");
     }
   };
 
@@ -782,10 +782,10 @@ export default function PatientAppointments() {
                 {activeTab !== "Cancelled" && (
                   <button
                     type="button"
-                    onClick={() => navigate("/patient/therapists")}
+                    onClick={() => navigate("/patient/psychologists")}
                     className="mt-5 rounded-xl bg-patient-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-patient-hover transition shadow-patient-sm"
                   >
-                    Browse Therapists
+                    Browse Psychologists
                   </button>
                 )}
               </div>
