@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { ZegoExpressEngine } from "zego-express-engine-webrtc";
 import { getInterviewToken, getChatMessages, sendChatMessage } from "../../../api/psychologist.api";
+import { uppercaseMeridiem } from "../../../utils/indiaDateTime";
 
 function ChatPanel({ messages, onSend, inputRef }) {
     const bottomRef = useRef(null);
@@ -30,7 +31,7 @@ function ChatPanel({ messages, onSend, inputRef }) {
                 {messages.map((m) => (
                     <div key={m.id} className={`flex flex-col ${!m.is_admin ? "items-end" : "items-start"}`}>
                         <span className="text-[10px] text-slate-500 mb-1">
-                            {m.sender_name} · {new Date(m.sent_at).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
+                            {m.sender_name} · {uppercaseMeridiem(new Date(m.sent_at).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }))}
                         </span>
                         <div className={`max-w-[85%] px-3 py-2 rounded-2xl text-sm leading-relaxed ${!m.is_admin
                             ? "bg-[#1188d8] text-white rounded-tr-sm"

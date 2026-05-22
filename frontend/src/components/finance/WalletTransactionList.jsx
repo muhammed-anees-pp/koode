@@ -1,4 +1,8 @@
+import { uppercaseMeridiem } from "../../utils/indiaDateTime";
+
 const formatAmount = (value) => `₹${Number(value || 0).toFixed(2)}`;
+
+const formatCreatedAt = (value) => uppercaseMeridiem(new Date(value).toLocaleString());
 
 const formatDateTime = (date, time) => {
   if (!date) return "";
@@ -49,7 +53,7 @@ export default function WalletTransactionList({
                     </span>
                   </div>
                   <div className={`mt-2 grid gap-1 text-xs ${secondaryText}`}>
-                    <p>Date & Time: <span className={primaryText}>{new Date(item.created_at).toLocaleString()}</span></p>
+                    <p>Date & Time: <span className={primaryText}>{formatCreatedAt(item.created_at)}</span></p>
                     {reference ? <p>Reference: <span className={primaryText}>{reference}</span></p> : null}
                     <p>Method: <span className={primaryText}>{item.payment_method || "Wallet"}</span></p>
                   </div>
@@ -96,7 +100,7 @@ export default function WalletTransactionList({
                     </p>
                   ) : null}
                   {item.payment_reference ? <p>Reference: <span className={primaryText}>{item.payment_reference}</span></p> : null}
-                  <p>Time: {new Date(item.created_at).toLocaleString()}</p>
+                  <p>Time: {formatCreatedAt(item.created_at)}</p>
                 </div>
               </div>
               <div className="text-left md:text-right">

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchAppointmentMessages, uploadAppointmentChatFile } from "../../api/chat.api";
-import { formatIndiaDate } from "../../utils/indiaDateTime";
+import { formatIndiaDate, uppercaseMeridiem } from "../../utils/indiaDateTime";
 import { useAuthStore } from "../../store/auth.store";
 
 const getChatSocketBaseUrl = () => {
@@ -22,12 +22,12 @@ const buildChatWebSocketUrl = (appointmentId, token) =>
   `${getChatSocketBaseUrl()}/ws/chat/${appointmentId}/?token=${encodeURIComponent(token)}`;
 
 const formatMessageTime = (value) =>
-  new Intl.DateTimeFormat("en-IN", {
+  uppercaseMeridiem(new Intl.DateTimeFormat("en-IN", {
     timeZone: "Asia/Kolkata",
     hour: "numeric",
     minute: "2-digit",
     hour12: true,
-  }).format(new Date(value));
+  }).format(new Date(value)));
 
 const formatMessageDate = (value) => {
   const date = new Date(value);

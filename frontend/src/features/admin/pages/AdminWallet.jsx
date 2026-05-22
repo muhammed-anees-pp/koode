@@ -5,6 +5,7 @@ import { getAdminFinance } from "../../../api/admin.api";
 import Navbar from "../../../components/admin/Navbar/AdminNavbar";
 import Sidebar from "../../../components/admin/Sidebar/AdminSidebar";
 import { useAuthStore } from "../../../store/auth.store";
+import { uppercaseMeridiem } from "../../../utils/indiaDateTime";
 
 const TRANSACTIONS_PER_PAGE = 8;
 
@@ -23,14 +24,14 @@ const formatAmount = (value) => `₹${Number(value || 0).toFixed(2)}`;
 
 const formatDateTime = (value) => {
   if (!value) return "—";
-  return new Date(value).toLocaleString("en-IN", {
+  return uppercaseMeridiem(new Date(value).toLocaleString("en-IN", {
     day: "2-digit",
     month: "short",
     year: "numeric",
     hour: "numeric",
     minute: "2-digit",
     hour12: true,
-  });
+  }));
 };
 
 const metricConfig = [

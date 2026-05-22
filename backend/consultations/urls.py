@@ -1,7 +1,7 @@
 from django.urls import path
 from consultations.views import (
-    AdminConsultationRecordingListView, ConsultationApproveJoinView, ConsultationDetailView, ConsultationExitView, ConsultationMessageListCreateView,
-    ConsultationNotesView, ConsultationPatientRequestJoinView, ConsultationPsychologistEnterView, ConsultationRecordingCallbackView, ConsultationTokenView,
+    ConsultationApproveJoinView, ConsultationDetailView, ConsultationExitView, ConsultationMessageListCreateView,
+    ConsultationNotesView, ConsultationPatientRequestJoinView, ConsultationPsychologistEnterView, ConsultationTokenView,
 )
 
 
@@ -14,6 +14,4 @@ urlpatterns = [
     path("bookings/<uuid:booking_id>/exit/", ConsultationExitView.as_view(), name="consultation-exit"),
     path("bookings/<uuid:booking_id>/messages/", ConsultationMessageListCreateView.as_view(), name="consultation-messages"),
     path("bookings/<uuid:booking_id>/notes/", ConsultationNotesView.as_view(), name="consultation-notes"),
-    path("recordings/", AdminConsultationRecordingListView.as_view(), name="consultation-recordings"),
-    path("recordings/callback/", ConsultationRecordingCallbackView.as_view(), name="consultation-recording-callback"),
 ]

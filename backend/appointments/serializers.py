@@ -321,6 +321,7 @@ class BookingSerializer(serializers.ModelSerializer):
     consultation_history = serializers.SerializerMethodField()
     patient_summary = serializers.SerializerMethodField()
     review = serializers.SerializerMethodField()
+    complaint = serializers.SerializerMethodField()
 
     def get_psychologist_photo(self, obj):
         request = self.context.get("request")
@@ -412,6 +413,33 @@ class BookingSerializer(serializers.ModelSerializer):
             review = None
         return review_payload(review)
 
+    def get_complaint(self, obj):
+        request = self.context.get("request")
+        if not request or getattr(request.user, "role", None) != "PATIENT":
+            return None
+
+        from complaints.models import Complaint
+        from complaints.services import complaint_eligibility_for_booking
+
+        patient = obj.patient
+        try:
+            complaint = obj.complaint
+        except Complaint.DoesNotExist:
+            complaint = None
+
+        payload = complaint_eligibility_for_booking(obj, patient=patient)
+        if complaint:
+            payload["complaint"] = {
+                "id": str(complaint.id),
+                "complaint_id": complaint.complaint_id,
+                "status": complaint.status,
+                "status_display": complaint.get_status_display(),
+                "created_at": complaint.created_at,
+            }
+        else:
+            payload["complaint"] = None
+        return payload
+
     class Meta:
         model = Booking
         fields = [
@@ -441,6 +469,7 @@ class BookingSerializer(serializers.ModelSerializer):
             "consultation_history",
             "patient_summary",
             "review",
+            "complaint",
             "psychologist_paid_at",
             "meeting_link",
             "cancellation_note",
@@ -578,6 +607,7 @@ class CancelBookingSerializer(serializers.Serializer):
 
     def save(self, **kwargs):
         booking = self.context["booking"]
+        cancelled_by = self.context.get("cancelled_by")
         note = self.validated_data["note"]
 
         with transaction.atomic():
@@ -598,7 +628,8 @@ class CancelBookingSerializer(serializers.Serializer):
             locked_booking.slot = None
             locked_booking.status = "CANCELLED"
             locked_booking.notes = note
-            locked_booking.save(update_fields=["slot", "status", "notes"])
+            locked_booking.cancelled_by = cancelled_by
+            locked_booking.save(update_fields=["slot", "status", "notes", "cancelled_by"])
             refund_booking_to_patient(locked_booking, note=note)
 
         sync_chat_room_for_booking(locked_booking)

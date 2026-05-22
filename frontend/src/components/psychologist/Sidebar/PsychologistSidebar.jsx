@@ -76,6 +76,18 @@ const navItems = [
     ),
   },
   {
+    key: 'complaints',
+    label: 'Complaints',
+    path: '/psychologist/complaints',
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+        <line x1="12" y1="9" x2="12" y2="13" />
+        <line x1="12" y1="17" x2="12.01" y2="17" />
+      </svg>
+    ),
+  },
+  {
     key: 'earnings',
     label: 'Wallet',
     path: '/psychologist/wallet',
@@ -120,6 +132,8 @@ const PsychologistSidebar = () => {
           overflow: 'hidden',
           zIndex: 40,
           boxShadow: '0 10px 30px rgba(15, 23, 42, 0.04)',
+          fontFamily: '"DM Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+          color: '#111827',
         }}
       >
         <nav
@@ -153,7 +167,9 @@ const PsychologistSidebar = () => {
                   color: active ? '#1188D8' : '#6b7280',
                   fontWeight: active ? 600 : 500,
                   fontSize: '14px',
-                  fontFamily: 'inherit',
+                  lineHeight: '20px',
+                  letterSpacing: '0',
+                  fontFamily: '"DM Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
                   outline: 'none',
                 }}
                 onMouseEnter={(e) => {
@@ -187,7 +203,7 @@ const PsychologistSidebar = () => {
         </nav>
 
         <div style={{ borderTop: '1px solid #f3f4f6', padding: '18px 14px' }}>
-          <p style={{ fontSize: '11px', color: '#9ca3af', textAlign: 'center', margin: 0 }}>
+          <p style={{ fontSize: '11px', lineHeight: '16px', fontWeight: 500, color: '#9ca3af', textAlign: 'center', margin: 0 }}>
             koode.in © 2025
           </p>
         </div>

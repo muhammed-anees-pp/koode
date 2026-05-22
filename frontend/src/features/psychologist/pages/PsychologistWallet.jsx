@@ -118,17 +118,17 @@ export default function PsychologistWallet() {
   ];
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#eef0f5] font-['DM_Sans',sans-serif] text-gray-900">
+    <div className="flex min-h-screen flex-col bg-[#eef0f5] text-gray-900">
       <PsychologistNavbar />
       <div className="flex flex-1">
         <PsychologistSidebar />
 
-        <main className="min-w-0 flex-1 px-6 py-8">
-          <div className="mx-auto max-w-6xl">
+        <main className="min-w-0 flex-1 px-4 py-7 sm:px-5 lg:px-6">
+          <div className="w-full">
 
             {/* Page heading */}
             <div className="mb-6">
-              <h1 className="text-2xl font-bold text-slate-900">
+              <h1 className="text-3xl font-bold tracking-tight text-slate-900">
                 {displayName}'s Earnings
               </h1>
               <p className="mt-1 text-sm text-slate-500">

@@ -5,6 +5,7 @@ import { cancelPatientBooking, getMyBookings, submitBookingReview } from "../../
 import PatientNavbar from "../../../components/patient/Navbar/PatientNavbar";
 import PatientFooter from "../../../components/patient/Footer/PatientFooter";
 import ReviewModal, { Stars } from "../../../components/patient/ReviewModal";
+import ComplaintModal from "../../../components/patient/ComplaintModal";
 import { usePatientSessionGuard } from "../../../hooks/usePatientSessionGuard";
 import { useAuthStore } from "../../../store/auth.store";
 import {
@@ -186,9 +187,12 @@ function UpcomingCard({ booking, onCancel, onOpenChat, onJoinConsultation }) {
 }
 
 
-function PastCard({ booking, onBookAgain, onViewPrescription, onOpenReview }) {
+function PastCard({ booking, onBookAgain, onViewPrescription, onOpenReview, onRaiseComplaint }) {
   const existingReview = booking.review;
   const reviewLabel = existingReview ? (existingReview.can_edit ? "Edit Review" : "View Review") : "Rate & Review";
+  const complaintInfo = booking.complaint;
+  const canRaiseComplaint = Boolean(complaintInfo?.can_raise);
+  const existingComplaint = complaintInfo?.complaint;
   return (
     <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
       <div className="flex items-start gap-4">
@@ -199,18 +203,6 @@ function PastCard({ booking, onBookAgain, onViewPrescription, onOpenReview }) {
             <div className="flex items-center gap-2 flex-wrap">
               <StatusBadge status={booking.status} />
               <h2 className="text-base font-bold text-slate-900">{booking.psychologist_name}</h2>
-            </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <button type="button" className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition" title="Download receipt">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
-                </svg>
-              </button>
-              <button type="button" onClick={() => onOpenReview(booking)} className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-amber-400 hover:bg-amber-50 transition" title={reviewLabel}>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                </svg>
-              </button>
             </div>
           </div>
 
@@ -248,11 +240,11 @@ function PastCard({ booking, onBookAgain, onViewPrescription, onOpenReview }) {
 
         </div>
 
-        <div className="flex flex-shrink-0 flex-col gap-2">
+        <div className="flex w-full flex-shrink-0 flex-col gap-2 sm:w-[168px]">
           <button
             type="button"
             onClick={() => onBookAgain(booking)}
-            className="flex items-center justify-center gap-1.5 rounded-xl border border-patient-primary bg-white px-4 py-2 text-sm font-semibold text-patient-primary transition hover:bg-patient-light"
+            className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-patient-primary bg-white px-4 py-2 text-sm font-semibold text-patient-primary transition hover:bg-patient-light"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <polyline points="23 4 23 10 17 10" /><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
@@ -262,7 +254,7 @@ function PastCard({ booking, onBookAgain, onViewPrescription, onOpenReview }) {
           <button
             type="button"
             onClick={() => onViewPrescription(booking)}
-            className="flex items-center justify-center gap-1.5 rounded-xl bg-patient-primary px-4 py-2 text-sm font-semibold text-white shadow-patient-sm transition hover:bg-patient-hover"
+            className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-patient-primary px-4 py-2 text-sm font-semibold text-white shadow-patient-sm transition hover:bg-patient-hover"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -272,6 +264,20 @@ function PastCard({ booking, onBookAgain, onViewPrescription, onOpenReview }) {
             </svg>
             Prescription
           </button>
+          {!existingComplaint && canRaiseComplaint ? (
+            <button
+              type="button"
+              onClick={() => onRaiseComplaint(booking)}
+              className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-600 transition hover:bg-rose-100"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" aria-hidden="true">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="7" x2="12" y2="13" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
+              Raise Complaint
+            </button>
+          ) : null}
         </div>
       </div>
     </article>
@@ -504,6 +510,7 @@ export default function PatientAppointments() {
   const [prescriptionTarget, setPrescriptionTarget] = useState(null);
   const [reviewTarget, setReviewTarget] = useState(null);
   const [reviewError, setReviewError] = useState("");
+  const [complaintTarget, setComplaintTarget] = useState(null);
   const [dateFilter, setDateFilter] = useState(DATE_FILTER_UPCOMING[0]);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -528,8 +535,11 @@ export default function PatientAppointments() {
       }
     });
     if (!reviewTarget && promptTarget) {
-      setReviewTarget(promptTarget);
-      setReviewError("");
+      const timer = window.setTimeout(() => {
+        setReviewTarget(promptTarget);
+        setReviewError("");
+      }, 0);
+      return () => window.clearTimeout(timer);
     }
   }, [bookingsQuery.data, reviewTarget]);
 
@@ -813,6 +823,7 @@ export default function PatientAppointments() {
                       onBookAgain={handleBookAgain}
                       onViewPrescription={setPrescriptionTarget}
                       onOpenReview={(target) => { setReviewTarget(target); setReviewError(""); }}
+                      onRaiseComplaint={setComplaintTarget}
                     />
                   );
                 }
@@ -868,6 +879,12 @@ export default function PatientAppointments() {
         onSubmit={({ rating, review }) => reviewMutation.mutate({ bookingId: reviewTarget.id, rating, review })}
         isPending={reviewMutation.isPending}
         error={reviewError}
+      />
+
+      <ComplaintModal
+        open={Boolean(complaintTarget)}
+        booking={complaintTarget}
+        onClose={() => setComplaintTarget(null)}
       />
 
     </div>

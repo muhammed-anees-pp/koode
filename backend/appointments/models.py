@@ -73,6 +73,7 @@ class Booking(models.Model):
     psychologist_paid_at = models.DateTimeField(null=True, blank=True)
     meeting_link = models.URLField(blank=True)
     notes = models.TextField(blank=True)
+    cancelled_by = models.ForeignKey("accounts.User", on_delete=models.SET_NULL, null=True, blank=True, related_name="cancelled_bookings")
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

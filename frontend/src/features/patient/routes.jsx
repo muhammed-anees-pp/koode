@@ -17,6 +17,7 @@ import PatientWallet from "./pages/PatientWallet";
 import PatientPaymentConfirmed from "./pages/PatientPaymentConfirmed";
 import PatientPaymentCancelled from "./pages/PatientPaymentCancelled";
 import PatientChatbot from "./pages/PatientChatbot";
+import PatientComplaints from "./pages/PatientComplaints";
 import { useAuthStore } from "../../store/auth.store";
 import ConsultationRoom from "../../components/consultation/ConsultationRoom";
 import PatientChatbotWidget from "../../components/patient/Chatbot/PatientChatbotWidget";
@@ -91,6 +92,10 @@ const PatientRoutes = () => {
         <Route
           path="wallet"
           element={isPatient ? <PatientWallet /> : <Navigate to="/patient/login" replace />}
+        />
+        <Route
+          path="complaints"
+          element={isPatient ? <PatientComplaints /> : <Navigate to="/patient/login" replace />}
         />
         <Route
           path="payment-confirmed"

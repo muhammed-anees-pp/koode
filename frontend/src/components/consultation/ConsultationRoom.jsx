@@ -14,15 +14,16 @@ import {
   saveConsultationNotes,
   sendConsultationMessage,
 } from "../../api/consultation.api";
+import { uppercaseMeridiem } from "../../utils/indiaDateTime";
 import { resolveMediaUrl } from "../../utils/url";
 
 const formatMessageTime = (value) =>
-  new Intl.DateTimeFormat("en-IN", {
+  uppercaseMeridiem(new Intl.DateTimeFormat("en-IN", {
     timeZone: "Asia/Kolkata",
     hour: "numeric",
     minute: "2-digit",
     hour12: true,
-  }).format(new Date(value));
+  }).format(new Date(value)));
 
 const cameraExtraInfo = (cameraOn) => JSON.stringify({ cameraOn });
 

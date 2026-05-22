@@ -10,6 +10,23 @@ export const fetchDashboard = async () => {
   return response.data;
 };
 
+export const fetchAdminAppointments = async ({
+  page = 1,
+  pageSize = 10,
+  search = "",
+  tab = "upcoming",
+} = {}) => {
+  const params = new URLSearchParams({ page, page_size: pageSize, tab });
+  if (search) params.append("search", search);
+  const response = await axiosInstance.get(`appointments/admin/?${params}`);
+  return response.data;
+};
+
+export const fetchAdminAppointmentDetail = async (appointmentId) => {
+  const response = await axiosInstance.get(`appointments/admin/${appointmentId}/`);
+  return response.data;
+};
+
 export const adminLogout = async () => {
   const response = await axiosInstance.post("admin/auth/logout/");
   return response.data;
@@ -144,10 +161,5 @@ export const fetchCommissionRates = async () => {
 
 export const createCommissionRate = async (data) => {
   const response = await axiosInstance.post("finance/commission-rates/", data);
-  return response.data;
-};
-
-export const fetchConsultationRecordings = async () => {
-  const response = await axiosInstance.get("consultations/recordings/");
   return response.data;
 };

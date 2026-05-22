@@ -2,6 +2,9 @@ const INDIA_TIME_ZONE = "Asia/Kolkata";
 
 const pad = (value) => String(value).padStart(2, "0");
 
+export const uppercaseMeridiem = (value) =>
+  String(value).replace(/\b(am|pm)\b/g, (match) => match.toUpperCase());
+
 export const getIndiaTodayISO = () => {
   const formatter = new Intl.DateTimeFormat("en-CA", {
     timeZone: INDIA_TIME_ZONE,
@@ -50,14 +53,14 @@ export const formatIndiaTime = (value) => {
 export const formatIndiaDateTime = (value) => {
   if (!value) return "";
 
-  return new Intl.DateTimeFormat("en-IN", {
+  return uppercaseMeridiem(new Intl.DateTimeFormat("en-IN", {
     timeZone: INDIA_TIME_ZONE,
     day: "2-digit",
     month: "short",
     hour: "numeric",
     minute: "2-digit",
     hour12: true,
-  }).format(new Date(value));
+  }).format(new Date(value)));
 };
 
 export const getIndiaNowParts = () => {
