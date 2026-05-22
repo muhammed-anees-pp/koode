@@ -7,7 +7,7 @@ from .models import Availability, Booking
 from django.db.models import Count, Q
 from django.utils import timezone
 from zoneinfo import ZoneInfo
-from admin_panel.permissions import IsAdminUserRole
+from dashboard.permissions import IsAdminUserRole
 from psychologists.models import PsychologistProfile
 from patients.models import PatientProfile
 from patients.permissions import IsPatient

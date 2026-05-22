@@ -6,7 +6,7 @@ from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from admin_panel.permissions import IsAdminUserRole
+from dashboard.permissions import IsAdminUserRole
 from appointments.models import Booking
 from complaints.models import Complaint
 from complaints.serializers import (
