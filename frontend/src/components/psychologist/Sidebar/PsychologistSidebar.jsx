@@ -132,6 +132,8 @@ const PsychologistSidebar = () => {
           overflow: 'hidden',
           zIndex: 40,
           boxShadow: '0 10px 30px rgba(15, 23, 42, 0.04)',
+          fontFamily: '"DM Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+          color: '#111827',
         }}
       >
         <nav
@@ -165,7 +167,9 @@ const PsychologistSidebar = () => {
                   color: active ? '#1188D8' : '#6b7280',
                   fontWeight: active ? 600 : 500,
                   fontSize: '14px',
-                  fontFamily: 'inherit',
+                  lineHeight: '20px',
+                  letterSpacing: '0',
+                  fontFamily: '"DM Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
                   outline: 'none',
                 }}
                 onMouseEnter={(e) => {
@@ -199,7 +203,7 @@ const PsychologistSidebar = () => {
         </nav>
 
         <div style={{ borderTop: '1px solid #f3f4f6', padding: '18px 14px' }}>
-          <p style={{ fontSize: '11px', color: '#9ca3af', textAlign: 'center', margin: 0 }}>
+          <p style={{ fontSize: '11px', lineHeight: '16px', fontWeight: 500, color: '#9ca3af', textAlign: 'center', margin: 0 }}>
             koode.in © 2025
           </p>
         </div>

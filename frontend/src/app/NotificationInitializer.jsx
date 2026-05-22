@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchNotifications } from "../api/notifications.api";
 import { useAuthStore } from "../store/auth.store";
 import { useNotificationsStore } from "../store/notifications.store";
@@ -37,6 +37,7 @@ const getUserIdFromToken = (token) => {
 };
 
 const NotificationInitializer = () => {
+  const queryClient = useQueryClient();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const accessToken = useAuthStore((state) => state.accessToken);
   const user = useAuthStore((state) => state.user);
@@ -114,6 +115,9 @@ const NotificationInitializer = () => {
             }
             prependNotification(payload.notification);
             pushToast(payload.notification);
+            if (payload.notification.target_url === "/patient/complaints") {
+              queryClient.invalidateQueries({ queryKey: ["patient-complaints"] });
+            }
           }
         } catch (error) {
           console.error("Error parsing notification payload:", error);
@@ -159,6 +163,7 @@ const NotificationInitializer = () => {
     isAuthenticated,
     prependNotification,
     pushToast,
+    queryClient,
     resetNotifications,
     setConnected,
   ]);

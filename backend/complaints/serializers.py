@@ -155,7 +155,6 @@ class ComplaintSerializer(serializers.ModelSerializer):
             "complaint_allowed_until",
             "admin_response",
             "admin_request_message",
-            "internal_admin_note",
             "psychologist_response",
             "psychologist_response_requested_at",
             "psychologist_responded_at",
@@ -178,7 +177,6 @@ class ComplaintSerializer(serializers.ModelSerializer):
             "complaint_allowed_until",
             "admin_response",
             "admin_request_message",
-            "internal_admin_note",
             "psychologist_response",
             "psychologist_response_requested_at",
             "psychologist_responded_at",
@@ -200,10 +198,35 @@ class ComplaintSerializer(serializers.ModelSerializer):
 CREATE COMPLAINT SERIALIZER
 """
 class CreateComplaintSerializer(serializers.Serializer):
-    category = serializers.ChoiceField(choices=Complaint.CATEGORY_CHOICES)
-    severity = serializers.ChoiceField(choices=Complaint.SEVERITY_CHOICES, required=False, default=Complaint.SEVERITY_MEDIUM)
-    subject = serializers.CharField(max_length=180, trim_whitespace=True)
-    description = serializers.CharField(trim_whitespace=True)
+    category = serializers.ChoiceField(
+        choices=Complaint.CATEGORY_CHOICES,
+        error_messages={
+            "required": "Please select an issue type.",
+            "invalid_choice": "Please select a valid issue type.",
+        },
+    )
+    severity = serializers.ChoiceField(
+        choices=Complaint.SEVERITY_CHOICES,
+        required=False,
+        default=Complaint.SEVERITY_MEDIUM,
+        error_messages={"invalid_choice": "Please select a valid severity."},
+    )
+    subject = serializers.CharField(
+        max_length=180,
+        trim_whitespace=True,
+        error_messages={
+            "blank": "Subject is required.",
+            "required": "Subject is required.",
+            "max_length": "Subject must be 180 characters or fewer.",
+        },
+    )
+    description = serializers.CharField(
+        trim_whitespace=True,
+        error_messages={
+            "blank": "Description is required.",
+            "required": "Description is required.",
+        },
+    )
     evidence = serializers.ListField(
         child=serializers.FileField(),
         required=False,
@@ -271,16 +294,25 @@ class CreateComplaintSerializer(serializers.Serializer):
 ADMIN COMPLAINT ACTIONS
 """
 class AdminComplaintActionSerializer(serializers.Serializer):
-    action = serializers.ChoiceField(choices=["resolve", "reject", "send_to_psychologist", "note"])
+    action = serializers.ChoiceField(
+        choices=["resolve", "reject", "send_to_psychologist"],
+        error_messages={
+            "required": "Please choose an action.",
+            "invalid_choice": "Please choose a valid action.",
+        },
+    )
     message = serializers.CharField(required=False, allow_blank=True, trim_whitespace=True)
-    internal_admin_note = serializers.CharField(required=False, allow_blank=True, trim_whitespace=True)
-    severity = serializers.ChoiceField(choices=Complaint.SEVERITY_CHOICES, required=False)
+    severity = serializers.ChoiceField(
+        choices=Complaint.SEVERITY_CHOICES,
+        required=False,
+        error_messages={"invalid_choice": "Please choose a valid severity."},
+    )
 
     def validate(self, attrs):
         action = attrs["action"]
         if action in {"resolve", "reject", "send_to_psychologist"} and not attrs.get("message", "").strip():
             label = "resolution message" if action == "resolve" else "reason" if action == "reject" else "message to psychologist"
-            raise serializers.ValidationError(f"Provide {label}.")
+            raise serializers.ValidationError({"message": f"Provide {label}."})
         return attrs
 
     def update(self, instance, validated_data):
@@ -294,10 +326,6 @@ class AdminComplaintActionSerializer(serializers.Serializer):
         if "severity" in validated_data:
             instance.severity = validated_data["severity"]
             update_fields.append("severity")
-        if "internal_admin_note" in validated_data:
-            instance.internal_admin_note = validated_data["internal_admin_note"]
-            update_fields.append("internal_admin_note")
-
         event_type = ComplaintTimelineEvent.EVENT_STATUS_CHANGED
         event_title = "Complaint Updated"
         patient_notification = None
@@ -322,8 +350,10 @@ class AdminComplaintActionSerializer(serializers.Serializer):
             event_title = "Complaint Rejected"
             patient_notification = f"Your complaint {instance.complaint_id} has been rejected."
         elif action == "send_to_psychologist":
+            reported_psychologist = instance.booking.psychologist
             instance.status = Complaint.STATUS_UNDER_REVIEW
             instance.show_to_psychologist = True
+            instance.psychologist = reported_psychologist
             instance.admin_request_message = message
             instance.psychologist_response_requested_at = now
             instance.resolved_at = None
@@ -331,6 +361,7 @@ class AdminComplaintActionSerializer(serializers.Serializer):
             update_fields += [
                 "status",
                 "show_to_psychologist",
+                "psychologist",
                 "admin_request_message",
                 "psychologist_response_requested_at",
                 "resolved_at",
@@ -339,22 +370,17 @@ class AdminComplaintActionSerializer(serializers.Serializer):
             event_type = ComplaintTimelineEvent.EVENT_PSYCHOLOGIST_REQUESTED
             event_title = "Psychologist Response Requested"
             patient_notification = f"Your complaint {instance.complaint_id} is under review."
-            psychologist_notification = f"Admin requested your response for complaint {instance.complaint_id}."
-        elif action == "note":
-            event_title = "Internal Admin Note Updated"
-
+            psychologist_notification = f"Complaint {instance.complaint_id} has been raised against you. Admin requested your response."
         with transaction.atomic():
             instance.save(update_fields=update_fields)
 
-            note = message or validated_data.get("internal_admin_note", "")
-            if action != "note" or note:
-                ComplaintTimelineEvent.objects.create(
-                    complaint=instance,
-                    event_type=event_type,
-                    title=event_title if old_status == instance.status else instance.get_status_display(),
-                    note=note,
-                    actor=actor,
-                )
+            ComplaintTimelineEvent.objects.create(
+                complaint=instance,
+                event_type=event_type,
+                title=event_title if old_status == instance.status else instance.get_status_display(),
+                note=message,
+                actor=actor,
+            )
 
             if patient_notification:
                 create_notification(
@@ -364,7 +390,7 @@ class AdminComplaintActionSerializer(serializers.Serializer):
                 )
             if psychologist_notification:
                 create_notification(
-                    instance.psychologist.user,
+                    instance.booking.psychologist.user,
                     psychologist_notification,
                     target_url="/psychologist/complaints",
                 )
@@ -387,7 +413,13 @@ class PsychologistComplaintSerializer(ComplaintSerializer):
 PSYCHOLOGIST COMPLAINT RESPONSE
 """
 class PsychologistComplaintResponseSerializer(serializers.Serializer):
-    response = serializers.CharField(trim_whitespace=True)
+    response = serializers.CharField(
+        trim_whitespace=True,
+        error_messages={
+            "blank": "Response is required.",
+            "required": "Response is required.",
+        },
+    )
     evidence = serializers.ListField(
         child=serializers.FileField(),
         required=False,
@@ -431,6 +463,11 @@ class PsychologistComplaintResponseSerializer(serializers.Serializer):
                 admins,
                 f"Psychologist submitted a response for complaint {instance.complaint_id}.",
                 target_url=f"/admin/complaints/{instance.id}",
+            )
+            create_notification(
+                instance.patient.user,
+                f"Psychologist submitted a response for your complaint {instance.complaint_id}.",
+                target_url="/patient/complaints",
             )
 
         return instance

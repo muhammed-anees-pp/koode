@@ -264,14 +264,7 @@ function PastCard({ booking, onBookAgain, onViewPrescription, onOpenReview, onRa
             </svg>
             Prescription
           </button>
-          {existingComplaint ? (
-            <Link
-              to="/patient/complaints"
-              className="flex w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-            >
-              View Complaint
-            </Link>
-          ) : canRaiseComplaint ? (
+          {!existingComplaint && canRaiseComplaint ? (
             <button
               type="button"
               onClick={() => onRaiseComplaint(booking)}
@@ -284,15 +277,7 @@ function PastCard({ booking, onBookAgain, onViewPrescription, onOpenReview, onRa
               </svg>
               Raise Complaint
             </button>
-          ) : (
-            <button
-              type="button"
-              disabled
-              className="flex w-full items-center justify-center rounded-xl border border-slate-200 bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-400"
-            >
-              Window Closed
-            </button>
-          )}
+          ) : null}
         </div>
       </div>
     </article>

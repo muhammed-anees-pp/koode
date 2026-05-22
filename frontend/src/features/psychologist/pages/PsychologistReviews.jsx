@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Navigate } from "react-router-dom";
 import { getPsychologistReviewDashboard } from "../../../api/psychologist.api";
@@ -88,8 +88,8 @@ export default function PsychologistReviews() {
 
   const dashboard = reviewsQuery.data;
   const summary = dashboard?.summary || {};
-  const reviews = dashboard?.reviews || [];
-  const ratingBreakdown = dashboard?.rating_breakdown || [];
+  const reviews = useMemo(() => dashboard?.reviews || [], [dashboard?.reviews]);
+  const ratingBreakdown = useMemo(() => dashboard?.rating_breakdown || [], [dashboard?.rating_breakdown]);
   const maxRatingCount = Math.max(...ratingBreakdown.map((item) => item.count || 0), 1);
 
   const filteredReviews = useMemo(() => {
@@ -99,10 +99,6 @@ export default function PsychologistReviews() {
     if (filter === "Low Ratings") return list.filter((review) => review.rating <= 2);
     return list.sort((a, b) => new Date(b.submitted_at) - new Date(a.submitted_at));
   }, [reviews, filter]);
-
-  useEffect(() => {
-    setPage(1);
-  }, [filter, reviews.length]);
 
   const totalPages = Math.max(1, Math.ceil(filteredReviews.length / FEEDBACKS_PER_PAGE));
   const safePage = Math.min(page, totalPages);
@@ -117,17 +113,17 @@ export default function PsychologistReviews() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f6f8fb] font-['Inter',sans-serif]">
+    <div className="min-h-screen bg-[#eef0f5] text-gray-900">
       <PsychologistNavbar />
       <div className="flex">
         <PsychologistSidebar />
-        <main className="min-h-[calc(100vh-73px)] flex-1 px-5 py-8 lg:px-8">
-          <div className="mx-auto max-w-7xl">
+        <main className="min-h-[calc(100vh-73px)] min-w-0 flex-1 px-4 py-7 sm:px-5 lg:px-6">
+          <div className="w-full">
             <div className="mb-7">
               <p className="text-sm font-bold uppercase tracking-[0.14em] text-psycho-primary">
                 Psychologist Dashboard
               </p>
-              <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900">
+              <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900">
                 Reviews & Ratings
               </h1>
             </div>
@@ -233,7 +229,10 @@ export default function PsychologistReviews() {
                           <button
                             key={item}
                             type="button"
-                            onClick={() => setFilter(item)}
+                            onClick={() => {
+                              setFilter(item);
+                              setPage(1);
+                            }}
                             className={`rounded-full px-4 py-2 text-sm font-bold transition ${
                               filter === item
                                 ? "bg-psycho-primary text-white shadow-sm"

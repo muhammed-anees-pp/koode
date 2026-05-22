@@ -11,10 +11,13 @@ from appointments.models import Booking
 from complaints.models import Complaint
 from complaints.serializers import (
     AdminComplaintActionSerializer, ComplaintSerializer, CreateComplaintSerializer, EligibleComplaintBookingSerializer,
+    PsychologistComplaintResponseSerializer, PsychologistComplaintSerializer,
 )
 from complaints.services import complaint_eligibility_for_booking
 from patients.models import PatientProfile
 from patients.permissions import IsPatient
+from psychologists.models import PsychologistProfile
+from psychologists.permissions import IsPsychologist
 
 
 
@@ -27,6 +30,26 @@ def complaint_queryset():
         "attachments",
         "psychologist_attachments",
         "timeline__actor",
+    )
+
+
+def apply_complaint_status_filter(queryset, complaint_status):
+    if not complaint_status or complaint_status == "ALL":
+        return queryset
+    if complaint_status == "OPEN":
+        return queryset.exclude(
+            status__in=[
+                Complaint.STATUS_RESOLVED,
+                Complaint.STATUS_REJECTED,
+            ]
+        )
+    return queryset.filter(status=complaint_status)
+
+
+def psychologist_visible_complaints(psychologist):
+    return complaint_queryset().filter(
+        booking__psychologist=psychologist,
+        show_to_psychologist=True,
     )
 
 
@@ -115,8 +138,7 @@ class PatientComplaintListView(APIView):
                 | Q(subject__icontains=search)
                 | Q(psychologist__user__full_name__icontains=search)
             )
-        if complaint_status and complaint_status != "ALL":
-            queryset = queryset.filter(status=complaint_status)
+        queryset = apply_complaint_status_filter(queryset, complaint_status)
 
         serializer = ComplaintSerializer(queryset, many=True, context={"request": request})
         return Response(serializer.data)
@@ -160,8 +182,7 @@ class AdminComplaintListView(APIView):
                 | Q(psychologist__user__full_name__icontains=search)
                 | Q(psychologist__user__email__icontains=search)
             )
-        if complaint_status and complaint_status != "ALL":
-            queryset = queryset.filter(status=complaint_status)
+        queryset = apply_complaint_status_filter(queryset, complaint_status)
         if category and category != "ALL":
             queryset = queryset.filter(category=category)
         if severity and severity != "ALL":
@@ -174,6 +195,7 @@ class AdminComplaintListView(APIView):
         end = start + page_size
         serializer = ComplaintSerializer(queryset[start:end], many=True, context={"request": request})
         counts = complaint_queryset().aggregate(
+            open=Count("id", filter=~Q(status__in=[Complaint.STATUS_RESOLVED, Complaint.STATUS_REJECTED])),
             pending_review=Count("id", filter=Q(status=Complaint.STATUS_PENDING)),
             under_review=Count("id", filter=Q(status=Complaint.STATUS_UNDER_REVIEW)),
             response_submitted=Count("id", filter=Q(status=Complaint.STATUS_PSYCHOLOGIST_RESPONSE_SUBMITTED)),
@@ -216,4 +238,71 @@ class AdminComplaintDetailView(APIView):
         return Response(response_serializer.data)
 
 
+"""
+PSYCHOLOGIST COMPLAINT LIST VIEW
+"""
+class PsychologistComplaintListView(APIView):
+    permission_classes = [IsAuthenticated, IsPsychologist]
 
+    def get(self, request):
+        psychologist = get_object_or_404(PsychologistProfile, user=request.user)
+        search = request.query_params.get("search", "").strip()
+        complaint_status = request.query_params.get("status", "ALL").strip()
+
+        queryset = psychologist_visible_complaints(psychologist)
+        if search:
+            queryset = queryset.filter(
+                Q(complaint_id__icontains=search)
+                | Q(subject__icontains=search)
+                | Q(patient__user__full_name__icontains=search)
+            )
+        queryset = apply_complaint_status_filter(queryset, complaint_status)
+
+        serializer = PsychologistComplaintSerializer(queryset, many=True, context={"request": request})
+        return Response(serializer.data)
+
+
+"""
+PSYCHOLOGIST COMPLAINT DETAILS VIEW
+"""
+class PsychologistComplaintDetailView(APIView):
+    permission_classes = [IsAuthenticated, IsPsychologist]
+    parser_classes = [JSONParser, MultiPartParser, FormParser]
+
+    def get_complaint(self, request, complaint_id):
+        psychologist = get_object_or_404(PsychologistProfile, user=request.user)
+        return get_object_or_404(
+            psychologist_visible_complaints(psychologist),
+            id=complaint_id,
+        )
+
+    def get(self, request, complaint_id):
+        complaint = self.get_complaint(request, complaint_id)
+        serializer = PsychologistComplaintSerializer(complaint, context={"request": request})
+        return Response(serializer.data)
+
+    def post(self, request, complaint_id):
+        complaint = self.get_complaint(request, complaint_id)
+        if complaint.status != Complaint.STATUS_UNDER_REVIEW:
+            return Response(
+                {"detail": "Response can only be submitted while the complaint is under review."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        data = request.data.copy()
+        if "evidence" not in data:
+            files = request.FILES.getlist("evidence")
+            if files:
+                if hasattr(data, "setlist"):
+                    data.setlist("evidence", files)
+                else:
+                    data["evidence"] = files
+
+        serializer = PsychologistComplaintResponseSerializer(
+            complaint,
+            data=data,
+            context={"request": request},
+        )
+        serializer.is_valid(raise_exception=True)
+        complaint = serializer.save()
+        response_serializer = PsychologistComplaintSerializer(complaint, context={"request": request})
+        return Response(response_serializer.data)

@@ -23,6 +23,14 @@ const initialForm = {
 };
 
 const fieldCls = "w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-patient-primary focus:ring-2 focus:ring-patient-primary/15";
+const invalidFieldCls = "border-rose-400 bg-rose-50/60 focus:border-rose-500 focus:ring-rose-100";
+const errorTextCls = "mt-1.5 text-sm font-medium text-rose-600";
+
+function firstError(value) {
+  if (!value) return "";
+  if (Array.isArray(value)) return value[0] || "";
+  return String(value);
+}
 
 function normalizeBooking(booking) {
   if (!booking) return null;
@@ -59,6 +67,7 @@ export default function ComplaintModal({ open, booking, onClose, onSuccess }) {
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [form, setForm] = useState(initialForm);
   const [successComplaint, setSuccessComplaint] = useState(null);
+  const [submitAttempted, setSubmitAttempted] = useState(false);
 
   const fixedBooking = useMemo(() => normalizeBooking(booking), [booking]);
   const activeBooking = fixedBooking || selectedBooking;
@@ -89,22 +98,36 @@ export default function ComplaintModal({ open, booking, onClose, onSuccess }) {
     setSelectedBooking(null);
     setForm(initialForm);
     setSuccessComplaint(null);
+    setSubmitAttempted(false);
     mutation.reset();
     onClose();
   };
 
   const apiError = mutation.error?.response?.data;
+  const fieldErrors = {
+    category: firstError(apiError?.category),
+    subject: firstError(apiError?.subject),
+    description: firstError(apiError?.description),
+    severity: firstError(apiError?.severity),
+    evidence: firstError(apiError?.evidence),
+  };
+  const validationErrors = {
+    category: submitAttempted && !form.category ? "Please select an issue type." : fieldErrors.category,
+    subject: submitAttempted && !form.subject.trim() ? "Subject is required." : fieldErrors.subject,
+    description: submitAttempted && !form.description.trim() ? "Description is required." : fieldErrors.description,
+    severity: fieldErrors.severity,
+    evidence: fieldErrors.evidence,
+  };
   const errorMessage =
     apiError?.non_field_errors?.[0] ||
     apiError?.detail ||
-    apiError?.subject?.[0] ||
-    apiError?.description?.[0] ||
-    apiError?.category?.[0] ||
     null;
 
   const submit = (event) => {
     event.preventDefault();
+    setSubmitAttempted(true);
     if (!activeBooking) return;
+    if (!form.category || !form.subject.trim() || !form.description.trim()) return;
     mutation.mutate({
       bookingId: activeBooking.id,
       category: form.category,
@@ -173,7 +196,7 @@ export default function ComplaintModal({ open, booking, onClose, onSuccess }) {
             </div>
           </div>
         ) : (
-          <form onSubmit={submit} className="max-h-[92vh] overflow-y-auto p-6">
+          <form onSubmit={submit} noValidate className="max-h-[92vh] overflow-y-auto p-6">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h2 className="text-2xl font-bold text-slate-900">Raise Complaint</h2>
@@ -191,30 +214,50 @@ export default function ComplaintModal({ open, booking, onClose, onSuccess }) {
             <div className="mt-5 grid gap-4">
               <label className="block">
                 <span className="mb-2 block text-sm font-semibold text-slate-700">Select Issue Type</span>
-                <select required value={form.category} onChange={(event) => setForm((prev) => ({ ...prev, category: event.target.value }))} className={fieldCls}>
+                <select value={form.category} onChange={(event) => {
+                  mutation.reset();
+                  setForm((prev) => ({ ...prev, category: event.target.value }));
+                }} className={`${fieldCls} ${validationErrors.category ? invalidFieldCls : ""}`}>
                   <option value="">Choose category</option>
                   {categories.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
                 </select>
+                {validationErrors.category ? <p className={errorTextCls}>{validationErrors.category}</p> : null}
               </label>
               <label className="block">
                 <span className="mb-2 block text-sm font-semibold text-slate-700">Subject</span>
-                <input required value={form.subject} onChange={(event) => setForm((prev) => ({ ...prev, subject: event.target.value }))} className={fieldCls} placeholder="Session ended too early" />
+                <input value={form.subject} onChange={(event) => {
+                  mutation.reset();
+                  setForm((prev) => ({ ...prev, subject: event.target.value }));
+                }} className={`${fieldCls} ${validationErrors.subject ? invalidFieldCls : ""}`} placeholder="Session ended too early" />
+                {validationErrors.subject ? <p className={errorTextCls}>{validationErrors.subject}</p> : null}
               </label>
               <label className="block">
                 <span className="mb-2 block text-sm font-semibold text-slate-700">Severity</span>
-                <select value={form.severity} onChange={(event) => setForm((prev) => ({ ...prev, severity: event.target.value }))} className={fieldCls}>
+                <select value={form.severity} onChange={(event) => {
+                  mutation.reset();
+                  setForm((prev) => ({ ...prev, severity: event.target.value }));
+                }} className={`${fieldCls} ${validationErrors.severity ? invalidFieldCls : ""}`}>
                   <option value="LOW">Low</option>
                   <option value="MEDIUM">Medium</option>
                   <option value="HIGH">High</option>
                 </select>
+                {validationErrors.severity ? <p className={errorTextCls}>{validationErrors.severity}</p> : null}
               </label>
               <label className="block">
                 <span className="mb-2 block text-sm font-semibold text-slate-700">Describe your concern</span>
-                <textarea required rows={5} value={form.description} onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))} className={`${fieldCls} resize-none`} placeholder="Write the details clearly..." />
+                <textarea rows={5} value={form.description} onChange={(event) => {
+                  mutation.reset();
+                  setForm((prev) => ({ ...prev, description: event.target.value }));
+                }} className={`${fieldCls} resize-none ${validationErrors.description ? invalidFieldCls : ""}`} placeholder="Write the details clearly..." />
+                {validationErrors.description ? <p className={errorTextCls}>{validationErrors.description}</p> : null}
               </label>
               <label className="block">
                 <span className="mb-2 block text-sm font-semibold text-slate-700">Upload Screenshot / File</span>
-                <input type="file" multiple onChange={(event) => setForm((prev) => ({ ...prev, evidence: Array.from(event.target.files || []) }))} className="w-full rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-600 file:mr-4 file:rounded-lg file:border-0 file:bg-patient-primary file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white" />
+                <input type="file" multiple onChange={(event) => {
+                  mutation.reset();
+                  setForm((prev) => ({ ...prev, evidence: Array.from(event.target.files || []) }));
+                }} className="w-full rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-600 file:mr-4 file:rounded-lg file:border-0 file:bg-patient-primary file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white" />
+                {validationErrors.evidence ? <p className={errorTextCls}>{validationErrors.evidence}</p> : null}
               </label>
             </div>
 

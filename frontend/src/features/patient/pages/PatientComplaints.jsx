@@ -10,6 +10,7 @@ import { useAuthStore } from "../../../store/auth.store";
 import { formatIndiaDate, formatIndiaDateTime, formatIndiaTime } from "../../../utils/indiaDateTime";
 
 const statusOptions = [
+  ["OPEN", "Open"],
   ["ALL", "All"],
   ["PENDING_REVIEW", "Pending"],
   ["UNDER_REVIEW", "Under Review"],
@@ -35,10 +36,11 @@ function StatusBadge({ complaint }) {
 }
 
 function InfoLine({ label, value }) {
+  const isEmpty = value === null || value === undefined || value === "";
   return (
     <div>
       <p className="text-xs font-bold uppercase tracking-wider text-slate-400">{label}</p>
-      <p className="mt-1 text-sm font-medium text-slate-800">{value || "-"}</p>
+      <p className={`mt-1 text-sm font-medium ${isEmpty ? "text-rose-600" : "text-slate-800"}`}>{isEmpty ? "Not filled" : value}</p>
     </div>
   );
 }
@@ -147,7 +149,7 @@ export default function PatientComplaints() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const role = useAuthStore((s) => s.role);
   const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("ALL");
+  const [status, setStatus] = useState("OPEN");
   const [selectedId, setSelectedId] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   usePatientSessionGuard();

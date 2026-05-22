@@ -10,7 +10,6 @@ const actionOptions = [
   ["send_to_psychologist", "Send To Psychologist"],
   ["resolve", "Resolve Complaint"],
   ["reject", "Reject Complaint"],
-  ["note", "Save Internal Note"],
 ];
 
 const severityOptions = [
@@ -28,6 +27,14 @@ const statusStyles = {
 };
 
 const inputCls = "w-full rounded-[10px] border border-slate-700/60 bg-[#141826] px-3 py-2.5 text-sm text-slate-200 outline-none transition placeholder:text-slate-500 focus:border-admin-primary focus:shadow-[0_0_0_3px_rgba(99,102,241,0.15)]";
+const invalidInputCls = "border-red-400 bg-red-500/10 focus:border-red-400 focus:shadow-[0_0_0_3px_rgba(248,113,113,0.15)]";
+const errorTextCls = "text-sm font-medium text-red-400";
+
+function firstError(value) {
+  if (!value) return "";
+  if (Array.isArray(value)) return value[0] || "";
+  return String(value);
+}
 
 const formatDateTime = (value) => {
   if (!value) return "-";
@@ -73,10 +80,11 @@ function StatusBadge({ complaint }) {
 }
 
 function DetailLine({ label, value }) {
+  const isEmpty = value === null || value === undefined || value === "";
   return (
     <div className="min-w-0 border-b border-slate-800/70 py-3 last:border-0">
       <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-500">{label}</p>
-      <p className="mt-1 break-words text-sm font-medium text-slate-200">{value || "-"}</p>
+      <p className={`mt-1 break-words text-sm font-medium ${isEmpty ? "text-red-300" : "text-slate-200"}`}>{isEmpty ? "Not filled" : value}</p>
     </div>
   );
 }
@@ -96,8 +104,8 @@ export default function AdminComplaintDetail() {
   const queryClient = useQueryClient();
   const [action, setAction] = useState("send_to_psychologist");
   const [message, setMessage] = useState("");
-  const [internalNote, setInternalNote] = useState("");
   const [severity, setSeverity] = useState("MEDIUM");
+  const [submitAttempted, setSubmitAttempted] = useState(false);
 
   const { data: complaint, isLoading, isError } = useQuery({
     queryKey: ["admin-complaint-detail", complaintId],
@@ -108,9 +116,9 @@ export default function AdminComplaintDetail() {
   useEffect(() => {
     if (!complaint) return;
     const timer = window.setTimeout(() => {
-      setInternalNote(complaint.internal_admin_note || "");
       setSeverity(complaint.severity || "MEDIUM");
       setMessage("");
+      setSubmitAttempted(false);
     }, 0);
     return () => window.clearTimeout(timer);
   }, [complaint]);
@@ -119,7 +127,7 @@ export default function AdminComplaintDetail() {
     mutationFn: updateAdminComplaint,
     onSuccess: async (updatedComplaint) => {
       setMessage("");
-      setInternalNote(updatedComplaint.internal_admin_note || "");
+      setSubmitAttempted(false);
       setSeverity(updatedComplaint.severity || "MEDIUM");
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["admin-complaints"] }),
@@ -129,6 +137,19 @@ export default function AdminComplaintDetail() {
   });
 
   const consultation = complaint?.consultation || {};
+  const apiError = mutation.error?.response?.data;
+  const fieldErrors = {
+    action: firstError(apiError?.action),
+    message: firstError(apiError?.message),
+    severity: firstError(apiError?.severity),
+  };
+  const validationErrors = {
+    action: fieldErrors.action,
+    message: submitAttempted && !message.trim() ? "This message is required." : fieldErrors.message,
+    severity: fieldErrors.severity,
+  };
+  const messageMissing = Boolean(validationErrors.message);
+  const formError = firstError(apiError?.non_field_errors) || firstError(apiError?.detail);
 
   return (
     <div className="flex min-h-screen bg-admin-gradient font-['DM_Sans',sans-serif]">
@@ -253,29 +274,45 @@ export default function AdminComplaintDetail() {
 
                   <DetailSection title="Admin Action">
                     <div className="grid gap-4">
-                      <select className={inputCls} value={action} onChange={(event) => setAction(event.target.value)}>
+                      <div>
+                        <select className={`${inputCls} ${validationErrors.action ? invalidInputCls : ""}`} value={action} onChange={(event) => {
+                          mutation.reset();
+                          setAction(event.target.value);
+                        }}>
                         {actionOptions.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-                      </select>
-                      <select className={inputCls} value={severity} onChange={(event) => setSeverity(event.target.value)}>
+                        </select>
+                        {validationErrors.action ? <p className={`mt-1.5 ${errorTextCls}`}>{validationErrors.action}</p> : null}
+                      </div>
+                      <div>
+                        <select className={`${inputCls} ${validationErrors.severity ? invalidInputCls : ""}`} value={severity} onChange={(event) => {
+                          mutation.reset();
+                          setSeverity(event.target.value);
+                        }}>
                         {severityOptions.map(([value, label]) => <option key={value} value={value}>{label} Severity</option>)}
-                      </select>
+                        </select>
+                        {validationErrors.severity ? <p className={`mt-1.5 ${errorTextCls}`}>{validationErrors.severity}</p> : null}
+                      </div>
                       <textarea
-                        className={`${inputCls} min-h-[130px] resize-none`}
+                        className={`${inputCls} min-h-[130px] resize-none ${messageMissing ? invalidInputCls : ""}`}
                         value={message}
-                        onChange={(event) => setMessage(event.target.value)}
-                        placeholder={action === "resolve" ? "Resolution message shown to patient" : action === "reject" ? "Reason for rejection" : action === "send_to_psychologist" ? "Message to psychologist" : "Optional timeline note"}
+                        onChange={(event) => {
+                          mutation.reset();
+                          setSubmitAttempted(false);
+                          setMessage(event.target.value);
+                        }}
+                        placeholder={action === "resolve" ? "Resolution message shown to patient" : action === "reject" ? "Reason for rejection" : "Message to psychologist"}
                       />
-                      <textarea
-                        className={`${inputCls} min-h-[110px] resize-none`}
-                        value={internalNote}
-                        onChange={(event) => setInternalNote(event.target.value)}
-                        placeholder="Internal admin note, private"
-                      />
-                      {mutation.isError ? <p className="text-sm text-red-400">Unable to update complaint. Please check the fields and try again.</p> : null}
+                      {validationErrors.message ? <p className={errorTextCls}>{validationErrors.message}</p> : null}
+                      {formError ? <p className={errorTextCls}>{formError}</p> : null}
+                      {mutation.isError && !formError && !Object.values(fieldErrors).some(Boolean) ? <p className={errorTextCls}>Unable to update complaint. Please check the fields and try again.</p> : null}
                       {mutation.isSuccess ? <p className="text-sm text-emerald-400">Complaint update saved.</p> : null}
                       <button
                         type="button"
-                        onClick={() => mutation.mutate({ complaintId: complaint.id, action, message, internalAdminNote: internalNote, severity })}
+                        onClick={() => {
+                          setSubmitAttempted(true);
+                          if (!message.trim()) return;
+                          mutation.mutate({ complaintId: complaint.id, action, message, severity });
+                        }}
                         disabled={mutation.isPending}
                         className="rounded-xl bg-admin-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
                       >

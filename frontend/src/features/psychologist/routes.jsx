@@ -18,6 +18,7 @@ import PsychologistMessages from "./pages/PsychologistMessages";
 import PsychologistPatients from "./pages/PsychologistPatients";
 import PsychologistWallet from "./pages/PsychologistWallet";
 import PsychologistReviews from "./pages/PsychologistReviews";
+import PsychologistComplaints from "./pages/PsychologistComplaints";
 import ConsultationRoom from "../../components/consultation/ConsultationRoom";
 
 const RouteLoader = () => (
@@ -188,6 +189,14 @@ const PsychologistRoutes = () => {
         element={
           isAuthenticated && role === "PSYCHOLOGIST"
             ? <PsychologistReviews />
+            : <Navigate to="/psychologist/login" replace />
+        }
+      />
+      <Route
+        path="complaints"
+        element={
+          isAuthenticated && role === "PSYCHOLOGIST"
+            ? <PsychologistComplaints />
             : <Navigate to="/psychologist/login" replace />
         }
       />

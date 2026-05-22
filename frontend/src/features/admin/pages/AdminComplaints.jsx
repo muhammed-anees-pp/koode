@@ -7,6 +7,7 @@ import Sidebar from "../../../components/admin/Sidebar/AdminSidebar";
 import { uppercaseMeridiem } from "../../../utils/indiaDateTime";
 
 const statusOptions = [
+  ["OPEN", "Open"],
   ["ALL", "All Statuses"],
   ["PENDING_REVIEW", "Pending Review"],
   ["UNDER_REVIEW", "Under Review"],
@@ -61,9 +62,19 @@ const formatDateTime = (value) => {
 };
 
 function Badge({ children, className = "" }) {
+  const isEmpty = children === null || children === undefined || children === "";
   return (
     <span className={`inline-flex whitespace-nowrap rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-wide ${className}`}>
-      {children || "-"}
+      {isEmpty ? "Not filled" : children}
+    </span>
+  );
+}
+
+function TableValue({ children, className = "" }) {
+  const isEmpty = children === null || children === undefined || children === "";
+  return (
+    <span className={`block truncate ${isEmpty ? "font-semibold text-red-300" : ""} ${className}`}>
+      {isEmpty ? "Not filled" : children}
     </span>
   );
 }
@@ -83,7 +94,7 @@ export default function AdminComplaints() {
   const [pageSize, setPageSize] = useState(10);
   const [filters, setFilters] = useState({
     search: "",
-    status: "ALL",
+    status: "OPEN",
     category: "ALL",
     severity: "ALL",
   });
@@ -118,6 +129,7 @@ export default function AdminComplaints() {
 
           <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
             <StatCard label="Pending Review" value={stats.pending_review} />
+            <StatCard label="Open" value={stats.open} />
             <StatCard label="Under Review" value={stats.under_review} />
             <StatCard label="Response Submitted" value={stats.response_submitted} />
             <StatCard label="Resolved" value={stats.resolved} />
@@ -175,12 +187,12 @@ export default function AdminComplaints() {
                       <p className="mt-1 max-w-[260px] truncate text-xs text-slate-500">{complaint.subject}</p>
                     </td>
                     <td className="px-5 py-4 text-sm text-slate-300">
-                      <span className="block max-w-[170px] truncate">{complaint.consultation?.patient?.full_name || "-"}</span>
+                      <TableValue className="max-w-[170px]">{complaint.consultation?.patient?.full_name}</TableValue>
                     </td>
                     <td className="px-5 py-4 text-sm text-slate-300">
-                      <span className="block max-w-[170px] truncate">{complaint.consultation?.psychologist?.full_name || "-"}</span>
+                      <TableValue className="max-w-[170px]">{complaint.consultation?.psychologist?.full_name}</TableValue>
                     </td>
-                    <td className="px-5 py-4 text-sm text-slate-400">{complaint.category_display || "-"}</td>
+                    <td className="px-5 py-4 text-sm text-slate-400"><TableValue>{complaint.category_display}</TableValue></td>
                     <td className="px-5 py-4">
                       <Badge className={severityStyles[complaint.severity] || severityStyles.LOW}>
                         {complaint.severity_display || complaint.severity}

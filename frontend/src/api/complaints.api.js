@@ -52,18 +52,18 @@ export const fetchAdminComplaintDetail = async (complaintId) => {
   return response.data;
 };
 
-export const updateAdminComplaint = async ({ complaintId, action, message, internalAdminNote, severity }) => {
+export const updateAdminComplaint = async ({ complaintId, action, message, severity }) => {
   const payload = { action };
   if (message !== undefined) payload.message = message;
-  if (internalAdminNote !== undefined) payload.internal_admin_note = internalAdminNote;
   if (severity !== undefined) payload.severity = severity;
   const response = await axiosInstance.patch(`complaints/admin/${complaintId}/`, payload);
   return response.data;
 };
 
-export const fetchPsychologistComplaints = async ({ search = "" } = {}) => {
+export const fetchPsychologistComplaints = async ({ search = "", status = "OPEN" } = {}) => {
   const params = new URLSearchParams();
   if (search) params.append("search", search);
+  if (status) params.append("status", status);
   const query = params.toString();
   const response = await axiosInstance.get(`complaints/psychologist/${query ? `?${query}` : ""}`);
   return response.data;
