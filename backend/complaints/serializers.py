@@ -276,7 +276,7 @@ class CreateComplaintSerializer(serializers.Serializer):
                 complaint=complaint,
                 event_type=ComplaintTimelineEvent.EVENT_SUBMITTED,
                 title="Complaint Submitted",
-                note="Complaint submitted by patient.",
+                note=complaint.description,
                 actor=actor,
             )
 
@@ -453,7 +453,7 @@ class PsychologistComplaintResponseSerializer(serializers.Serializer):
                 complaint=instance,
                 event_type=ComplaintTimelineEvent.EVENT_PSYCHOLOGIST_RESPONDED,
                 title="Psychologist Submitted Response",
-                note="Psychologist response submitted for admin review.",
+                note=validated_data["response"],
                 actor=actor,
             )
 

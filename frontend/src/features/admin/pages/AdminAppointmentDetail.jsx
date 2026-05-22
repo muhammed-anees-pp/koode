@@ -136,7 +136,8 @@ export default function AdminAppointmentDetail() {
   const isUpcomingAppointment = appointment && !["COMPLETED", "CANCELLED"].includes(appointment.status);
   const isCancelledAppointment = appointment?.status === "CANCELLED";
   const sourceTab = searchParams.get("tab") || (appointment?.status === "COMPLETED" ? "past" : appointment?.status === "CANCELLED" ? "cancelled" : "upcoming");
-  const backPath = sourceTab && sourceTab !== "upcoming" ? `/admin/appointments?tab=${sourceTab}` : "/admin/appointments";
+  const returnTo = searchParams.get("returnTo");
+  const backPath = returnTo || (sourceTab && sourceTab !== "upcoming" ? `/admin/appointments?tab=${sourceTab}` : "/admin/appointments");
 
   return (
     <div className="flex min-h-screen bg-admin-gradient font-['DM_Sans',sans-serif]">
@@ -152,7 +153,7 @@ export default function AdminAppointmentDetail() {
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
               <polyline points="15 18 9 12 15 6" />
             </svg>
-            Back to Appointments
+            {returnTo ? "Back to Complaint" : "Back to Appointments"}
           </button>
 
           {isLoading && (

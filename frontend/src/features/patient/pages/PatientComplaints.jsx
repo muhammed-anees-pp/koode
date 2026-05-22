@@ -14,7 +14,6 @@ const statusOptions = [
   ["ALL", "All"],
   ["PENDING_REVIEW", "Pending"],
   ["UNDER_REVIEW", "Under Review"],
-  ["PSYCHOLOGIST_RESPONSE_SUBMITTED", "Response Submitted"],
   ["RESOLVED", "Resolved"],
   ["REJECTED", "Rejected"],
 ];

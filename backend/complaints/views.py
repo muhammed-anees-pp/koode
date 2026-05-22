@@ -201,6 +201,8 @@ class AdminComplaintListView(APIView):
             response_submitted=Count("id", filter=Q(status=Complaint.STATUS_PSYCHOLOGIST_RESPONSE_SUBMITTED)),
             resolved=Count("id", filter=Q(status=Complaint.STATUS_RESOLVED)),
             rejected=Count("id", filter=Q(status=Complaint.STATUS_REJECTED)),
+            low_priority=Count("id", filter=Q(severity=Complaint.SEVERITY_LOW)),
+            medium_priority=Count("id", filter=Q(severity=Complaint.SEVERITY_MEDIUM)),
             high_priority=Count("id", filter=Q(severity=Complaint.SEVERITY_HIGH)),
         )
         return Response({

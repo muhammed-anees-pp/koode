@@ -127,13 +127,15 @@ export default function AdminComplaints() {
             <p className="mt-1 text-sm text-slate-400">Track patient complaints, review case status, and manage follow-up actions.</p>
           </div>
 
-          <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
+          <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
             <StatCard label="Pending Review" value={stats.pending_review} />
             <StatCard label="Open" value={stats.open} />
             <StatCard label="Under Review" value={stats.under_review} />
             <StatCard label="Response Submitted" value={stats.response_submitted} />
             <StatCard label="Resolved" value={stats.resolved} />
             <StatCard label="Rejected" value={stats.rejected} />
+            <StatCard label="Low Priority" value={stats.low_priority} />
+            <StatCard label="Medium Priority" value={stats.medium_priority} />
             <StatCard label="High Priority" value={stats.high_priority} />
           </div>
 

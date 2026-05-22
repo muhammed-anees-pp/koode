@@ -221,6 +221,12 @@ export default function PsychologistComplaints() {
                       </div>
                     </Section>
 
+                    <Section title="Admin Message">
+                      <p className="whitespace-pre-line rounded-lg border border-sky-100 bg-sky-50 p-4 text-sm leading-6 text-slate-700">
+                        {complaint.admin_request_message || "No admin message added."}
+                      </p>
+                    </Section>
+
                     <Section title="Patient Complaint">
                       <div className="mb-4 grid gap-4 md:grid-cols-3">
                         <DetailLine label="Category" value={complaint.category_display} />
