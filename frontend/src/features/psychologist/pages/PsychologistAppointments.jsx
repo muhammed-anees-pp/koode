@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import PsychologistNavbar from "../../../components/psychologist/Navbar/PsychologistNavbar";
 import PsychologistSidebar from "../../../components/psychologist/Sidebar/PsychologistSidebar";
 import {
@@ -28,6 +28,12 @@ const STATUS_STYLES = {
 
 const FILTER_OPTIONS = ["Upcoming", "Past", "Cancelled"];
 const ITEMS_PER_PAGE = 8;
+
+const getInitialFilter = (search) => {
+  const requestedFilter = new URLSearchParams(search).get("filter");
+  return FILTER_OPTIONS.includes(requestedFilter) ? requestedFilter : "Upcoming";
+};
+
 const sortAppointmentsForFilter = (appointments, activeFilter) => {
   const direction = activeFilter === "Past" || activeFilter === "Cancelled" ? -1 : 1;
   return [...appointments].sort(
@@ -423,9 +429,10 @@ function PatientSummaryModal({ booking, onClose }) {
 export default function PsychologistAppointments() {
   usePsychologistSessionGuard();
   const navigate = useNavigate();
+  const location = useLocation();
   const queryClient = useQueryClient();
   const dateInputRef = useRef(null);
-  const [activeFilter, setActiveFilter] = useState("Upcoming");
+  const [activeFilter, setActiveFilter] = useState(() => getInitialFilter(location.search));
   const [searchQuery, setSearchQuery] = useState("");
   const [dateFilter, setDateFilter] = useState("");
   const [currentPage, setCurrentPage] = useState(1);

@@ -23,6 +23,7 @@ from applications.models import PsychologistApplication
 from appointments.models import Booking
 from complaints.models import Complaint
 from consultations.models import Consultation
+from finance.services.amounts import calculate_commission_preview
 from finance.models import WalletTransaction
 from patient_summary.serializers import patient_summary_payload
 from patients.models import PatientProfile
@@ -1403,6 +1404,7 @@ class AdminPsychologistDetailView(APIView):
             "job_title": profile.job_title,
             "years_of_experience": profile.years_of_experience,
             "consultation_fee": str(profile.consultation_fee) if profile.consultation_fee else None,
+            "commission_preview": calculate_commission_preview(profile.consultation_fee) if profile.consultation_fee else None,
             "average_rating": round(profile.average_rating, 1) if profile.average_rating else None,
             "review_count": profile.review_count,
             "highest_education": profile.highest_education,

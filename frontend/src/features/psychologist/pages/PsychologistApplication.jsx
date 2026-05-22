@@ -7,6 +7,7 @@ import { submitApplication, getSpecializations } from '../../../api/psychologist
 import { fetchCurrentCommissionRate } from '../../../api/finance.api';
 import { useAuthStore } from '../../../store/auth.store';
 import { usePsychologistSessionGuard } from '../../../hooks/usePsychologistSessionGuard';
+import { calculateCommissionPreview } from '../../../utils/commission';
 
 const COUNTRIES = ['India', 'United States', 'United Kingdom', 'Canada', 'Australia', 'Other'];
 
@@ -318,10 +319,10 @@ const PsychologistApplication = () => {
     });
 
     const commissionPercentage = Number(commissionRate?.percentage ?? 10);
-    const COMMISSION_RATE = commissionPercentage / 100;
     const fee = parseFloat(form.consultation_fee) || 0;
-    const commission = Math.round(fee * COMMISSION_RATE);
-    const earning = fee - commission;
+    const commissionPreview = calculateCommissionPreview(fee, commissionPercentage);
+    const commission = commissionPreview.commission;
+    const earning = commissionPreview.payout;
 
 
     const { data: specializations = [], isLoading: specsLoading } = useQuery({
@@ -670,11 +671,11 @@ const PsychologistApplication = () => {
                         <div className="bg-gray-50 border border-gray-100 rounded-xl p-4 flex flex-col gap-2 text-sm">
                             <div className="flex justify-between text-gray-500">
                                 <span>Platform Commission ({commissionPercentage.toFixed(2)}%)</span>
-                                <span className="text-red-400">-₹{commission}</span>
+                                <span className="text-red-400">-₹{commission.toLocaleString('en-IN')}</span>
                             </div>
                             <div className="flex justify-between font-semibold text-gray-900 border-t border-gray-200 pt-2 mt-1">
                                 <span>Your Estimated Earning</span>
-                                <span className="text-psycho-primary">₹{earning} <span className="text-xs font-normal text-gray-500">/ session</span></span>
+                                <span className="text-psycho-primary">₹{earning.toLocaleString('en-IN')} <span className="text-xs font-normal text-gray-500">/ session</span></span>
                             </div>
                             <p className="text-xs text-gray-400 flex items-center gap-1 mt-1">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></svg>

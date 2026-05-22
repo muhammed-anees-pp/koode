@@ -5,6 +5,7 @@ import { getMyApplication, getApplicationStatus, requestJoin, getJoinStatus } fr
 import { fetchCurrentCommissionRate } from '../../../api/finance.api';
 import { usePsychologistSessionGuard } from '../../../hooks/usePsychologistSessionGuard';
 import { resolveMediaUrl } from '../../../utils/url';
+import { normalizeCommissionPreview } from '../../../utils/commission';
 
 const STEPS = [
     {
@@ -543,11 +544,15 @@ const PsychologistApprovalWaiting = () => {
 
     const fullName = application?.full_name || 'Dr. —';
     const email = application?.email || '—';
-    const commissionPercentage = Number(commissionRate?.percentage ?? 10);
-    const earningPercentage = Math.max(0, 100 - commissionPercentage);
+    const commissionPreview = normalizeCommissionPreview(
+        application?.commission_preview,
+        application?.consultation_fee,
+        commissionRate?.percentage ?? 10
+    );
+    const earningPercentage = commissionPreview.earningPercentage;
     const fee = application?.consultation_fee ? `₹${parseFloat(application.consultation_fee).toLocaleString('en-IN')}` : '—';
     const earning = application?.consultation_fee
-        ? `₹${Math.round(parseFloat(application.consultation_fee) * (earningPercentage / 100)).toLocaleString('en-IN')}`
+        ? `₹${commissionPreview.payout.toLocaleString('en-IN')}`
         : '—';
 
     const address = [application?.street_address, application?.city, application?.state, application?.pincode]

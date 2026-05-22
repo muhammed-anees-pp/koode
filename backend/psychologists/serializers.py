@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from accounts.models import User
 from .models import Specialization, PsychologistProfile
+from finance.services.amounts import calculate_commission_preview
 import re
 
 
@@ -68,6 +69,7 @@ class PsychologistProfileSerializer(serializers.ModelSerializer):
     highest_education   = serializers.CharField(required=False, allow_blank=True)
     years_of_experience = serializers.IntegerField(required=False)
     consultation_fee    = serializers.DecimalField(max_digits=8, decimal_places=2, required=False)
+    commission_preview  = serializers.SerializerMethodField()
 
     class Meta:
         model = PsychologistProfile
@@ -77,9 +79,12 @@ class PsychologistProfileSerializer(serializers.ModelSerializer):
             "street_address", "city", "state", "pincode", "country",
             "job_title", "highest_education", "years_of_experience",
             "specializations", "specialization_ids", "consultation_fee",
-            "total_session_minutes", "created_at",
+            "commission_preview", "total_session_minutes", "created_at",
         ]
-        read_only_fields = ["psychologist_id", "specializations", "total_session_minutes", "created_at"]
+        read_only_fields = ["psychologist_id", "specializations", "commission_preview", "total_session_minutes", "created_at"]
+
+    def get_commission_preview(self, obj):
+        return calculate_commission_preview(obj.consultation_fee)
 
 
     def validate_phone_number(self, value):
