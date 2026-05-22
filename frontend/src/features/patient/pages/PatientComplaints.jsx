@@ -29,7 +29,7 @@ const statusStyles = {
 
 function StatusBadge({ complaint }) {
   return (
-    <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-wide ${statusStyles[complaint?.status] || "border-slate-200 bg-slate-100 text-slate-600"}`}>
+    <span className={`inline-flex whitespace-nowrap rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-wide ${statusStyles[complaint?.status] || "border-slate-200 bg-slate-100 text-slate-600"}`}>
       {complaint?.status_display || complaint?.status || "Pending"}
     </span>
   );
@@ -124,7 +124,6 @@ function ComplaintDetails({ complaint }) {
                 <span className="absolute -left-[7px] top-1 h-3 w-3 rounded-full bg-patient-primary" />
                 <p className="text-xs font-semibold text-slate-400">{formatIndiaDateTime(event.created_at)}</p>
                 <p className="mt-1 text-sm font-semibold text-slate-800">{event.title}</p>
-                {event.note ? <p className="mt-1 text-sm leading-6 text-slate-600">{event.note}</p> : null}
               </div>
             ))}
           </div>
@@ -184,7 +183,7 @@ export default function PatientComplaints() {
             </button>
           </div>
 
-          <div className="mt-6 grid gap-5 lg:grid-cols-[360px_minmax(0,1fr)]">
+          <div className="mt-6 grid gap-5 lg:grid-cols-[430px_minmax(0,1fr)]">
             <aside className="rounded-2xl border border-slate-200 bg-white">
               <div className="border-b border-slate-100 p-4">
                 <div className="relative">
@@ -209,8 +208,10 @@ export default function PatientComplaints() {
                 {complaints.map((complaint) => (
                   <button key={complaint.id} type="button" onClick={() => setSelectedId(complaint.id)} className={`mb-3 w-full rounded-xl border p-4 text-left transition ${selectedComplaint?.id === complaint.id ? "border-patient-primary bg-teal-50" : "border-slate-200 bg-white hover:bg-slate-50"}`}>
                     <div className="flex items-start justify-between gap-3">
-                      <p className="text-sm font-bold text-slate-900">{complaint.complaint_id}</p>
-                      <StatusBadge complaint={complaint} />
+                      <p className="min-w-0 break-words text-sm font-bold text-slate-900">{complaint.complaint_id}</p>
+                      <div className="shrink-0">
+                        <StatusBadge complaint={complaint} />
+                      </div>
                     </div>
                     <p className="mt-3 text-sm font-semibold text-slate-800">{complaint.subject}</p>
                     <p className="mt-1 text-sm text-slate-500">Dr. {complaint.consultation?.psychologist?.full_name}</p>

@@ -464,10 +464,5 @@ class PsychologistComplaintResponseSerializer(serializers.Serializer):
                 f"Psychologist submitted a response for complaint {instance.complaint_id}.",
                 target_url=f"/admin/complaints/{instance.id}",
             )
-            create_notification(
-                instance.patient.user,
-                f"Psychologist submitted a response for your complaint {instance.complaint_id}.",
-                target_url="/patient/complaints",
-            )
 
         return instance
