@@ -131,9 +131,9 @@ const PatientNavbar = ({ authLink } = {}) => {
 
                     
                     <div className="flex-none flex items-center gap-3">
-                        <button className="px-5 py-2.5 bg-gradient-to-r from-patient-primary to-patient-hover text-white text-[0.875rem] font-semibold border-none rounded-[10px] cursor-pointer shadow-patient-sm transition-all duration-200 hover:shadow-patient-md hover:-translate-y-px active:translate-y-0">
+                        <Link to="/patient/psychologists" className="px-5 py-2.5 bg-gradient-to-r from-patient-primary to-patient-hover text-white text-[0.875rem] font-semibold border-none rounded-[10px] cursor-pointer shadow-patient-sm transition-all duration-200 hover:shadow-patient-md hover:-translate-y-px active:translate-y-0 no-underline">
                             Book Consultation
-                        </button>
+                        </Link>
 
                         {authLink ? (
                             <Link
@@ -252,7 +252,7 @@ const PatientNavbar = ({ authLink } = {}) => {
                         )}
 
                         <div className="px-6 pt-4 pb-6 flex flex-col gap-3">
-                            <button className="w-full py-3 bg-gradient-to-r from-patient-primary to-patient-hover text-white font-semibold border-none rounded-[10px] cursor-pointer shadow-patient-sm">Book Consultation</button>
+                            <Link to="/patient/psychologists" className="w-full py-3 bg-gradient-to-r from-patient-primary to-patient-hover text-white font-semibold border-none rounded-[10px] cursor-pointer shadow-patient-sm text-center no-underline" onClick={() => setIsMobileMenuOpen(false)}>Book Consultation</Link>
                             {!isLoggedIn && (
                                 <Link to="/patient/login" className="w-full py-3 text-center text-patient-primary font-semibold border-[1.5px] border-patient-primary rounded-[10px] no-underline transition-all duration-200 hover:bg-[rgba(26,190,170,0.06)]" onClick={() => setIsMobileMenuOpen(false)}>Login</Link>
                             )}

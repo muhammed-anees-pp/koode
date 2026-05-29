@@ -11,6 +11,18 @@ import {
 import { uppercaseMeridiem } from "../../../utils/indiaDateTime";
 import { resolveMediaUrl } from "../../../utils/url";
 
+const cameraExtraInfo = (cameraOn) => JSON.stringify({ cameraOn });
+
+const parseCameraExtraInfo = (extraInfo) => {
+    if (!extraInfo) return true;
+    try {
+        const parsed = JSON.parse(extraInfo);
+        return parsed.cameraOn !== false;
+    } catch {
+        return true;
+    }
+};
+
 function AppAvatar({ name, photo, size = 44 }) {
     if (photo) {
         return (
@@ -207,6 +219,7 @@ export default function AdminInterviewRoomModal({ interviewId, applicantName, sc
     const [showEndConfirm, setShowEndConfirm] = useState(false);
     const [ending, setEnding] = useState(false);
     const [remoteStreamID, setRemoteStreamID] = useState(null);
+    const [remoteCamOn, setRemoteCamOn] = useState(true);
 
     const [previewStream, setPreviewStream] = useState(null);
     const [previewMicOn, setPreviewMicOn] = useState(true);
@@ -392,7 +405,9 @@ export default function AdminInterviewRoomModal({ interviewId, applicantName, sc
                     lastMsgRef.current = msgs[msgs.length - 1].sent_at;
                     setChatMessages((prev) => [...prev, ...msgs]);
                 }
-            } catch (error) {}
+            } catch (err) {
+                console.error("Chat poll error:", err);
+            }
         }, 2500);
     }, [interviewId]);
 
@@ -426,7 +441,7 @@ export default function AdminInterviewRoomModal({ interviewId, applicantName, sc
             tempStream.getTracks().forEach((t) => t.stop());
 
             if (engineRef.current) {
-                try { engineRef.current.destroyEngine(); } catch (_) {}
+                try { engineRef.current.destroyEngine(); } catch (err) { console.warn("Engine cleanup failed:", err); }
                 engineRef.current = null;
             }
 
@@ -445,6 +460,7 @@ export default function AdminInterviewRoomModal({ interviewId, applicantName, sc
                         if (stream.streamID !== localStreamIdRef.current) {
                             remoteStreamIDRef.current = stream.streamID;
                             setRemoteStreamID(stream.streamID);
+                            setRemoteCamOn(parseCameraExtraInfo(stream.extraInfo));
                         }
                     });
                 }
@@ -453,9 +469,18 @@ export default function AdminInterviewRoomModal({ interviewId, applicantName, sc
                         if (stream.streamID === remoteStreamIDRef.current) {
                             remoteStreamIDRef.current = null;
                             setRemoteStreamID(null);
+                            setRemoteCamOn(true);
                         }
                     });
                 }
+            });
+
+            engine.on("streamExtraInfoUpdate", (_roomID, streamList) => {
+                streamList.forEach((stream) => {
+                    if (stream.streamID === remoteStreamIDRef.current) {
+                        setRemoteCamOn(parseCameraExtraInfo(stream.extraInfo));
+                    }
+                });
             });
 
             const loginResult = await engine.loginRoom(
@@ -469,6 +494,7 @@ export default function AdminInterviewRoomModal({ interviewId, applicantName, sc
             const streamID = `admin_${user_id}_${Date.now()}`;
             localStreamIdRef.current = streamID;
             await engine.startPublishingStream(streamID, stream);
+            await engine.setStreamExtraInfo(streamID, cameraExtraInfo(previewCamOn)).catch((err) => console.warn("Camera state update failed:", err));
 
             if (!previewMicOn) engine.mutePublishStreamAudio(stream, true);
             if (!previewCamOn) engine.mutePublishStreamVideo(stream, true);
@@ -488,7 +514,7 @@ export default function AdminInterviewRoomModal({ interviewId, applicantName, sc
         } catch (err) {
             console.error("Admin join room error:", err);
             if (engineRef.current) {
-                try { engineRef.current.destroyEngine(); } catch (_) {}
+                try { engineRef.current.destroyEngine(); } catch (cleanupErr) { console.warn("Engine cleanup failed:", cleanupErr); }
                 engineRef.current = null;
             }
             setError("Failed to connect: " + (err?.message || "Unknown error") + ". Please try again.");
@@ -510,14 +536,15 @@ export default function AdminInterviewRoomModal({ interviewId, applicantName, sc
                 if (localStreamIdRef.current) await engine.stopPublishingStream(localStreamIdRef.current);
                 if (localStream) engine.destroyStream(localStream);
                 await engine.logoutRoom();
-            } catch (_) {}
-            try { engine.destroyEngine(); } catch (_) {}
+            } catch (cleanupErr) { console.warn("Room cleanup failed:", cleanupErr); }
+            try { engine.destroyEngine(); } catch (destroyErr) { console.warn("Engine cleanup failed:", destroyErr); }
             engineRef.current = null;
         }
         setJoined(false);
         setPhase("waiting");
         setLocalStream(null);
         setRemoteStreamID(null);
+        setRemoteCamOn(true);
         setChatMessages([]);
         lastMsgRef.current = null;
     };
@@ -541,8 +568,8 @@ export default function AdminInterviewRoomModal({ interviewId, applicantName, sc
                     if (localStreamIdRef.current) await engine.stopPublishingStream(localStreamIdRef.current);
                     if (localStream) engine.destroyStream(localStream);
                     await engine.logoutRoom();
-                } catch (_) {}
-                try { engine.destroyEngine(); } catch (_) {}
+                } catch (cleanupErr) { console.warn("Room cleanup failed:", cleanupErr); }
+                try { engine.destroyEngine(); } catch (destroyErr) { console.warn("Engine cleanup failed:", destroyErr); }
                 engineRef.current = null;
             }
             stopChatPoll();
@@ -563,8 +590,12 @@ export default function AdminInterviewRoomModal({ interviewId, applicantName, sc
 
     const toggleCam = () => {
         if (!localStream || !engineRef.current) return;
+        const nextCamOn = !camOn;
         engineRef.current.mutePublishStreamVideo(localStream, camOn);
-        setCamOn((v) => !v);
+        if (localStreamIdRef.current) {
+            engineRef.current.setStreamExtraInfo(localStreamIdRef.current, cameraExtraInfo(nextCamOn)).catch((err) => console.warn("Camera state update failed:", err));
+        }
+        setCamOn(nextCamOn);
     };
 
     const handleSendChat = async (text) => {
@@ -608,180 +639,103 @@ export default function AdminInterviewRoomModal({ interviewId, applicantName, sc
 
     if (phase === "waiting" && tokenData) {
         return (
-            <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={handleBackdropClick}>
-                <div
-                    className="bg-[#0f1320] border border-slate-700/50 rounded-2xl shadow-2xl w-[560px] max-h-[90vh] overflow-y-auto"
-                    onClick={(e) => e.stopPropagation()}
-                >
-                    <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700/50 sticky top-0 bg-[#0f1320] z-10">
-                        <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center">
-                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#818cf8" strokeWidth="2">
-                                    <polygon points="23 7 16 12 23 17 23 7" /><rect x="1" y="5" width="15" height="14" rx="2" />
+            <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-950/95 px-4 py-8 text-white backdrop-blur-sm" onClick={handleBackdropClick}>
+                <div className="grid w-full max-w-5xl gap-6 lg:grid-cols-[1fr_360px]" onClick={(e) => e.stopPropagation()}>
+                    <div className="relative aspect-video overflow-hidden rounded-[28px] border border-white/10 bg-black">
+                        {previewError ? (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-6 text-center text-slate-500">
+                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                                    <line x1="1" y1="1" x2="23" y2="23" /><path d="M21 21H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3" /><path d="M10.66 6H14a2 2 0 0 1 2 2S23 7 23 17" />
+                                </svg>
+                                <p className="text-xs">{previewError}</p>
+                            </div>
+                        ) : !previewStream ? (
+                            <div className="absolute inset-0 flex items-center justify-center">
+                                <svg className="animate-spin text-indigo-400" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <path d="M21 12a9 9 0 1 1-6.219-8.56" />
                                 </svg>
                             </div>
-                            <div>
-                                <h3 className="font-outfit text-sm font-bold text-slate-100">Interview Room</h3>
-                                <p className="text-[11px] text-slate-500">{applicantName || "Candidate"}</p>
+                        ) : !previewCamOn ? (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-slate-900">
+                                <AppAvatar name={tokenData?.user_name || "Admin"} photo={tokenData?.user_photo || null} size={72} />
+                                <p className="text-xs text-slate-400">Camera off</p>
                             </div>
-                        </div>
-                        <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-800 border border-slate-700 text-slate-400 hover:text-slate-200 cursor-pointer transition-all border-none">
+                        ) : null}
+                        <video ref={previewVideoRef} autoPlay muted playsInline className={`h-full w-full object-cover ${previewCamOn ? "" : "invisible"}`} />
+                    </div>
+
+                    <div className="relative rounded-[28px] border border-white/10 bg-white/10 p-6 backdrop-blur">
+                        <button onClick={onClose} className="absolute right-5 top-5 flex h-8 w-8 items-center justify-center rounded-xl border border-white/10 bg-white/10 text-slate-400 transition hover:text-slate-100">
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                 <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
                             </svg>
                         </button>
-                    </div>
+                        <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Waiting Room</p>
+                        <h1 className="mt-2 pr-8 text-2xl font-bold">Interview Room</h1>
+                        <p className="mt-2 text-sm text-slate-300">{applicantName || "Candidate"}</p>
+                        <p className="mt-1 text-sm text-slate-400">{fmtDateTime(scheduledAt)}</p>
 
-                    <div className="p-6 space-y-5">
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="flex items-center gap-3 bg-slate-800/50 border border-slate-700/50 rounded-xl px-4 py-3">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#818cf8" strokeWidth="2">
-                                    <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
-                                </svg>
-                                <div>
-                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5">Scheduled</p>
-                                    <p className="text-sm font-semibold text-slate-200">{fmtDateTime(scheduledAt)}</p>
+                        <div className={`mt-5 rounded-2xl border p-4 ${timeReached ? "border-emerald-500/30 bg-emerald-500/10" : "border-amber-400/20 bg-amber-400/10"}`}>
+                            <p className={`text-sm font-semibold ${timeReached ? "text-emerald-300" : "text-amber-100"}`}>
+                                {timeReached ? "Ready to join" : `Join button unlocks in ${countdown}`}
+                            </p>
+                        </div>
+
+                        {(specs.length > 0 || app?.years_of_experience != null || shortId) && (
+                            <div className="mt-5 rounded-2xl border border-white/10 bg-slate-900/40 p-4">
+                                <div className="flex items-center gap-3">
+                                    <AppAvatar name={app?.full_name || applicantName} photo={app?.profile_picture} size={44} />
+                                    <div>
+                                        <p className="text-sm font-bold text-slate-100">{app?.full_name || applicantName}</p>
+                                        {shortId ? <p className="text-xs text-slate-500">Applicant ID: #{shortId}</p> : null}
+                                    </div>
                                 </div>
-                            </div>
-                            <div className={`flex items-center gap-3 border rounded-xl px-4 py-3 ${timeReached ? "bg-emerald-500/10 border-emerald-500/30" : "bg-slate-800/50 border-slate-700/50"}`}>
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={timeReached ? "#34d399" : "#818cf8"} strokeWidth="2">
-                                    <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
-                                </svg>
-                                <div>
-                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5">
-                                        {timeReached ? "Status" : "Starts In"}
+                                {(specs.length > 0 || app?.years_of_experience != null) && (
+                                    <p className="mt-3 text-xs text-slate-400">
+                                        {[specs[0], app?.years_of_experience != null ? `${app.years_of_experience} Years` : null].filter(Boolean).join(" · ")}
                                     </p>
-                                    {timeReached
-                                        ? <p className="text-sm font-semibold text-emerald-400">Ready to join</p>
-                                        : <p className="text-sm font-semibold text-slate-200 font-mono">{countdown}</p>
-                                    }
-                                </div>
+                                )}
                             </div>
-                        </div>
-
-                        <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-4">
-                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-3">Candidate</p>
-                            <div className="flex items-center gap-3 mb-3">
-                                <AppAvatar name={app?.full_name || applicantName} photo={app?.profile_picture} size={44} />
-                                <div>
-                                    <p className="text-sm font-bold text-slate-200">{app?.full_name || applicantName}</p>
-                                    <p className="text-xs text-slate-500">Applicant ID: #{shortId}</p>
-                                </div>
-                            </div>
-                            {(specs.length > 0 || app?.years_of_experience != null) && (
-                                <div className="grid grid-cols-2 gap-2 mt-2">
-                                    {specs.length > 0 && (
-                                        <div className="bg-slate-900/60 rounded-lg p-2.5">
-                                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Specialization</p>
-                                            <p className="text-sm text-slate-300">{specs[0]}</p>
-                                        </div>
-                                    )}
-                                    {app?.years_of_experience != null && (
-                                        <div className="bg-slate-900/60 rounded-lg p-2.5">
-                                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Experience</p>
-                                            <p className="text-sm text-slate-300">{app.years_of_experience} Years</p>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-
-                        <div>
-                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Camera Preview</p>
-                            <div className="relative bg-slate-900 rounded-xl overflow-hidden aspect-video">
-                                {previewError ? (
-                                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-slate-500">
-                                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                                            <line x1="1" y1="1" x2="23" y2="23" /><path d="M21 21H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3" /><path d="M10.66 6H14a2 2 0 0 1 2 2S23 7 23 17" />
-                                        </svg>
-                                        <p className="text-xs text-center px-4">{previewError}</p>
-                                    </div>
-                                ) : !previewStream ? (
-                                    <div className="absolute inset-0 flex items-center justify-center">
-                                        <svg className="animate-spin text-slate-600" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-                                        </svg>
-                                    </div>
-                                ) : !previewCamOn ? (
-                                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-slate-900">
-                                        <AppAvatar
-                                            name={tokenData?.user_name || "Admin"}
-                                            photo={tokenData?.user_photo || null}
-                                            size={72}
-                                        />
-                                        <p className="text-xs text-slate-400">Camera off</p>
-                                    </div>
-                                ) : null}
-                                <video
-                                    ref={previewVideoRef}
-                                    autoPlay
-                                    muted
-                                    playsInline
-                                    className={`w-full h-full object-cover ${!previewCamOn ? "invisible" : ""}`}
-                                />
-                                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-3">
-                                    <WaitingCtrlBtn onClick={togglePreviewMic} active={previewMicOn} title={previewMicOn ? "Mute mic" : "Unmute mic"}>
-                                        {previewMicOn
-                                            ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" /><path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line x1="12" y1="19" x2="12" y2="23" /><line x1="8" y1="23" x2="16" y2="23" /></svg>
-                                            : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="1" y1="1" x2="23" y2="23" /><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6" /><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23" /><line x1="12" y1="19" x2="12" y2="23" /><line x1="8" y1="23" x2="16" y2="23" /></svg>
-                                        }
-                                    </WaitingCtrlBtn>
-                                    <WaitingCtrlBtn onClick={togglePreviewCam} active={previewCamOn} title={previewCamOn ? "Turn off camera" : "Turn on camera"}>
-                                        {previewCamOn
-                                            ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="23 7 16 12 23 17 23 7" /><rect x="1" y="5" width="15" height="14" rx="2" /></svg>
-                                            : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="1" y1="1" x2="23" y2="23" /><path d="M21 21H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3" /><path d="M10.66 6H14a2 2 0 0 1 2 2S23 7 23 17" /></svg>
-                                        }
-                                    </WaitingCtrlBtn>
-                                </div>
-                            </div>
-                        </div>
+                        )}
 
                         {pendingJoin && (
-                            <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse flex-shrink-0" />
+                            <div className="mt-5 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4">
+                                <div className="flex items-center justify-between gap-3">
                                     <div>
                                         <p className="text-sm font-semibold text-amber-300">Candidate is waiting</p>
                                         <p className="text-xs text-amber-500/80">{applicantName} has requested to join</p>
                                     </div>
+                                    <button onClick={handleApproveJoin} className="rounded-xl border-none bg-emerald-600 px-4 py-2 text-xs font-bold text-white transition hover:bg-emerald-500">
+                                        Admit
+                                    </button>
                                 </div>
-                                <button onClick={handleApproveJoin} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg border-none cursor-pointer transition-all">
-                                    Admit
-                                </button>
                             </div>
                         )}
 
-                        {error && <p className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">{error}</p>}
+                        {error && <p className="mt-4 rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-300">{error}</p>}
 
-                        <div>
-                            {!timeReached && countdown && (
-                                <p className="text-center text-xs text-amber-400/80 mb-3 flex items-center justify-center gap-1.5">
-                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
-                                    </svg>
-                                    Join button unlocks in {countdown}
-                                </p>
-                            )}
-                            <button
-                                onClick={joinRoom}
-                                disabled={joining || !timeReached}
-                                className="w-full flex items-center justify-center gap-2.5 py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold rounded-xl border-none cursor-pointer transition-all shadow-[0_4px_14px_rgba(99,102,241,0.4)] disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                {joining ? (
-                                    <>
-                                        <svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>
-                                        Connecting…
-                                    </>
-                                ) : (
-                                    <>
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
-                                            <polygon points="23 7 16 12 23 17 23 7" /><rect x="1" y="5" width="15" height="14" rx="2" />
-                                        </svg>
-                                        Join Interview Room
-                                    </>
-                                )}
-                            </button>
+                        <div className="mt-6 flex gap-3">
+                            <WaitingCtrlBtn onClick={togglePreviewMic} active={previewMicOn} title={previewMicOn ? "Mute mic" : "Unmute mic"}>
+                                {previewMicOn
+                                    ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" /><path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line x1="12" y1="19" x2="12" y2="23" /><line x1="8" y1="23" x2="16" y2="23" /></svg>
+                                    : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="1" y1="1" x2="23" y2="23" /><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6" /><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23" /><line x1="12" y1="19" x2="12" y2="23" /><line x1="8" y1="23" x2="16" y2="23" /></svg>
+                                }
+                            </WaitingCtrlBtn>
+                            <WaitingCtrlBtn onClick={togglePreviewCam} active={previewCamOn} title={previewCamOn ? "Turn off camera" : "Turn on camera"}>
+                                {previewCamOn
+                                    ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="23 7 16 12 23 17 23 7" /><rect x="1" y="5" width="15" height="14" rx="2" /></svg>
+                                    : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="1" y1="1" x2="23" y2="23" /><path d="M21 21H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3" /><path d="M10.66 6H14a2 2 0 0 1 2 2S23 7 23 17" /></svg>
+                                }
+                            </WaitingCtrlBtn>
                         </div>
+
+                        <button
+                            onClick={joinRoom}
+                            disabled={joining || !timeReached}
+                            className="mt-7 flex w-full items-center justify-center gap-2.5 rounded-2xl border-none bg-indigo-600 px-5 py-3 text-sm font-bold text-white shadow-[0_4px_14px_rgba(99,102,241,0.4)] transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            {joining ? "Connecting..." : "Join Interview Room"}
+                        </button>
                     </div>
                 </div>
             </div>
@@ -793,12 +747,20 @@ export default function AdminInterviewRoomModal({ interviewId, applicantName, sc
             <div className="fixed inset-0 z-[200] flex bg-black">
                 <div className="relative flex-1 bg-gray-950">
                     {remoteStreamID ? (
-                        <video
-                            ref={remoteVideoRef}
-                            autoPlay
-                            playsInline
-                            className="absolute inset-0 w-full h-full object-cover"
-                        />
+                        <>
+                            <video
+                                ref={remoteVideoRef}
+                                autoPlay
+                                playsInline
+                                className={`absolute inset-0 w-full h-full object-cover ${remoteCamOn ? "" : "opacity-0"}`}
+                            />
+                            {!remoteCamOn && (
+                                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-gray-950">
+                                    <AppAvatar name={app?.full_name || applicantName} photo={app?.profile_picture} size={96} />
+                                    <p className="text-sm text-slate-400">Camera off</p>
+                                </div>
+                            )}
+                        </>
                     ) : (
                         <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 text-slate-500">
                             <div className="w-20 h-20 rounded-full bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-2xl font-bold text-indigo-400">
@@ -850,10 +812,10 @@ export default function AdminInterviewRoomModal({ interviewId, applicantName, sc
                         </div>
                     )}
 
-                    <div className="absolute bottom-20 right-4 w-44 rounded-xl overflow-hidden shadow-2xl border border-white/10 bg-gray-900">
-                        <video ref={localVideoRef} autoPlay muted playsInline className={`w-full h-auto object-cover ${!camOn ? 'opacity-0 absolute' : ''}`} />
+                    <div className="absolute bottom-20 right-4 aspect-video w-44 rounded-xl overflow-hidden shadow-2xl border border-white/10 bg-gray-900">
+                        <video ref={localVideoRef} autoPlay muted playsInline className={`h-full w-full object-cover ${camOn ? "" : "opacity-0"}`} />
                         {!camOn && (
-                            <div className="flex flex-col items-center justify-center gap-1.5 py-4">
+                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5">
                                 <AppAvatar
                                     name={tokenData?.user_name || "Admin"}
                                     photo={tokenData?.user_photo || null}

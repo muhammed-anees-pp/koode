@@ -45,3 +45,17 @@ def calculate_psychologist_payout(booking):
         "psychologist_payout": payout,
         "admin_retained": retained,
     }
+
+
+def calculate_commission_preview(consultation_fee, effective_date=None):
+    fee = money(consultation_fee or 0)
+    commission_rate = get_effective_commission_rate(effective_date)
+    commission = money(fee * commission_rate)
+    payout = money(fee - commission)
+    return {
+        "consultation_fee": fee,
+        "commission_amount": commission,
+        "commission_rate": commission_rate,
+        "commission_percentage": money(commission_rate * Decimal("100.00")),
+        "psychologist_payout": payout,
+    }

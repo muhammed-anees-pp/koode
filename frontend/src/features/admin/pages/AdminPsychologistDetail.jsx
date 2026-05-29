@@ -6,6 +6,7 @@ import { fetchCurrentCommissionRate } from "../../../api/finance.api";
 import Sidebar from "../../../components/admin/Sidebar/AdminSidebar";
 import Navbar from "../../../components/admin/Navbar/AdminNavbar";
 import { resolveMediaUrl } from "../../../utils/url";
+import { normalizeCommissionPreview } from "../../../utils/commission";
 
 function InfoRow({ label, value }) {
     return (
@@ -242,10 +243,11 @@ export default function AdminPsychologistDetail() {
     const audioUrl = profile.audio_intro ? resolveMediaUrl(profile.audio_intro) : null;
     const averageRating = profile.average_rating ? `${profile.average_rating} ★` : "No rating";
     
-    const commissionPercentage = Number(commissionRate?.percentage ?? 10);
     const fee = parseFloat(profile.consultation_fee) || 0;
-    const commission = Math.round(fee * (commissionPercentage / 100));
-    const earning = fee - commission;
+    const commissionPreview = normalizeCommissionPreview(profile.commission_preview, fee, commissionRate?.percentage ?? 10);
+    const commissionPercentage = commissionPreview.percentage;
+    const commission = commissionPreview.commission;
+    const earning = commissionPreview.payout;
 
     return (
         <div className="flex min-h-screen bg-admin-gradient font-['DM_Sans',sans-serif]">

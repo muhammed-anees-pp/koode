@@ -6,7 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from appointments.models import Booking
-from admin_panel.permissions import IsAdminUserRole
+from dashboard.permissions import IsAdminUserRole
 from patients.models import PatientProfile
 from patients.permissions import IsPatient
 from patient_summary.serializers import patient_summary_payload

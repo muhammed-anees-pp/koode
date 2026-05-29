@@ -50,7 +50,7 @@ INSTALLED_APPS = [
 
     "home",
     "accounts",
-    "admin_panel",
+    "dashboard",
     "patients",
     "applications",
     "psychologists",

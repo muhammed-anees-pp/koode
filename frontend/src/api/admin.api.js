@@ -10,6 +10,22 @@ export const fetchDashboard = async () => {
   return response.data;
 };
 
+export const fetchAdminDashboard = async ({ period = "30d", start = "", end = "" } = {}) => {
+  const params = new URLSearchParams({ period });
+  if (start) params.append("start", start);
+  if (end) params.append("end", end);
+  const response = await axiosInstance.get(`admin/dashboard/?${params}`);
+  return response.data;
+};
+
+export const downloadAdminDashboard = async ({ format = "excel", period = "30d", start = "", end = "" } = {}) => {
+  const params = new URLSearchParams({ format, period });
+  if (start) params.append("start", start);
+  if (end) params.append("end", end);
+  const response = await axiosInstance.get(`admin/dashboard/export/?${params}`, { responseType: "blob" });
+  return response;
+};
+
 export const fetchAdminAppointments = async ({
   page = 1,
   pageSize = 10,

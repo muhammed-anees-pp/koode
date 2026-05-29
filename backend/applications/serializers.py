@@ -4,6 +4,7 @@ import os
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import serializers
 from .models import PsychologistApplication
+from finance.services.amounts import calculate_commission_preview
 
 
 logger = logging.getLogger(__name__)
@@ -19,6 +20,7 @@ class PsychologistApplicationSerializer(serializers.ModelSerializer):
     specializations = serializers.SerializerMethodField()
     interview_id = serializers.SerializerMethodField()
     interview_status = serializers.SerializerMethodField()
+    commission_preview = serializers.SerializerMethodField()
 
     def get_specializations(self, obj):
         return [{"id": s.id, "name": s.name} for s in obj.specializations.all()]
@@ -43,12 +45,15 @@ class PsychologistApplicationSerializer(serializers.ModelSerializer):
             logger.exception("Failed to read interview status for application %s", obj.id)
             return None
 
+    def get_commission_preview(self, obj):
+        return calculate_commission_preview(obj.consultation_fee)
+
     class Meta:
         model = PsychologistApplication
         fields = [
             "id", "profile_picture", "audio_intro", "full_name", "email", "phone_number", "about", "street_address", "city", "state",
             "pincode", "country", "job_title", "years_of_experience", "highest_education", "certificate_document", "specializations", "consultation_fee",
-            "status", "submitted_at", "interview_date", "interview_id", "interview_status", "admin_notes",
+            "status", "submitted_at", "interview_date", "interview_id", "interview_status", "admin_notes", "commission_preview",
         ]
         read_only_fields = ["status", "submitted_at",]
 
