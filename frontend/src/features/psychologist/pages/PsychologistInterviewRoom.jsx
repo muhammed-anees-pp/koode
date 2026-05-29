@@ -3,6 +3,41 @@ import { useParams, useNavigate } from "react-router-dom";
 import { ZegoExpressEngine } from "zego-express-engine-webrtc";
 import { getInterviewToken, getChatMessages, sendChatMessage } from "../../../api/psychologist.api";
 import { uppercaseMeridiem } from "../../../utils/indiaDateTime";
+import { resolveMediaUrl } from "../../../utils/url";
+
+const cameraExtraInfo = (cameraOn) => JSON.stringify({ cameraOn });
+
+const parseCameraExtraInfo = (extraInfo) => {
+    if (!extraInfo) return true;
+    try {
+        const parsed = JSON.parse(extraInfo);
+        return parsed.cameraOn !== false;
+    } catch {
+        return true;
+    }
+};
+
+function InterviewAvatar({ name, photo, size = 72 }) {
+    if (photo) {
+        return (
+            <img
+                src={resolveMediaUrl(photo)}
+                alt={name || "Participant"}
+                className="rounded-full object-cover"
+                style={{ width: size, height: size }}
+                onError={(e) => { e.currentTarget.style.display = "none"; }}
+            />
+        );
+    }
+    return (
+        <div
+            className="flex items-center justify-center rounded-full bg-[#1188d8] font-bold text-white"
+            style={{ width: size, height: size, fontSize: size * 0.42 }}
+        >
+            {(name || "?").charAt(0).toUpperCase()}
+        </div>
+    );
+}
 
 function ChatPanel({ messages, onSend, inputRef }) {
     const bottomRef = useRef(null);
@@ -77,11 +112,14 @@ export default function PsychologistInterviewRoom() {
     const [tokenData, setTokenData] = useState(null);
     const [micOn, setMicOn] = useState(true);
     const [camOn, setCamOn] = useState(true);
+    const [remoteCamOn, setRemoteCamOn] = useState(true);
     const [localStream, setLocalStream] = useState(null);
     const [remoteStreamID, setRemoteStreamID] = useState(null);
     const [showChat, setShowChat] = useState(false);
     const [chatMessages, setChatMessages] = useState([]);
     const [mediaWarning, setMediaWarning] = useState(null);
+    const initialMicOn = useRef(sessionStorage.getItem("interview_micOn") !== "0");
+    const initialCamOn = useRef(sessionStorage.getItem("interview_camOn") !== "0");
 
     const engineRef = useRef(null);
     const localStreamIdRef = useRef(null);
@@ -93,6 +131,10 @@ export default function PsychologistInterviewRoom() {
     const chatInputRef = useRef(null);
     const canvasCleanupRef = useRef(null);
 
+    const localName = tokenData?.user_name || "You";
+    const localPhoto = tokenData?.user_photo || null;
+    const remoteName = "Koode Admin Team";
+
 
     const localVideoRef = useCallback((el) => {
         if (el && localStreamRef.current) {
@@ -103,12 +145,15 @@ export default function PsychologistInterviewRoom() {
     useEffect(() => {
         getInterviewToken(interviewId)
             .then((data) => { setTokenData(data); })
-            .catch(() => { setError("Failed to load interview room."); setLoading(false); });
+            .catch(() => {
+                setError("Failed to load interview room.");
+                setLoading(false);
+            });
 
-        return () => { clearInterval(chatPollRef.current); };
+        return () => {
+            clearInterval(chatPollRef.current);
+        };
     }, [interviewId]);
-
-    useEffect(() => { if (tokenData) joinRoom(tokenData); }, [tokenData]);
 
     useEffect(() => {
         localStreamRef.current = localStream;
@@ -140,7 +185,9 @@ export default function PsychologistInterviewRoom() {
                     lastMsgRef.current = msgs[msgs.length - 1].sent_at;
                     setChatMessages((prev) => [...prev, ...msgs]);
                 }
-            } catch (error) {}
+            } catch (err) {
+                console.error("Chat poll error:", err);
+            }
         }, 2500);
     }, []);
 
@@ -189,11 +236,13 @@ export default function PsychologistInterviewRoom() {
     const joinRoom = useCallback(async (td) => {
         const { app_id, token, room_id, user_id } = td;
         const userName = td.user_name || "Psychologist";
+        const startMicOn = initialMicOn.current;
+        const startCamOn = initialCamOn.current;
 
         await new Promise((r) => setTimeout(r, 600));
 
         if (engineRef.current) {
-            try { engineRef.current.destroyEngine(); } catch (_) {}
+            try { engineRef.current.destroyEngine(); } catch (err) { console.warn("Engine cleanup failed:", err); }
             engineRef.current = null;
         }
 
@@ -209,6 +258,7 @@ export default function PsychologistInterviewRoom() {
                             console.log("[Psycho] Remote stream added:", stream.streamID);
                             remoteStreamIDRef.current = stream.streamID;
                             setRemoteStreamID(stream.streamID);
+                            setRemoteCamOn(parseCameraExtraInfo(stream.extraInfo));
                         }
                     });
                 }
@@ -218,9 +268,18 @@ export default function PsychologistInterviewRoom() {
                             console.log("[Psycho] Remote stream removed:", stream.streamID);
                             remoteStreamIDRef.current = null;
                             setRemoteStreamID(null);
+                            setRemoteCamOn(true);
                         }
                     });
                 }
+            });
+
+            engine.on("streamExtraInfoUpdate", (_roomID, streamList) => {
+                streamList.forEach((stream) => {
+                    if (stream.streamID === remoteStreamIDRef.current) {
+                        setRemoteCamOn(parseCameraExtraInfo(stream.extraInfo));
+                    }
+                });
             });
 
             await engine.loginRoom(room_id, token, { userID: user_id, userName }, { userUpdate: true });
@@ -240,7 +299,7 @@ export default function PsychologistInterviewRoom() {
                     try {
                         const micStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
                         micTrack = micStream.getAudioTracks()[0];
-                    } catch (_) {}
+                    } catch (err) { console.warn("Microphone fallback failed:", err); }
 
                     const fake = createFakeStream(userName);
                     canvasCleanupRef.current = fake.cleanup;
@@ -260,6 +319,13 @@ export default function PsychologistInterviewRoom() {
             const streamID = `psycho_${user_id}_${Date.now()}`;
             localStreamIdRef.current = streamID;
             await engine.startPublishingStream(streamID, zegoStream);
+            await engine.setStreamExtraInfo(streamID, cameraExtraInfo(startCamOn)).catch((err) => console.warn("Camera state update failed:", err));
+            if (!startMicOn) engine.mutePublishStreamAudio(zegoStream, true);
+            if (!startCamOn) engine.mutePublishStreamVideo(zegoStream, true);
+            setMicOn(startMicOn);
+            setCamOn(startCamOn);
+            sessionStorage.removeItem("interview_micOn");
+            sessionStorage.removeItem("interview_camOn");
             setLocalStream(zegoStream);
 
             const existingMsgs = await getChatMessages(interviewId);
@@ -276,6 +342,10 @@ export default function PsychologistInterviewRoom() {
         }
     }, [interviewId, startChatPoll, createFakeStream]);
 
+    useEffect(() => {
+        if (tokenData) joinRoom(tokenData);
+    }, [tokenData, joinRoom]);
+
     const leaveRoom = async () => {
         clearInterval(chatPollRef.current);
         if (canvasCleanupRef.current) { canvasCleanupRef.current(); canvasCleanupRef.current = null; }
@@ -285,8 +355,8 @@ export default function PsychologistInterviewRoom() {
                 if (localStreamIdRef.current) await engine.stopPublishingStream(localStreamIdRef.current);
                 if (localStream) engine.destroyStream(localStream);
                 await engine.logoutRoom();
-            } catch (_) {}
-            try { engine.destroyEngine(); } catch (_) {}
+            } catch (err) { console.warn("Room cleanup failed:", err); }
+            try { engine.destroyEngine(); } catch (err) { console.warn("Engine cleanup failed:", err); }
             engineRef.current = null;
         }
         navigate("/psychologist/approval-waiting");
@@ -300,8 +370,12 @@ export default function PsychologistInterviewRoom() {
 
     const toggleCam = () => {
         if (!localStream || !engineRef.current) return;
+        const nextCamOn = !camOn;
         engineRef.current.mutePublishStreamVideo(localStream, camOn);
-        setCamOn((v) => !v);
+        if (localStreamIdRef.current) {
+            engineRef.current.setStreamExtraInfo(localStreamIdRef.current, cameraExtraInfo(nextCamOn)).catch((err) => console.warn("Camera state update failed:", err));
+        }
+        setCamOn(nextCamOn);
     };
 
     const handleSendChat = async (text) => {
@@ -340,13 +414,21 @@ export default function PsychologistInterviewRoom() {
             
             <div className="relative flex-1 bg-gray-950">
                 {remoteStreamID ? (
-    <video
-        ref={remoteVideoRef}
-        autoPlay
-        playsInline
-        className="absolute inset-0 w-full h-full object-cover"
-    />
-) 
+                    <>
+                        <video
+                            ref={remoteVideoRef}
+                            autoPlay
+                            playsInline
+                            className={`absolute inset-0 w-full h-full object-cover ${remoteCamOn ? "" : "opacity-0"}`}
+                        />
+                        {!remoteCamOn && (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-gray-950">
+                                <InterviewAvatar name={remoteName} size={96} />
+                                <p className="text-sm text-slate-400">Camera off</p>
+                            </div>
+                        )}
+                    </>
+                ) 
                 : (
                     <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 text-slate-500">
                         <div className="w-20 h-20 rounded-full bg-[#1188d8]/10 border border-[#1188d8]/20 flex items-center justify-center">
@@ -378,13 +460,19 @@ export default function PsychologistInterviewRoom() {
 
                 {remoteStreamID && (
                     <div className="absolute bottom-20 left-4 bg-black/60 backdrop-blur-sm text-white text-[11px] font-medium px-2.5 py-1 rounded-full pointer-events-none">
-                        Koode Admin Team
+                        {remoteName}
                     </div>
                 )}
 
                 
-                <div className="absolute bottom-20 right-4 w-44 rounded-xl overflow-hidden shadow-2xl border border-white/10 bg-gray-900">
-                    <video ref={localVideoRef} autoPlay muted playsInline className="w-full h-auto object-cover" />
+                <div className="absolute bottom-20 right-4 aspect-video w-44 rounded-xl overflow-hidden shadow-2xl border border-white/10 bg-gray-900">
+                    <video ref={localVideoRef} autoPlay muted playsInline className={`h-full w-full object-cover ${camOn ? "" : "opacity-0"}`} />
+                    {!camOn && (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5">
+                            <InterviewAvatar name={localName} photo={localPhoto} size={52} />
+                            <p className="text-[9px] text-slate-400">Camera off</p>
+                        </div>
+                    )}
                     <div className="absolute bottom-1.5 left-2 bg-black/60 text-white text-[9px] font-medium px-1.5 py-0.5 rounded-full">You</div>
                 </div>
 

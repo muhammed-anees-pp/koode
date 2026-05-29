@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PsychologistNavbar from '../../../components/psychologist/Navbar/PsychologistNavbar';
 import { getMyApplication, getApplicationStatus, requestJoin, getJoinStatus } from '../../../api/psychologist.api';
@@ -128,7 +128,7 @@ const isWithin5Minutes = (interviewDate) => {
 };
 
 
-function InterviewDetailsModal({ interviewDate, onClose, onEnterWaiting }) {
+function InterviewDetailsModal({ interviewDate, onClose }) {
     return (
         <div
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
@@ -233,8 +233,8 @@ function InterviewDetailsModal({ interviewDate, onClose, onEnterWaiting }) {
 }
 
 
-function WaitingRoomModal({ interviewDate, interviewId, onClose, onEnterRoom, navigate, profileImgUrl, nameInitial }) {
-    const scheduledAt = interviewDate ? new Date(interviewDate) : null;
+function WaitingRoomModal({ interviewDate, interviewId, onClose, onEnterRoom, profileImgUrl, nameInitial }) {
+    const scheduledAt = useMemo(() => interviewDate ? new Date(interviewDate) : null, [interviewDate]);
     const [countdown, setCountdown] = useState(0);
     const [canJoin, setCanJoin] = useState(false);
     const [micOn, setMicOn] = useState(true);
@@ -305,7 +305,7 @@ function WaitingRoomModal({ interviewDate, interviewId, onClose, onEnterRoom, na
                     applyStream(new MediaStream([audioTrack, ...liveVideoTracks]));
                     setMicOn(true);
                 })
-                .catch(() => {});
+                .catch((err) => console.warn('Could not re-enable microphone:', err));
         }
     };
 
@@ -326,7 +326,7 @@ function WaitingRoomModal({ interviewDate, interviewId, onClose, onEnterRoom, na
                     applyStream(new MediaStream([videoTrack, ...liveAudioTracks]));
                     setCamOn(true);
                 })
-                .catch(() => {});
+                .catch((err) => console.warn('Could not re-enable camera:', err));
         }
     };
 
@@ -357,19 +357,20 @@ function WaitingRoomModal({ interviewDate, interviewId, onClose, onEnterRoom, na
                 }
             }, 3000);
         } catch (err) {
+            console.error('Join request error:', err);
             setError('Failed to send join request. Please try again.');
             setJoinRequested(false);
         }
-    }, [canJoin, joinRequested, waitingForAdmin, interviewId, navigate]);
+    }, [canJoin, joinRequested, waitingForAdmin, interviewId, micOn, camOn, onEnterRoom]);
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={onClose}>
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[440px] overflow-hidden" onClick={(e) => e.stopPropagation()}>
                 <div className="flex items-center justify-between px-6 pt-5 pb-1">
-                    <h2 className="text-base font-bold text-gray-900">Interview Waiting Room</h2>
+                    <h2 className="text-base font-bold text-gray-900">Interview Preview</h2>
                     <div className="flex items-center gap-2">
                         <span className="text-xs font-medium bg-amber-50 border border-amber-200 text-amber-700 px-3 py-1 rounded-full">
-                            Waiting Room
+                            Preview
                         </span>
                         <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-full bg-gray-100 border-none cursor-pointer hover:bg-gray-200 transition-all text-gray-500">
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
@@ -495,7 +496,7 @@ function WaitingRoomModal({ interviewDate, interviewId, onClose, onEnterRoom, na
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                 <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" /><polyline points="10 17 15 12 10 7" /><line x1="15" y1="12" x2="3" y2="12" />
                             </svg>
-                            Join Interview Room
+                            Request to Join
                         </button>
                     )}
                 </div>
@@ -883,7 +884,6 @@ const PsychologistApprovalWaiting = () => {
                     interviewDate={application?.interview_date}
                     interviewId={interviewId}
                     onClose={() => setShowInterviewDetails(false)}
-                    onEnterWaiting={() => setShowWaitingRoom(true)}
                 />
             )}
 
@@ -896,7 +896,6 @@ const PsychologistApprovalWaiting = () => {
                         setShowWaitingRoom(false);
                         navigate(`/psychologist/interview/${interviewId}`);
                     }}
-                    navigate={navigate}
                     profileImgUrl={profileImgUrl}
                     nameInitial={fullName?.charAt(0) || '?'}
                 />
