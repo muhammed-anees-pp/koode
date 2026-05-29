@@ -131,12 +131,7 @@ def notify_applicant_interview_scheduled(application):
     message = f"Your interview has been scheduled for {format_india_datetime(application.interview_date)}."
 
     try:
-        interview = getattr(application, "interview", None)
-        target_url = (
-            f"/psychologist/interview/{interview.id}"
-            if interview
-            else "/psychologist/approval-waiting"
-        )
+        target_url = "/psychologist/approval-waiting?interview=1"
         create_notification(application.user, message, target_url=target_url)
         logger.info(
             "Notified applicant user %s about interview schedule for application %s",

@@ -8,7 +8,13 @@ import {
 import { useAuthStore } from "../../store/auth.store";
 import { useNotificationsStore } from "../../store/notifications.store";
 import { uppercaseMeridiem } from "../../utils/indiaDateTime";
-import { getNotificationTarget } from "../../utils/notificationNavigation";
+import { getApplicationStatus } from "../../api/psychologist.api";
+import {
+  getNotificationTarget,
+  getPsychologistInterviewWaitingTarget,
+  getRoleKey,
+  isPsychologistInterviewNotification,
+} from "../../utils/notificationNavigation";
 
 const formatNotificationTime = (value) =>
   uppercaseMeridiem(new Intl.DateTimeFormat("en-IN", {
@@ -112,13 +118,26 @@ const NotificationBell = ({ variant = "patient" }) => {
     return true;
   });
 
-  const handleNotificationClick = (notification) => {
+  const handleNotificationClick = async (notification) => {
     setIsOpen(false);
     if (!notification.is_read) {
       markAsRead(notification.id);
       markReadMutation.mutate(notification.id);
     }
-    navigate(getNotificationTarget(notification, role || variant));
+    const roleKey = getRoleKey(role || variant);
+    if (isPsychologistInterviewNotification(notification, roleKey)) {
+      try {
+        const status = await getApplicationStatus();
+        const activeApplication = ["INTERVIEW_SCHEDULED", "WAITING", "ONGOING"].includes(status?.status);
+        const activeInterview = ["SCHEDULED", "WAITING", "ONGOING"].includes(status?.interview_status);
+        if (!activeApplication || !activeInterview || !status?.interview_id) return;
+        navigate(getPsychologistInterviewWaitingTarget());
+      } catch (err) {
+        console.error("Unable to resolve interview notification target:", err);
+      }
+      return;
+    }
+    navigate(getNotificationTarget(notification, roleKey));
   };
 
   return (

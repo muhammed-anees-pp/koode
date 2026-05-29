@@ -8,13 +8,25 @@ export const getRoleKey = (role) => {
   return "patient";
 };
 
+export const isPsychologistInterviewNotification = (notification, role) => {
+  if (getRoleKey(role) !== "psychologist") return false;
+  const targetUrl = String(notification?.target_url || "");
+  const message = String(notification?.message || "").toLowerCase();
+  return targetUrl.startsWith("/psychologist/interview/") || message.includes("interview");
+};
+
+export const getPsychologistInterviewWaitingTarget = () => "/psychologist/approval-waiting?interview=1";
+
 export const getNotificationTarget = (notification, role) => {
+  const roleKey = getRoleKey(role);
   const targetUrl = notification?.target_url;
+  if (isPsychologistInterviewNotification(notification, role)) {
+    return getPsychologistInterviewWaitingTarget();
+  }
   if (typeof targetUrl === "string" && targetUrl.startsWith("/") && !targetUrl.startsWith("//")) {
     return targetUrl;
   }
 
-  const roleKey = getRoleKey(role);
   const message = String(notification?.message || "").toLowerCase();
 
   if (roleKey === "admin") {

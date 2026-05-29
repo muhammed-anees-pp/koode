@@ -2,9 +2,15 @@ import { useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { markNotificationRead } from "../../api/notifications.api";
+import { getApplicationStatus } from "../../api/psychologist.api";
 import { useAuthStore } from "../../store/auth.store";
 import { useNotificationsStore } from "../../store/notifications.store";
-import { getNotificationTarget, getRoleKey } from "../../utils/notificationNavigation";
+import {
+  getNotificationTarget,
+  getPsychologistInterviewWaitingTarget,
+  getRoleKey,
+  isPsychologistInterviewNotification,
+} from "../../utils/notificationNavigation";
 
 const TOAST_DURATION = 5000;
 
@@ -140,13 +146,26 @@ const NotificationToasts = () => {
     mutationFn: markNotificationRead,
   });
 
-  const handleOpen = (notification) => {
+  const handleOpen = async (notification) => {
     dismissToast(notification.id);
     if (!notification.is_read) {
       markAsRead(notification.id);
       markReadMutation.mutate(notification.id);
     }
-    navigate(getNotificationTarget(notification, role));
+    const roleKey = getRoleKey(role);
+    if (isPsychologistInterviewNotification(notification, roleKey)) {
+      try {
+        const status = await getApplicationStatus();
+        const activeApplication = ["INTERVIEW_SCHEDULED", "WAITING", "ONGOING"].includes(status?.status);
+        const activeInterview = ["SCHEDULED", "WAITING", "ONGOING"].includes(status?.interview_status);
+        if (!activeApplication || !activeInterview || !status?.interview_id) return;
+        navigate(getPsychologistInterviewWaitingTarget());
+      } catch (err) {
+        console.error("Unable to resolve interview notification target:", err);
+      }
+      return;
+    }
+    navigate(getNotificationTarget(notification, roleKey));
   };
 
   if (!toasts.length) {
