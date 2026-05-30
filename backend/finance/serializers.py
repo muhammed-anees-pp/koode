@@ -16,7 +16,7 @@ from .services.amounts import (
 WALLET TRANSACTION SERIALIZER
 """
 class WalletTransactionSerializer(serializers.ModelSerializer):
-    booking_id = serializers.UUIDField(source="booking.id", read_only=True)
+    booking_id = serializers.CharField(source="booking.id", read_only=True)
     title = serializers.SerializerMethodField()
     description = serializers.SerializerMethodField()
     payment_method = serializers.SerializerMethodField()

@@ -124,6 +124,19 @@ class ConsultationPatientRequestJoinView(ConsultationActionBaseView):
         if not is_consultation_open(consultation):
             return Response({"detail": "Consultation room is not active."}, status=status.HTTP_400_BAD_REQUEST)
 
+        if consultation.patient_joined:
+            consultation.patient_requested_join = False
+            consultation.status = "ONGOING"
+            consultation.save(update_fields=[
+                "patient_requested_join",
+                "status",
+                "updated_at",
+            ])
+            return Response({
+                "detail": "Patient already admitted.",
+                "consultation": consultation_state_for_session(consultation, user=request.user),
+            })
+
         consultation.patient_requested_join = True
         consultation.patient_joined = False
         if consultation.status in {"SCHEDULED", "WAITING"}:
@@ -151,6 +164,15 @@ class ConsultationApproveJoinView(ConsultationActionBaseView):
             return Response({"detail": "Consultation room is not active."}, status=status.HTTP_400_BAD_REQUEST)
         if not consultation.psychologist_joined:
             return Response({"detail": "Enter the consultation room before admitting the patient."}, status=status.HTTP_400_BAD_REQUEST)
+        if consultation.patient_joined:
+            consultation.patient_requested_join = False
+            consultation.status = "ONGOING"
+            consultation.save(update_fields=[
+                "patient_requested_join",
+                "status",
+                "updated_at",
+            ])
+            return Response({"detail": "Patient already admitted.", "consultation": consultation_state_for_session(consultation, user=request.user)})
         if not consultation.patient_requested_join:
             return Response({"detail": "No patient join request is pending."}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -176,8 +198,6 @@ class ConsultationExitView(ConsultationActionBaseView):
             return Response({"detail": "Not allowed"}, status=status.HTTP_403_FORBIDDEN)
 
         if request.user.role == "PATIENT":
-            consultation.patient_joined = False
-            consultation.save(update_fields=["patient_joined", "updated_at"])
             return Response({"detail": "Exited consultation.", "consultation": consultation_state_for_session(consultation, user=request.user)})
 
         if request.user.role != "PSYCHOLOGIST":

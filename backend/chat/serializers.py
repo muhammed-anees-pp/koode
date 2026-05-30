@@ -49,7 +49,7 @@ class MessageSerializer(serializers.ModelSerializer):
 
 
 class ChatRoomSerializer(serializers.ModelSerializer):
-    appointment_id = serializers.UUIDField(source="appointment.id", read_only=True)
+    appointment_id = serializers.CharField(source="appointment.id", read_only=True)
     patient_name = serializers.CharField(source="patient.user.full_name", read_only=True)
     psychologist_name = serializers.CharField(source="psychologist.user.full_name", read_only=True)
     appointment_status = serializers.CharField(source="appointment.status", read_only=True)

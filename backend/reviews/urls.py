@@ -5,5 +5,5 @@ from reviews.views import AdminReviewListView, BookingReviewView, PsychologistRe
 urlpatterns = [
     path("admin/", AdminReviewListView.as_view(), name="admin-review-list"),
     path("psychologist/dashboard/", PsychologistReviewDashboardView.as_view(), name="psychologist-review-dashboard"),
-    path("bookings/<uuid:booking_id>/", BookingReviewView.as_view(), name="booking-review"),
+    path("bookings/<str:booking_id>/", BookingReviewView.as_view(), name="booking-review"),
 ]

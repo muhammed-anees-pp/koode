@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useEffectEvent, useRef, useState } from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ZegoExpressEngine } from "zego-express-engine-webrtc";
 import { useAuthStore } from "../../store/auth.store";
 import {
@@ -37,6 +37,12 @@ const parseCameraExtraInfo = (extraInfo) => {
   }
 };
 
+const hasLiveTracks = (stream) =>
+  Boolean(stream?.getTracks().some((track) => track.readyState === "live"));
+
+const hasLiveTrack = (stream, kind) =>
+  Boolean(stream?.getTracks().some((track) => track.kind === kind && track.readyState === "live"));
+
 const getInitials = (name = "") => {
   const parts = name.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return "?";
@@ -61,6 +67,23 @@ const VideoAvatar = ({ name, photo, compact = false }) => {
       </div>
     </div>
   );
+};
+
+const MediaStatus = ({ label }) => (
+  <div className="absolute inset-x-4 bottom-4 rounded-2xl border border-white/10 bg-black/55 px-4 py-3 text-center text-sm font-semibold text-slate-200 backdrop-blur">
+    {label}
+  </div>
+);
+
+const roleAccentClasses = {
+  patient: {
+    button: "bg-emerald-500 hover:bg-emerald-400",
+    panel: "border-emerald-400/20 bg-emerald-400/10 text-emerald-100",
+  },
+  psychologist: {
+    button: "bg-sky-600 hover:bg-sky-500",
+    panel: "border-sky-400/20 bg-sky-500/10 text-sky-100",
+  },
 };
 
 const MicIcon = () => (
@@ -327,6 +350,7 @@ const ConsultationNotesPanel = ({ booking, consultation, onSaved }) => {
 export default function ConsultationRoom({ role }) {
   const { bookingId } = useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const authRole = useAuthStore((s) => s.role);
   const authUser = useAuthStore((s) => s.user);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -352,6 +376,7 @@ export default function ConsultationRoom({ role }) {
   const localVideoRef = useRef(null);
   const previewVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
+  const joiningAfterAdmissionRef = useRef(false);
 
   const detailQuery = useQuery({
     queryKey: ["consultation", bookingId],
@@ -366,6 +391,19 @@ export default function ConsultationRoom({ role }) {
   const localPhoto = authUser?.profile_picture || (role === "psychologist" ? booking?.psychologist_photo : booking?.patient_photo);
   const remoteName = role === "patient" ? booking?.psychologist_name : booking?.patient_name;
   const remotePhoto = role === "patient" ? booking?.psychologist_photo : booking?.patient_photo;
+  const previewHasVideo = hasLiveTrack(previewStream, "video");
+  const previewHasAudio = hasLiveTrack(previewStream, "audio");
+  const showPreviewVideo = camOn;
+  const previewStatus = !mediaDevicesSupported
+    ? "Camera or microphone is not supported in this browser."
+    : !previewStream
+      ? "Starting camera and microphone..."
+      : camOn && previewHasVideo
+        ? ""
+        : camOn
+          ? "Camera is unavailable"
+          : "Camera is off";
+  const accent = roleAccentClasses[role] ?? roleAccentClasses.patient;
 
   const stopPreviewStream = useCallback(() => {
     previewStreamRef.current?.getTracks().forEach((track) => track.stop());
@@ -373,30 +411,84 @@ export default function ConsultationRoom({ role }) {
     setPreviewStream(null);
   }, []);
 
-  useEffect(() => {
-    let cancelled = false;
-    if (!mediaDevicesSupported) return () => {};
+  const attachPreviewVideo = useCallback((stream) => {
+    const video = previewVideoRef.current;
+    if (!video || !stream) return;
+    if (video.srcObject !== stream) video.srcObject = stream;
+    video.muted = true;
+    video.playsInline = true;
+    video.play().catch(() => {});
+  }, []);
 
-    navigator.mediaDevices.getUserMedia({ audio: true, video: true })
-      .then((stream) => {
-        if (cancelled) {
-          stream.getTracks().forEach((track) => track.stop());
-          return;
-        }
-        previewStreamRef.current = stream;
-        setPreviewStream(stream);
-        if (previewVideoRef.current) previewVideoRef.current.srcObject = stream;
-      })
-      .catch(() => setError("Camera or microphone permission is required before joining."));
+  const startPreviewStream = useCallback(async () => {
+    if (!mediaDevicesSupported) return null;
+    if (hasLiveTracks(previewStreamRef.current)) {
+      attachPreviewVideo(previewStreamRef.current);
+      return previewStreamRef.current;
+    }
+
+    let stream = null;
+    let cameraError = null;
+    let micError = null;
+
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+      setError("");
+    } catch (combinedError) {
+      const tracks = [];
+
+      try {
+        const videoStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        tracks.push(...videoStream.getVideoTracks());
+      } catch (err) {
+        cameraError = err;
+      }
+
+      try {
+        const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        tracks.push(...audioStream.getAudioTracks());
+      } catch (err) {
+        micError = err;
+      }
+
+      if (tracks.length === 0) throw combinedError;
+
+      stream = new MediaStream(tracks);
+      if (cameraError && !micError) setError("Camera access is unavailable. You can still join with microphone.");
+      if (!cameraError && micError) setError("Microphone access is unavailable. You can still join with camera.");
+      if (cameraError && micError) setError("Camera and microphone access are unavailable.");
+    }
+
+    const existing = previewStreamRef.current;
+    if (existing && existing !== stream) {
+      existing.getTracks().forEach((track) => track.stop());
+    }
+
+    previewStreamRef.current = stream;
+    setPreviewStream(stream);
+    attachPreviewVideo(stream);
+    return stream;
+  }, [attachPreviewVideo, mediaDevicesSupported]);
+
+  useEffect(() => {
+    if (phase === "call" || phase === "ended") return () => {};
+
+    const timer = window.setTimeout(() => {
+      startPreviewStream()
+        .then(() => {})
+        .catch(() => setError("Camera or microphone permission is required before joining."));
+    }, 0);
+
     return () => {
-      cancelled = true;
-      stopPreviewStream();
+      window.clearTimeout(timer);
     };
-  }, [mediaDevicesSupported, stopPreviewStream]);
+  }, [phase, startPreviewStream]);
+
+  useEffect(() => () => stopPreviewStream(), [stopPreviewStream]);
 
   useEffect(() => {
-    if (previewVideoRef.current && previewStream) previewVideoRef.current.srcObject = previewStream;
-  }, [previewStream]);
+    attachPreviewVideo(previewStream);
+  }, [attachPreviewVideo, previewStream]);
 
   useEffect(() => {
     localStreamRef.current = localStream;
@@ -440,6 +532,7 @@ export default function ConsultationRoom({ role }) {
     setLocalStream(null);
     setRemoteStreamID(null);
     setRemoteCamOn(true);
+    joiningAfterAdmissionRef.current = false;
   }, []);
 
   useEffect(() => () => { cleanupRoom(); }, [cleanupRoom]);
@@ -495,6 +588,7 @@ export default function ConsultationRoom({ role }) {
     await engine.setStreamExtraInfo(streamID, cameraExtraInfo(camOn)).catch(() => {});
     setLocalStream(zegoStream);
     setPhase("call");
+    joiningAfterAdmissionRef.current = false;
   }, [bookingId, camOn, micOn, role, stopPreviewStream]);
 
   const enterMutation = useMutation({
@@ -503,7 +597,20 @@ export default function ConsultationRoom({ role }) {
         await psychologistEnterConsultation(bookingId);
         await loginAndPublish();
       } else {
-        await requestConsultationJoin(bookingId);
+        joiningAfterAdmissionRef.current = false;
+        if (consultation?.patient_joined) {
+          await loginAndPublish();
+          return;
+        }
+        const data = await requestConsultationJoin(bookingId);
+        queryClient.setQueryData(["consultation", bookingId], (current) => ({
+          ...(current ?? {}),
+          consultation: data.consultation ?? current?.consultation,
+        }));
+        if (data?.consultation?.patient_joined) {
+          await loginAndPublish();
+          return;
+        }
         setPhase("waiting");
       }
     },
@@ -514,7 +621,10 @@ export default function ConsultationRoom({ role }) {
   });
 
   const joinAfterAdmission = useEffectEvent(() => {
+    if (joiningAfterAdmissionRef.current) return;
+    joiningAfterAdmissionRef.current = true;
     loginAndPublish().catch((err) => {
+      joiningAfterAdmissionRef.current = false;
       setPhase("preview");
       setError(err?.response?.data?.detail || err?.message || "Unable to join room.");
     });
@@ -522,7 +632,16 @@ export default function ConsultationRoom({ role }) {
 
   const approveMutation = useMutation({
     mutationFn: () => approveConsultationJoin(bookingId),
-    onSuccess: () => detailQuery.refetch(),
+    onSuccess: (data) => {
+      queryClient.setQueryData(["consultation", bookingId], (current) => ({
+        ...(current ?? {}),
+        consultation: data.consultation ?? current?.consultation,
+      }));
+      detailQuery.refetch();
+    },
+    onError: (err) => {
+      setError(err?.response?.data?.detail || "Unable to admit patient.");
+    },
   });
 
   const exitMutation = useMutation({
@@ -547,12 +666,50 @@ export default function ConsultationRoom({ role }) {
   }, [consultation?.patient_joined, phase, role]);
 
   useEffect(() => {
+    if (role === "patient" && phase === "waiting") {
+      joiningAfterAdmissionRef.current = false;
+    }
+  }, [phase, role]);
+
+  useEffect(() => {
+    if (role !== "patient" || phase !== "waiting") return () => {};
+
+    let stopped = false;
+    const pollAdmission = async () => {
+      try {
+        const data = await getConsultationDetail(bookingId);
+        if (stopped) return;
+        queryClient.setQueryData(["consultation", bookingId], data);
+        if (data?.consultation?.patient_joined) joinAfterAdmission();
+      } catch (err) {
+        if (!stopped) setError(err?.response?.data?.detail || "Unable to check admission status.");
+      }
+    };
+
+    pollAdmission();
+    const interval = window.setInterval(pollAdmission, 1000);
+    return () => {
+      stopped = true;
+      window.clearInterval(interval);
+    };
+  }, [bookingId, phase, queryClient, role]);
+
+  useEffect(() => {
     if (phase !== "call" || consultation?.status !== "COMPLETED" || exitMutation.isPending) return;
     leaveAfterRemoteCompletion();
   }, [consultation?.status, exitMutation.isPending, phase]);
 
+  useEffect(() => {
+    if (phase !== "call" || consultation?.is_open !== false || exitMutation.isPending) return;
+    leaveAfterRemoteCompletion();
+  }, [consultation?.is_open, exitMutation.isPending, phase]);
+
   const togglePreviewTrack = (kind) => {
     const tracks = kind === "audio" ? previewStream?.getAudioTracks() : previewStream?.getVideoTracks();
+    if (!tracks?.length) {
+      startPreviewStream().catch(() => setError("Camera or microphone permission is required before joining."));
+      return;
+    }
     tracks?.forEach((track) => { track.enabled = !track.enabled; });
     if (kind === "audio") setMicOn((value) => !value);
     if (kind === "video") setCamOn((value) => !value);
@@ -585,7 +742,7 @@ export default function ConsultationRoom({ role }) {
       <div className="flex h-screen items-center justify-center bg-slate-950 px-4 text-center text-white">
         <div>
           <h1 className="text-xl font-bold">Consultation room is not active</h1>
-          <p className="mt-2 text-sm text-slate-400">The room opens 5 minutes before the appointment time and closes after completion.</p>
+          <p className="mt-2 text-sm text-slate-400">The room opens 5 minutes before the appointment time and closes when the slot time ends.</p>
           <button onClick={() => navigate(-1)} className="mt-5 rounded-xl bg-white px-5 py-2 text-sm font-bold text-slate-950">Go back</button>
         </div>
       </div>
@@ -595,26 +752,38 @@ export default function ConsultationRoom({ role }) {
   if (phase !== "call") {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-950 px-4 py-8 text-white">
-        <div className="grid w-full max-w-5xl gap-6 lg:grid-cols-[1fr_360px]">
-          <div className="relative aspect-video overflow-hidden rounded-[28px] border border-white/10 bg-black">
-            <video ref={previewVideoRef} autoPlay muted playsInline className={`h-full w-full bg-black object-cover ${camOn ? "" : "opacity-0"}`} />
+        <div className="grid w-full max-w-5xl items-stretch gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
+          <div className="relative min-h-[260px] overflow-hidden rounded-[28px] border border-white/10 bg-black sm:min-h-[360px] lg:aspect-video lg:min-h-0">
+            <video
+              ref={(node) => {
+                previewVideoRef.current = node;
+                if (node) attachPreviewVideo(previewStreamRef.current);
+              }}
+              autoPlay
+              muted
+              playsInline
+              onLoadedMetadata={() => attachPreviewVideo(previewStreamRef.current)}
+              onCanPlay={() => attachPreviewVideo(previewStreamRef.current)}
+              className={`absolute inset-0 h-full w-full bg-black object-cover ${showPreviewVideo ? "" : "opacity-0"}`}
+            />
             {!camOn ? <VideoAvatar name={localName} photo={localPhoto} /> : null}
+            {previewStatus ? <MediaStatus label={previewStatus} /> : null}
           </div>
-          <div className="rounded-[28px] border border-white/10 bg-white/10 p-6 backdrop-blur">
+          <div className="flex min-h-[260px] flex-col rounded-[28px] border border-white/10 bg-white/10 p-6 backdrop-blur">
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Waiting Room</p>
             <h1 className="mt-2 text-2xl font-bold">{role === "patient" ? booking?.psychologist_name : booking?.patient_name}</h1>
             <p className="mt-2 text-sm text-slate-300">{booking?.date} · {booking?.start_time} - {booking?.end_time}</p>
             {error ? <p className="mt-4 rounded-xl bg-red-500/15 px-4 py-3 text-sm text-red-200">{error}</p> : null}
             {phase === "waiting" ? (
-              <div className="mt-6 rounded-2xl border border-amber-400/20 bg-amber-400/10 p-4 text-sm text-amber-100">
+              <div className={`mt-6 rounded-2xl border p-4 text-sm ${accent.panel}`}>
                 Waiting for the psychologist to admit you.
               </div>
             ) : null}
-            <div className="mt-6 flex gap-3">
-              <CtrlButton active={micOn} onClick={() => togglePreviewTrack("audio")} title="Microphone">
+            <div className="mt-auto flex gap-3 pt-6">
+              <CtrlButton active={micOn} onClick={() => togglePreviewTrack("audio")} title={previewHasAudio ? "Microphone" : "Microphone unavailable"}>
                 <MicIcon />
               </CtrlButton>
-              <CtrlButton active={camOn} onClick={() => togglePreviewTrack("video")} title="Camera">
+              <CtrlButton active={camOn} onClick={() => togglePreviewTrack("video")} title={previewHasVideo ? "Camera" : "Camera unavailable"}>
                 <CameraIcon />
               </CtrlButton>
             </div>
@@ -622,9 +791,9 @@ export default function ConsultationRoom({ role }) {
               type="button"
               disabled={enterMutation.isPending || phase === "waiting" || phase === "connecting"}
               onClick={() => enterMutation.mutate()}
-              className="mt-7 w-full rounded-2xl bg-emerald-500 px-5 py-3 text-sm font-bold text-white transition hover:bg-emerald-400 disabled:opacity-60"
+              className={`mt-7 w-full rounded-2xl px-5 py-3 text-sm font-bold text-white transition disabled:opacity-60 ${accent.button}`}
             >
-              {role === "patient" ? "Request to Join" : "Enter Consultation"}
+              {role === "patient" ? (consultation?.patient_joined ? "Rejoin" : "Request to Join") : "Enter Consultation"}
             </button>
           </div>
         </div>
