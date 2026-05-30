@@ -82,7 +82,7 @@ const PsychologistLogin = () => {
         <form className="flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)}>
           <div>
             <label htmlFor="email" className={labelCls}>Email Address</label>
-            <input type="email" id="email" placeholder="doctor@clinic.com" {...register("email")} className={inputCls(!!errors.email)} />
+            <input type="email" id="email" placeholder="psychologist@clinic.com" {...register("email")} className={inputCls(!!errors.email)} />
             {errors.email && <p className={errorMsgCls}>{errors.email.message}</p>}
           </div>
 

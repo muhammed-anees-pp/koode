@@ -560,12 +560,12 @@ export default function PatientAppointments() {
       list = all.filter((b) => b.status === "CANCELLED");
     } else {
       list = all.filter(
-        (b) => b.date >= today && b.status !== "COMPLETED" && b.status !== "CANCELLED"
+        (b) => (b.date >= today || b.consultation?.is_open) && b.status !== "COMPLETED" && b.status !== "CANCELLED"
       );
       if (dateFilter === "Next 7 Days") {
-        list = list.filter((b) => b.date <= addDaysToISO(today, 7));
+        list = list.filter((b) => b.consultation?.is_open || b.date <= addDaysToISO(today, 7));
       } else if (dateFilter === "Next 30 Days") {
-        list = list.filter((b) => b.date <= addDaysToISO(today, 30));
+        list = list.filter((b) => b.consultation?.is_open || b.date <= addDaysToISO(today, 30));
       }
     }
 

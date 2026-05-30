@@ -23,6 +23,7 @@ from finance.services.wallets import debit_wallet, get_wallet
 TIME ZONE
 """
 INDIA_TZ = ZoneInfo("Asia/Kolkata")
+ACTIVE_BOOKING_STATUSES = ("PENDING", "CONFIRMED")
 
 
 def get_india_now():
@@ -44,10 +45,49 @@ def is_slot_after_booking(slot, booking):
     return slot.start_time >= booking.end_time
 
 
+def patient_has_slot_conflict(patient, date_value, start_time_value, end_time_value, exclude_booking=None):
+    if not patient:
+        return False
+
+    conflicts = Booking.objects.filter(
+        patient=patient,
+        date=date_value,
+        status__in=ACTIVE_BOOKING_STATUSES,
+        start_time__lt=end_time_value,
+        end_time__gt=start_time_value,
+    )
+    if exclude_booking:
+        conflicts = conflicts.exclude(id=exclude_booking.id)
+    return conflicts.exists()
+
+
 """
 AVAILABLE SLOT SERIALIZER
 """
 class AvailableSlotSerializer(serializers.ModelSerializer):
+    is_booked = serializers.SerializerMethodField()
+    is_locked_for_patient = serializers.SerializerMethodField()
+
+    def get_is_booked(self, obj):
+        return obj.is_booked or self.get_is_locked_for_patient(obj)
+
+    def get_is_locked_for_patient(self, obj):
+        patient = self.context.get("patient")
+        if not patient:
+            return False
+        cache = self.context.setdefault("_patient_slot_conflicts", {})
+        cache_key = (obj.availability.date, obj.start_time, obj.end_time)
+        if cache_key in cache:
+            return cache[cache_key]
+
+        cache[cache_key] = patient_has_slot_conflict(
+            patient,
+            obj.availability.date,
+            obj.start_time,
+            obj.end_time,
+        )
+        return cache[cache_key]
+
     class Meta:
         model = AvailableSlot
         fields = [
@@ -55,6 +95,7 @@ class AvailableSlotSerializer(serializers.ModelSerializer):
             "start_time",
             "end_time",
             "is_booked",
+            "is_locked_for_patient",
         ]
 
 """
@@ -68,7 +109,11 @@ class AvailabilitySerializer(serializers.ModelSerializer):
             slot for slot in obj.slots.all()
             if is_future_slot(obj.date, slot.start_time)
         ], key=lambda slot: (slot.start_time, slot.end_time))
-        return AvailableSlotSerializer(future_slots, many=True).data
+        return AvailableSlotSerializer(
+            future_slots,
+            many=True,
+            context=self.context,
+        ).data
 
     class Meta:
         model = Availability
@@ -501,6 +546,17 @@ class CreateBookingSerializer(serializers.Serializer):
         if not is_future_slot(slot.availability.date, slot.start_time):
             raise serializers.ValidationError("Past slots cannot be booked")
 
+        patient = self.context["patient"]
+        if patient_has_slot_conflict(
+            patient,
+            slot.availability.date,
+            slot.start_time,
+            slot.end_time,
+        ):
+            raise serializers.ValidationError(
+                "You already have an appointment in this time slot."
+            )
+
         attrs["slot"] = slot
         attrs["wallet_amount"] = money(attrs.get("wallet_amount") or 0)
         return attrs
@@ -524,6 +580,17 @@ class CreateBookingSerializer(serializers.Serializer):
 
             if locked_slot.is_booked:
                 raise serializers.ValidationError("Slot already booked")
+
+            locked_availability = locked_slot.availability
+            if patient_has_slot_conflict(
+                patient,
+                locked_availability.date,
+                locked_slot.start_time,
+                locked_slot.end_time,
+            ):
+                raise serializers.ValidationError(
+                    "You already have an appointment in this time slot."
+                )
 
             patient_wallet = get_wallet(patient.user)
             locked_wallet = None
@@ -714,6 +781,17 @@ class RescheduleBookingSerializer(serializers.Serializer):
         if not is_future_slot(slot.availability.date, slot.start_time):
             raise serializers.ValidationError("Past slots cannot be selected")
 
+        if patient_has_slot_conflict(
+            booking.patient,
+            slot.availability.date,
+            slot.start_time,
+            slot.end_time,
+            exclude_booking=booking,
+        ):
+            raise serializers.ValidationError(
+                "Patient already has an appointment in this time slot"
+            )
+
         if not is_slot_after_booking(slot, booking):
             raise serializers.ValidationError(
                 "Reschedule is only allowed to slots after the current appointment time"
@@ -744,6 +822,17 @@ class RescheduleBookingSerializer(serializers.Serializer):
 
             if locked_new_slot.is_booked:
                 raise serializers.ValidationError("Selected slot is already booked")
+
+            if patient_has_slot_conflict(
+                locked_booking.patient,
+                locked_new_slot.availability.date,
+                locked_new_slot.start_time,
+                locked_new_slot.end_time,
+                exclude_booking=locked_booking,
+            ):
+                raise serializers.ValidationError(
+                    "Patient already has an appointment in this time slot"
+                )
 
             old_slot.is_booked = False
             old_slot.save(update_fields=["is_booked"])

@@ -409,7 +409,7 @@ export default function PatientAppointmentDetail() {
 
                   <h3 className="text-lg font-bold mb-1">Join Consultation</h3>
                   <p className="text-sm text-white/80 mb-5">
-                    Ready to start? The room opens 5 minutes before your time.
+                    Ready to start? The room stays available until the slot time ends.
                   </p>
 
                   <button

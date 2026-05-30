@@ -21,6 +21,15 @@ def sync_application_status_for_interview(interview):
     return application
 
 
+def _interview_room_closed_response(interview):
+    if interview.status in ("COMPLETED", "CANCELLED"):
+        return Response(
+            {"detail": "Interview room is no longer active.", "status": interview.status},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    return None
+
+
 
 ############################
 ####        ADMIN       ####
@@ -33,6 +42,10 @@ class AdminInterviewTokenView(APIView):
 
     def get(self, request, interview_id):
         interview = get_object_or_404(Interview, id=interview_id)
+        closed_response = _interview_room_closed_response(interview)
+        if closed_response:
+            return closed_response
+
         user_id = str(request.user.id)
         token_info = generate_zego_token(user_id)
 
@@ -95,6 +108,10 @@ class ApproveJoinView(APIView):
 
     def post(self, request, interview_id):
         interview = get_object_or_404(Interview, id=interview_id)
+        closed_response = _interview_room_closed_response(interview)
+        if closed_response:
+            return closed_response
+
         interview.psychologist_joined = True
         interview.admin_joined = True
         interview.join_requested = False
@@ -175,6 +192,10 @@ class PsychologistInterviewTokenView(APIView):
 
     def get(self, request, interview_id):
         interview = get_object_or_404(Interview, id=interview_id)
+        closed_response = _interview_room_closed_response(interview)
+        if closed_response:
+            return closed_response
+
         user_id = str(request.user.id)
         token_info = generate_zego_token(user_id)
 

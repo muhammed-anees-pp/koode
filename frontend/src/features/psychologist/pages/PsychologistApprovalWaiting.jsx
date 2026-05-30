@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import PsychologistNavbar from '../../../components/psychologist/Navbar/PsychologistNavbar';
 import { getMyApplication, getApplicationStatus, requestJoin, getJoinStatus } from '../../../api/psychologist.api';
 import { fetchCurrentCommissionRate } from '../../../api/finance.api';
@@ -508,6 +508,7 @@ function WaitingRoomModal({ interviewDate, interviewId, onClose, onEnterRoom, pr
 
 const PsychologistApprovalWaiting = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     usePsychologistSessionGuard();
     const [application, setApplication] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -516,6 +517,7 @@ const PsychologistApprovalWaiting = () => {
     const [showWaitingRoom, setShowWaitingRoom] = useState(false);
     const [interviewStatus, setInterviewStatus] = useState(null);
     const [commissionRate, setCommissionRate] = useState(null);
+    const autoOpenedWaitingRef = useRef(false);
 
     useEffect(() => {
         Promise.all([
@@ -566,6 +568,15 @@ const PsychologistApprovalWaiting = () => {
     const interviewStatuses = ['INTERVIEW_SCHEDULED', 'WAITING', 'ONGOING'];
     const showInterviewOption = interviewStatuses.includes(status) && interviewId && interviewStatus !== 'COMPLETED';
     const interviewCompleted = interviewStatus === 'COMPLETED' && !['APPROVED', 'REJECTED'].includes(status);
+
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        if (autoOpenedWaitingRef.current || !params.has('interview')) return;
+        if (loading || !showInterviewOption) return;
+        autoOpenedWaitingRef.current = true;
+        const timer = window.setTimeout(() => setShowWaitingRoom(true), 0);
+        return () => window.clearTimeout(timer);
+    }, [loading, location.search, showInterviewOption]);
 
     return (
         <div className="min-h-screen bg-[#eef0f5]">

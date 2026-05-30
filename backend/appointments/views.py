@@ -266,6 +266,10 @@ class PsychologistSlotListView(APIView):
     def get(self, request, psychologist_id):
         psychologist = get_object_or_404(PsychologistProfile, psychologist_id=psychologist_id)
         date = request.query_params.get("date")
+        patient = None
+        if request.user.role == "PATIENT":
+            patient = get_object_or_404(PatientProfile, user=request.user)
+
         qs = Availability.objects.filter(psychologist=psychologist)
         if date:
             qs = qs.filter(date=date)
@@ -275,7 +279,7 @@ class PsychologistSlotListView(APIView):
             availability for availability in qs
             if any(is_future_slot(availability.date, slot.start_time) for slot in availability.slots.all())
         ]
-        serializer = AvailabilitySerializer(qs, many=True)
+        serializer = AvailabilitySerializer(qs, many=True, context={"patient": patient})
         return Response(serializer.data)
 
 

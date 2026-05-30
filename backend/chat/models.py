@@ -1,9 +1,7 @@
 import uuid
-
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
-
 from appointments.models import Booking
 from patients.models import PatientProfile
 from psychologists.models import PsychologistProfile

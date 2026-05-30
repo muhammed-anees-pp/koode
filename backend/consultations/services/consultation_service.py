@@ -12,7 +12,7 @@ INDIA_TZ = ZoneInfo("Asia/Kolkata")
 CONSULTATION ROOM ID
 """
 def consultation_room_id(booking):
-    return f"consultation_{booking.id.hex}"
+    return f"consultation_{booking.id}"
 
 
 """
@@ -51,7 +51,7 @@ def consultation_window_start(booking):
 CONSULTATOIN WINDOW END
 """
 def consultation_window_end(booking):
-    return appointment_datetime(booking.date, booking.end_time) + timedelta(hours=1)
+    return appointment_datetime(booking.date, booking.end_time)
 
 
 """

@@ -56,7 +56,7 @@ class Booking(models.Model):
         ("REFUNDED", "Refunded"),
     )
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.CharField(primary_key=True, max_length=36, editable=False)
     patient = models.ForeignKey(PatientProfile, on_delete=models.CASCADE, related_name="bookings")
     psychologist = models.ForeignKey(PsychologistProfile, on_delete=models.CASCADE, related_name="bookings")
     slot = models.OneToOneField(AvailableSlot, on_delete=models.SET_NULL, related_name="booking", null=True, blank=True,)
@@ -75,6 +75,19 @@ class Booking(models.Model):
     notes = models.TextField(blank=True)
     cancelled_by = models.ForeignKey("accounts.User", on_delete=models.SET_NULL, null=True, blank=True, related_name="cancelled_bookings")
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def generate_appointment_id(self):
+        return f"AP-{uuid.uuid4().hex[:8].upper()}"
+
+    def save(self, *args, **kwargs):
+        if not self.id:
+            while True:
+                new_id = self.generate_appointment_id()
+                if not Booking.objects.filter(id=new_id).exists():
+                    self.id = new_id
+                    break
+
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.patient} → {self.psychologist} ({self.date} {self.start_time})"

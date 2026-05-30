@@ -463,7 +463,7 @@ export default function PsychologistAppointments() {
       bookings = bookings.filter((b) => b.status === "CANCELLED");
     } else {
       bookings = bookings.filter(
-        (b) => b.date >= today && b.status !== "COMPLETED" && b.status !== "CANCELLED"
+        (b) => (b.date >= today || b.consultation?.is_open) && b.status !== "COMPLETED" && b.status !== "CANCELLED"
       );
     }
 
