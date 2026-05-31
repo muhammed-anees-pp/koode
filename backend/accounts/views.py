@@ -4,13 +4,17 @@ from rest_framework.views import APIView
 from rest_framework import status
 from django.conf import settings
 from rest_framework.permissions import IsAuthenticated, AllowAny
+from django.core import signing
+from django.shortcuts import redirect
+from django.urls import reverse
+from urllib.parse import urlencode
 from .services.password_reset_service import ForgotPasswordResetService
 from . throttles import ForgotPasswordThrottle
 from .services.patient_auth_service import PatientAuthService
 from .services.psychologist_auth_service import PsychologistAuthService
 from . serializers import (AdminLoginSerializer, ForgotPasswordSerializer, ResetPasswordSerializer,
                            SignupSerializer, PatientLoginSerializer, PsychologistLoginSerializer)
-from .services.google_auth_service import GooglePatientAuthService, GooglePsychologistAuthService
+from .services.google_auth_service import GoogleOAuthCodeService, GooglePatientAuthService, GooglePsychologistAuthService
 
 
 REFRESH_COOKIE_BY_ROLE = {
@@ -55,6 +59,33 @@ def delete_refresh_cookie(response, role):
     if cookie_name:
         response.delete_cookie(cookie_name, path="/")
     response.delete_cookie("refresh_token", path="/")
+
+
+GOOGLE_OAUTH_STATE_SALT = "accounts.google_oauth"
+
+
+def get_google_oauth_redirect_uri(request):
+    configured_uri = getattr(settings, "GOOGLE_OAUTH_REDIRECT_URI", "")
+    if configured_uri:
+        return configured_uri
+    return request.build_absolute_uri(reverse("google-oauth-callback"))
+
+
+def get_frontend_oauth_callback_url(role):
+    role_path = "psychologist" if role == "PSYCHOLOGIST" else "patient"
+    if role == "PSYCHOLOGIST":
+        frontend_url = (settings.PSYCHOLOGIST_FRONTEND_URL or "").rstrip("/")
+    else:
+        frontend_url = (settings.PATIENT_FRONTEND_URL or "").rstrip("/")
+
+    if frontend_url.endswith(f"/{role_path}"):
+        return f"{frontend_url}/oauth/callback"
+    return f"{frontend_url}/{role_path}/oauth/callback"
+
+
+def redirect_frontend_oauth_error(role, message):
+    callback_url = get_frontend_oauth_callback_url(role)
+    return redirect(f"{callback_url}?{urlencode({'error': message})}")
 
 
 ############################
@@ -134,6 +165,91 @@ class RefreshTokenView(APIView):
             return response
         except Exception:
             return Response({"detail": "Invalid token"}, status = 401)
+
+
+class GoogleOAuthStartView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        role = request.query_params.get("role")
+        mode = request.query_params.get("mode")
+
+        if role not in {"PATIENT", "PSYCHOLOGIST"}:
+            return Response({"detail": "Invalid role"}, status=status.HTTP_400_BAD_REQUEST)
+        if mode not in {"login", "signup"}:
+            return Response({"detail": "Invalid mode"}, status=status.HTTP_400_BAD_REQUEST)
+        if not settings.GOOGLE_CLIENT_ID:
+            return Response({"detail": "Google OAuth is not configured"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        redirect_uri = get_google_oauth_redirect_uri(request)
+        state = signing.dumps(
+            {"role": role, "mode": mode, "redirect_uri": redirect_uri},
+            salt=GOOGLE_OAUTH_STATE_SALT,
+        )
+        params = {
+            "client_id": settings.GOOGLE_CLIENT_ID,
+            "redirect_uri": redirect_uri,
+            "response_type": "code",
+            "scope": "openid email profile",
+            "state": state,
+            "prompt": "select_account",
+        }
+
+        return redirect(f"https://accounts.google.com/o/oauth2/v2/auth?{urlencode(params)}")
+
+
+class GoogleOAuthCallbackView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        code = request.query_params.get("code")
+        state = request.query_params.get("state")
+        google_error = request.query_params.get("error")
+
+        role = "PATIENT"
+
+        try:
+            if not state:
+                return redirect_frontend_oauth_error(role, "Missing Google OAuth state")
+
+            state_data = signing.loads(
+                state,
+                salt=GOOGLE_OAUTH_STATE_SALT,
+                max_age=600,
+            )
+            role = state_data.get("role")
+            mode = state_data.get("mode")
+            redirect_uri = state_data.get("redirect_uri")
+
+            if role not in {"PATIENT", "PSYCHOLOGIST"} or mode not in {"login", "signup"}:
+                return redirect_frontend_oauth_error("PATIENT", "Invalid Google OAuth state")
+            if google_error:
+                return redirect_frontend_oauth_error(role, "Google sign-in was cancelled")
+            if not code:
+                return redirect_frontend_oauth_error(role, "Missing Google authorization code")
+
+            idinfo = GoogleOAuthCodeService.exchange_code_for_idinfo(code, redirect_uri)
+            if role == "PSYCHOLOGIST":
+                result = GooglePsychologistAuthService.authenticate_or_create(idinfo, mode)
+            else:
+                result = GooglePatientAuthService.authenticate_or_create(idinfo, mode)
+
+            user = result["user"]
+            callback_url = get_frontend_oauth_callback_url(user.role)
+            response = redirect(callback_url)
+            set_refresh_cookie(response, user.role, result["refresh"])
+            return response
+        except Exception as exc:
+            detail = getattr(exc, "detail", None)
+            if isinstance(detail, dict):
+                message = next(iter(detail.values()), "Google sign-in failed")
+            elif isinstance(detail, list) and detail:
+                message = str(detail[0])
+            elif detail:
+                message = str(detail)
+            else:
+                message = "Google sign-in failed"
+            return redirect_frontend_oauth_error(role, message)
 
 
 
