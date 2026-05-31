@@ -6,6 +6,7 @@ from accounts.models import User
 from patients.models import PatientProfile
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.db import transaction
+import requests as http_requests
 
 
 """
@@ -76,6 +77,43 @@ class GooglePatientAuthService:
             "refresh": str(refresh),
             "user": user
         }
+
+
+class GoogleOAuthCodeService:
+    TOKEN_URL = "https://oauth2.googleapis.com/token"
+
+    @staticmethod
+    def exchange_code_for_idinfo(code, redirect_uri):
+        if not settings.GOOGLE_CLIENT_ID or not settings.GOOGLE_CLIENT_SECRET:
+            raise ValidationError("Google OAuth is not configured")
+
+        try:
+            response = http_requests.post(
+                GoogleOAuthCodeService.TOKEN_URL,
+                data={
+                    "code": code,
+                    "client_id": settings.GOOGLE_CLIENT_ID,
+                    "client_secret": settings.GOOGLE_CLIENT_SECRET,
+                    "redirect_uri": redirect_uri,
+                    "grant_type": "authorization_code",
+                },
+                timeout=10,
+            )
+            response.raise_for_status()
+            token_data = response.json()
+            google_id_token = token_data.get("id_token")
+            if not google_id_token:
+                raise ValidationError("Google did not return an ID token")
+
+            return id_token.verify_oauth2_token(
+                google_id_token,
+                requests.Request(),
+                settings.GOOGLE_CLIENT_ID,
+            )
+        except ValidationError:
+            raise
+        except Exception:
+            raise ValidationError("Google OAuth callback failed")
     
 
 """

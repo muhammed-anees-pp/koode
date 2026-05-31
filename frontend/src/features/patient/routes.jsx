@@ -21,6 +21,7 @@ import PatientComplaints from "./pages/PatientComplaints";
 import { useAuthStore } from "../../store/auth.store";
 import ConsultationRoom from "../../components/consultation/ConsultationRoom";
 import PatientChatbotWidget from "../../components/patient/Chatbot/PatientChatbotWidget";
+import OAuthCallback from "../../components/auth/OAuthCallback";
 
 
 const PatientRoutes = () => {
@@ -40,6 +41,7 @@ const PatientRoutes = () => {
           element={isPatient ? <Navigate to="/patient/home" replace /> : <PatientSignup />}
         />
         <Route path="verification-sent" element={<VerificationSent />} />
+        <Route path="oauth/callback" element={<OAuthCallback role="PATIENT" />} />
         <Route path="verify-email" element={<VerificationSent />} />
         <Route path="verify-success" element={<VerificationSent />} />
         <Route path="verify-error" element={<VerificationSent />} />
