@@ -1,0 +1,57 @@
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: koode-redis
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:6380:6379"
+    volumes:
+      - koode_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend-web:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: koode-backend-web
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env.docker.example
+      - path: ./backend/.env.docker
+        required: false
+    environment:
+      RUN_MIGRATIONS: "true"
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    depends_on:
+      redis:
+        condition: service_healthy
+    command: daphne -b 0.0.0.0 -p 8000 config.asgi:application
+
+  backend-worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: koode-backend-worker
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env.docker.example
+      - path: ./backend/.env.docker
+        required: false
+    environment:
+      RUN_MIGRATIONS: "false"
+    volumes:
+      - ./backend:/app
+    depends_on:
+      redis:
+        condition: service_healthy
+    command: celery -A config worker -l info
+
+volumes:
+  koode_redis_data:

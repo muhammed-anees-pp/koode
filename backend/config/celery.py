@@ -1,13 +1,22 @@
 import os
+from pathlib import Path
+from dotenv import load_dotenv
 from celery import Celery
 
-# Set default Django settings
+BASE_DIR = Path(__file__).resolve().parent.parent
+if os.getenv("SKIP_DOTENV", "False") != "True":
+    load_dotenv(BASE_DIR / ".env")
+
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 
 app = Celery("config")
 
-# Load settings from Django settings, using CELERY_ prefix
 app.config_from_object("django.conf:settings", namespace="CELERY")
 
-# Auto-discover tasks from all installed apps
+if os.getenv("REDIS_URL"):
+    app.conf.update(
+        broker_url=os.getenv("REDIS_URL"),
+        result_backend=os.getenv("CELERY_RESULT_BACKEND", os.getenv("REDIS_URL")),
+    )
+
 app.autodiscover_tasks()

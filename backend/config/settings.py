@@ -10,94 +10,141 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 from pathlib import Path
+from datetime import timedelta
 import os
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+if os.getenv("SKIP_DOTENV", "False") != "True":
+    load_dotenv(BASE_DIR / ".env")
 
-load_dotenv(BASE_DIR / ".env")
-
-# # Build paths inside the project like this: BASE_DIR / 'subdir'.
-# # Quick-start development settings - unsuitable for production
-# # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
-# # SECURITY WARNING: keep the secret key used in production secret!
-# # SECURITY WARNING: don't run with debug turned on in production!
-
-
+# -------------------------------------------------
+# CORE
+# -------------------------------------------------
 SECRET_KEY = os.getenv("SECRET_KEY")
+
 DEBUG = os.getenv("DEBUG", "False") == "True"
+
 ALLOWED_HOSTS = [
     host for host in os.getenv("ALLOWED_HOSTS", "").split(",") if host
 ]
 
-# Application definition
-
+# -------------------------------------------------
+# APPLICATIONS
+# -------------------------------------------------
 INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'rest_framework',
-    'corsheaders',
-    'django_celery_results',
-    'home',
+    "daphne",
+
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+
+    "rest_framework",
+    "corsheaders",
+    "rest_framework_simplejwt.token_blacklist",
+    "channels",
+
+    "storages",
+
+    "home",
+    "accounts",
+    "dashboard",
+    "patients",
+    "applications",
+    "psychologists",
+    "interviews",
+    "appointments",
+    "consultations",
+    "patient_summary",
+    "psychologist_finder",
+    "notifications",
+    "chat",
+    "chatbot",
+    "finance",
+    "reviews",
+    "complaints",
 ]
 
+# -------------------------------------------------
+# MIDDLEWARE
+# -------------------------------------------------
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "corsheaders.middleware.CorsMiddleware",
+    "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-ROOT_URLCONF = 'config.urls'
+# --------------------
+# ROOT URL
+# --------------------
+ROOT_URLCONF = "config.urls"
 
+# -------------------------------------------------
+# INTERNATIONALIZATION
+# -------------------------------------------------
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
             ],
         },
     },
 ]
 
-WSGI_APPLICATION = 'config.wsgi.application'
+# -------------------------------------------------
+# WSGI/ASGI
+# -------------------------------------------------
+WSGI_APPLICATION = "config.wsgi.application"
+ASGI_APPLICATION = "config.asgi.application"
 
-
-# Database
-# https://docs.djangoproject.com/en/6.0/ref/settings/#databases
+# --------------------
+# DATABASE CONFIG
+# --------------------
+DATABASE_OPTIONS = {}
+if os.getenv("DB_SSLMODE"):
+    DATABASE_OPTIONS["sslmode"] = os.getenv("DB_SSLMODE")
+if os.getenv("DB_SSLROOTCERT"):
+    DATABASE_OPTIONS["sslrootcert"] = os.getenv("DB_SSLROOTCERT")
 
 DATABASES = {
     "default": {
-        "ENGINE": os.getenv("DB_ENGINE"),
-        "NAME": BASE_DIR / os.getenv("DB_NAME"),
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": os.getenv("DB_NAME"),
         "USER": os.getenv("DB_USER"),
         "PASSWORD": os.getenv("DB_PASSWORD"),
         "HOST": os.getenv("DB_HOST"),
-        "PORT": os.getenv("DB_PORT"),
+        "PORT": os.getenv("DB_PORT", "5432"),
+        "CONN_MAX_AGE": int(os.getenv("DB_CONN_MAX_AGE", "60")),
+        "OPTIONS": DATABASE_OPTIONS,
     }
 }
 
-# Redis config
-REDIS_URL = os.getenv("REDIS_URL")
-
-
-
-# Password validation
-# https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
-
+# -------------------------------------------------
+# sqlite3 CONFIG
+# -------------------------------------------------
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
+# -------------------------------------------------
+# PASSWORD VALIDATION
+# -------------------------------------------------
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -113,35 +160,287 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
-# Internationalization
-# https://docs.djangoproject.com/en/6.0/topics/i18n/
-
+# -------------------------------------------------
+# INTERNATIONALIZATION
+# -------------------------------------------------
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Kolkata'
 
 USE_I18N = True
 
 USE_TZ = True
 
-
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/6.0/howto/static-files/
-
+# -------------------------------------------------
+# STATIC FILES
+# -------------------------------------------------
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
-# Celery Configuration Options
-CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL")
-CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND")
-
-CELERY_ACCEPT_CONTENT = ['application/json']
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
-CELERY_TIMEZONE = TIME_ZONE
-
-# CORS 
-CORS_ALLOW_ALL_ORIGINS = True 
+# -------------------------------------------------
+# CUSTOM USER MODEL
+# -------------------------------------------------
+AUTH_USER_MODEL = "accounts.User"
 
 
+# -------------------------------------------------
+# REST FRAMEWORK
+# -------------------------------------------------
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ),
+    "EXCEPTION_HANDLER": "config.exceptions.custom_exception_handler",
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "120/minute",
+        "forgot_password": "3/minute",
+    },
+}
 
+
+# -------------------------------------------------
+# LOGGING
+# -------------------------------------------------
+LOG_DIR = BASE_DIR / "logs"
+LOG_DIR.mkdir(exist_ok=True)
+LOG_TO_FILE = os.getenv("LOG_TO_FILE", "True") == "True"
+
+LOG_HANDLERS = ["console", "file"] if LOG_TO_FILE else ["console"]
+LOGGING_HANDLERS = {
+    "console": {
+        "class": "logging.StreamHandler",
+        "formatter": "simple",
+    },
+}
+
+if LOG_TO_FILE:
+    LOGGING_HANDLERS["file"] = {
+        "class": "logging.handlers.RotatingFileHandler",
+        "filename": LOG_DIR / "backend.log",
+        "maxBytes": 1024 * 1024 * 5,
+        "backupCount": 5,
+        "formatter": "verbose",
+    }
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "{levelname} {asctime} {name} {process:d} {thread:d} {message}",
+            "style": "{",
+        },
+        "simple": {
+            "format": "{levelname} {name} {message}",
+            "style": "{",
+        },
+    },
+    "handlers": LOGGING_HANDLERS,
+    "root": {
+        "handlers": LOG_HANDLERS,
+        "level": os.getenv("LOG_LEVEL", "INFO"),
+    },
+    "loggers": {
+        "django": {
+            "handlers": LOG_HANDLERS,
+            "level": os.getenv("DJANGO_LOG_LEVEL", "INFO"),
+            "propagate": False,
+        },
+        "appointments": {
+            "handlers": LOG_HANDLERS,
+            "level": os.getenv("APP_LOG_LEVEL", "INFO"),
+            "propagate": False,
+        },
+        "consultations": {
+            "handlers": LOG_HANDLERS,
+            "level": os.getenv("APP_LOG_LEVEL", "INFO"),
+            "propagate": False,
+        },
+        "notifications": {
+            "handlers": LOG_HANDLERS,
+            "level": os.getenv("APP_LOG_LEVEL", "INFO"),
+            "propagate": False,
+        },
+        "chat": {
+            "handlers": LOG_HANDLERS,
+            "level": os.getenv("APP_LOG_LEVEL", "INFO"),
+            "propagate": False,
+        },
+        "patients": {
+            "handlers": LOG_HANDLERS,
+            "level": os.getenv("APP_LOG_LEVEL", "INFO"),
+            "propagate": False,
+        },
+        "psychologists": {
+            "handlers": LOG_HANDLERS,
+            "level": os.getenv("APP_LOG_LEVEL", "INFO"),
+            "propagate": False,
+        },
+        "applications": {
+            "handlers": LOG_HANDLERS,
+            "level": os.getenv("APP_LOG_LEVEL", "INFO"),
+            "propagate": False,
+        },
+        "config.exceptions": {
+            "handlers": LOG_HANDLERS,
+            "level": os.getenv("APP_LOG_LEVEL", "INFO"),
+            "propagate": False,
+        },
+    },
+}
+
+
+
+# -------------------------------------------------
+# SIMPLE JWT
+# -------------------------------------------------
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(
+    minutes=int(os.getenv("ACCESS_TOKEN_LIFETIME_MINUTES", 30))
+    ),
+    "REFRESH_TOKEN_LIFETIME": timedelta(
+        days=int(os.getenv("REFRESH_TOKEN_LIFETIME_DAYS", 1))
+    ),
+
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
+}
+
+
+CHANNEL_REDIS_URL = os.getenv("CHANNEL_REDIS_URL", "redis://127.0.0.1:6379/1")
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [CHANNEL_REDIS_URL],
+        },
+    },
+}
+
+# -------------------------------------------------
+# AUTHENTICATION BACKENDS
+# -------------------------------------------------
+AUTHENTICATION_BACKENDS = [
+    "django.contrib.auth.backends.ModelBackend",
+]
+
+# -------------------------------------------------
+# CORS
+# -------------------------------------------------
+CORS_ALLOW_CREDENTIALS = True
+
+CORS_ALLOWED_ORIGINS = os.getenv(
+    "CORS_ALLOWED_ORIGINS", ""
+).split(",")
+
+
+# -------------------------------------------------
+# COOKIE SECURITY
+# -------------------------------------------------
+COOKIE_SECURE = os.getenv("COOKIE_SECURE", "False") == "True"
+COOKIE_SAMESITE = os.getenv("COOKIE_SAMESITE")
+
+
+# -------------------------------------------------
+# MEDIA / STORAGE
+# -------------------------------------------------
+USE_S3 = os.getenv("USE_S3", "True") == "True"
+MEDIA_ROOT = BASE_DIR / "media"
+
+STORAGES = {
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+    },
+}
+
+if USE_S3:
+    AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
+    AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
+    AWS_STORAGE_BUCKET_NAME = os.getenv("AWS_STORAGE_BUCKET_NAME")
+    AWS_S3_REGION_NAME = os.getenv("AWS_S3_REGION_NAME")
+    AWS_S3_SIGNATURE_VERSION = os.getenv("AWS_S3_SIGNATURE_VERSION")
+    AWS_DEFAULT_ACL = None
+    AWS_S3_FILE_OVERWRITE = False
+    AWS_QUERYSTRING_AUTH = False
+    AWS_S3_CUSTOM_DOMAIN = f"{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com"
+    AWS_LOCATION = "media"
+    MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/media/"
+    STORAGES["default"] = {
+        "BACKEND": "config.storage_backends.MediaStorage",
+    }
+else:
+    MEDIA_URL = "/media/"
+    STORAGES["default"] = {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    }
+
+
+# -------------------------------------------------
+# REDIS
+# -------------------------------------------------
+REDIS_URL = os.getenv("REDIS_URL")
+# -------------------------------------------------
+# CELERY
+# -------------------------------------------------
+CELERY_BROKER_URL = REDIS_URL
+CELERY_RESULT_BACKEND = REDIS_URL
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_IMPORTS = (
+    "accounts.tasks",
+    "applications.tasks",
+)
+
+# -------------------------------------------------
+# EMAIL
+# -------------------------------------------------
+EMAIL_BACKEND = os.getenv("EMAIL_BACKEND")
+EMAIL_HOST = os.getenv("EMAIL_HOST")
+EMAIL_PORT = int(os.getenv("EMAIL_PORT"))
+EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True") == "True"
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL")
+
+# -------------------------------------------------
+# FRONTEND URLS
+# -------------------------------------------------
+ADMIN_FRONTEND_URL = os.getenv("ADMIN_FRONTEND_URL")
+PATIENT_FRONTEND_URL = os.getenv("PATIENT_FRONTEND_URL")
+PSYCHOLOGIST_FRONTEND_URL = os.getenv("PSYCHOLOGIST_FRONTEND_URL")
+
+
+# -------------------------------------------------
+# GOOGLE CLIENT ID
+# -------------------------------------------------
+GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID")
+
+
+# -------------------------------------------------
+# ZEGO CLOUD
+# -------------------------------------------------
+ZEGO_APP_ID = os.getenv("ZEGO_APP_ID")
+ZEGO_SERVER_SECRET = os.getenv("ZEGO_SERVER_SECRET")
+ZEGO_CONSULTATION_APP_ID = os.getenv("ZEGO_CONSULTATION_APP_ID", ZEGO_APP_ID)
+ZEGO_CONSULTATION_SERVER_SECRET = os.getenv("ZEGO_CONSULTATION_SERVER_SECRET", ZEGO_SERVER_SECRET)
+
+# -------------------------------------------------
+# MISTRAL AI
+# -------------------------------------------------
+MISTRAL_API_KEY = os.getenv("MISTRAL_API_KEY", "")
+MISTRAL_API_URL = os.getenv(
+    "MISTRAL_API_URL",
+    "https://api.mistral.ai/v1/chat/completions",
+)
+MISTRAL_MODEL = os.getenv("MISTRAL_MODEL", "mistral-small-latest")
+MISTRAL_TIMEOUT_SECONDS = int(os.getenv("MISTRAL_TIMEOUT_SECONDS", "30"))
+CHATBOT_USE_LLM_REWRITES = os.getenv("CHATBOT_USE_LLM_REWRITES", "1") == "1"
+
+# -------------------------------------------------
+# RAZORPAY
+# -------------------------------------------------
+RAZORPAY_KEY_ID = os.getenv("RAZORPAY_KEY_ID")
+RAZORPAY_KEY_SECRET = os.getenv("RAZORPAY_KEY_SECRET")

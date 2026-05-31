@@ -1,0 +1,206 @@
+import { Routes, Route, Navigate } from "react-router-dom";
+import AdminLogin from "./pages/AdminLogin";
+import Dashboard from "./pages/AdminDashboard";
+import AdminForgotPassword from "./pages/AdminForgotPassword";
+import AdminResetPassword from "./pages/AdminResetPassword";
+import AdminPatientList from "./pages/AdminPatientList";
+import AdminPatientDetail from "./pages/AdminPatientDetail";
+import AdminApplicationList from "./pages/AdminApplicationList";
+import AdminApplicationDetail from "./pages/AdminApplicationDetail";
+import AdminInterviewRoom from "./pages/AdminInterviewRoom";
+import AdminPsychologistList from "./pages/AdminPsychologistList";
+import AdminPsychologistDetail from "./pages/AdminPsychologistDetail";
+import AdminAppointments from "./pages/AdminAppointments";
+import AdminAppointmentDetail from "./pages/AdminAppointmentDetail";
+import AdminCommissions from "./pages/AdminCommissions";
+import AdminWallet from "./pages/AdminWallet";
+import AdminReviews from "./pages/AdminReviews";
+import AdminComplaints from "./pages/AdminComplaints";
+import AdminComplaintDetail from "./pages/AdminComplaintDetail";
+import { useAuthStore } from "../../store/auth.store";
+
+const AdminRoutes = () => {
+  const { isAuthenticated, role } = useAuthStore();
+
+  return (
+    <Routes>
+      <Route
+        path="login"
+        element={isAuthenticated && role === "ADMIN" ? <Navigate to="/admin/dashboard" replace /> : <AdminLogin />}
+      />
+      <Route
+        path="forgot-password"
+        element={isAuthenticated && role === "ADMIN" ? <Navigate to="/admin/dashboard" replace /> : <AdminForgotPassword />}
+      />
+      <Route
+        path="reset-password"
+        element={isAuthenticated && role === "ADMIN" ? <Navigate to="/admin/dashboard" replace /> : <AdminResetPassword />}
+      />
+
+      <Route
+        path="dashboard"
+        element={
+          isAuthenticated && role === "ADMIN" ? (
+            <Dashboard />
+          ) : (
+            <Navigate to="/admin/login" />
+          )
+        }
+      />
+
+      <Route
+        path="patients"
+        element={
+          isAuthenticated && role === "ADMIN" ? (
+            <AdminPatientList />
+          ) : (
+            <Navigate to="/admin/login" />
+          )
+        }
+      />
+
+      <Route
+        path="patients/:id"
+        element={
+          isAuthenticated && role === "ADMIN" ? (
+            <AdminPatientDetail />
+          ) : (
+            <Navigate to="/admin/login" />
+          )
+        }
+      />
+
+      <Route
+        path="psychologists"
+        element={
+          isAuthenticated && role === "ADMIN" ? (
+            <AdminPsychologistList />
+          ) : (
+            <Navigate to="/admin/login" />
+          )
+        }
+      />
+
+      <Route
+        path="psychologists/:id"
+        element={
+          isAuthenticated && role === "ADMIN" ? (
+            <AdminPsychologistDetail />
+          ) : (
+            <Navigate to="/admin/login" />
+          )
+        }
+      />
+
+      <Route
+        path="appointments"
+        element={
+          isAuthenticated && role === "ADMIN" ? (
+            <AdminAppointments />
+          ) : (
+            <Navigate to="/admin/login" />
+          )
+        }
+      />
+
+      <Route
+        path="appointments/:appointmentId"
+        element={
+          isAuthenticated && role === "ADMIN" ? (
+            <AdminAppointmentDetail />
+          ) : (
+            <Navigate to="/admin/login" />
+          )
+        }
+      />
+
+      <Route
+        path="applications"
+        element={
+          isAuthenticated && role === "ADMIN" ? (
+            <AdminApplicationList />
+          ) : (
+            <Navigate to="/admin/login" />
+          )
+        }
+      />
+
+      <Route
+        path="applications/:id"
+        element={
+          isAuthenticated && role === "ADMIN" ? (
+            <AdminApplicationDetail />
+          ) : (
+            <Navigate to="/admin/login" />
+          )
+        }
+      />
+
+      <Route
+        path="interview/:interviewId"
+        element={isAuthenticated && role === "ADMIN" ? <AdminInterviewRoom /> : <Navigate to="/admin/login" />}
+      />
+
+      <Route
+        path="finance"
+        element={
+          isAuthenticated && role === "ADMIN" ? (
+            <AdminWallet />
+          ) : (
+            <Navigate to="/admin/login" />
+          )
+        }
+      />
+
+      <Route path="wallet" element={<Navigate to="/admin/finance" replace />} />
+
+      <Route
+        path="commissions"
+        element={
+          isAuthenticated && role === "ADMIN" ? (
+            <AdminCommissions />
+          ) : (
+            <Navigate to="/admin/login" />
+          )
+        }
+      />
+
+      <Route
+        path="reviews"
+        element={
+          isAuthenticated && role === "ADMIN" ? (
+            <AdminReviews />
+          ) : (
+            <Navigate to="/admin/login" />
+          )
+        }
+      />
+
+      <Route
+        path="complaints"
+        element={
+          isAuthenticated && role === "ADMIN" ? (
+            <AdminComplaints />
+          ) : (
+            <Navigate to="/admin/login" />
+          )
+        }
+      />
+
+      <Route
+        path="complaints/:complaintId"
+        element={
+          isAuthenticated && role === "ADMIN" ? (
+            <AdminComplaintDetail />
+          ) : (
+            <Navigate to="/admin/login" />
+          )
+        }
+      />
+
+      <Route path="*" element={<Navigate to="login" />} />
+    </Routes>
+  );
+};
+
+export default AdminRoutes;
