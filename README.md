@@ -319,6 +319,8 @@ AWS_S3_SIGNATURE_VERSION=s3v4
 
 # Google OAuth
 GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+GOOGLE_OAUTH_REDIRECT_URI=http://localhost:8000/api/auth/google/callback/
 
 # ZEGOCLOUD
 ZEGO_APP_ID=your_zego_app_id
@@ -338,12 +340,26 @@ MISTRAL_TIMEOUT_SECONDS=30
 CHATBOT_USE_LLM_REWRITES=1
 ```
 
+For Google Cloud OAuth, configure:
+
+```text
+Authorized JavaScript origins:
+http://localhost:5173
+http://127.0.0.1:5173
+https://koode.online
+https://www.koode.online
+
+Authorized redirect URIs:
+http://localhost:8000/api/auth/google/callback/
+https://koode.online/api/auth/google/callback/
+https://www.koode.online/api/auth/google/callback/
+```
+
 Create a `.env` file inside the `frontend/` directory.
 
 ```text
 VITE_API_BASE_URL=http://localhost:8000/api/
 VITE_WS_BASE_URL=ws://localhost:8000
-VITE_GOOGLE_CLIENT_ID=your_google_client_id
 ```
 
 ## Useful Commands

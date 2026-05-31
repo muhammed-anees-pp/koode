@@ -20,6 +20,7 @@ import PsychologistWallet from "./pages/PsychologistWallet";
 import PsychologistReviews from "./pages/PsychologistReviews";
 import PsychologistComplaints from "./pages/PsychologistComplaints";
 import ConsultationRoom from "../../components/consultation/ConsultationRoom";
+import OAuthCallback from "../../components/auth/OAuthCallback";
 
 const RouteLoader = () => (
   <div className="min-h-screen bg-[#eef0f5] flex items-center justify-center">
@@ -112,6 +113,7 @@ const PsychologistRoutes = () => {
         element={authRedirect ? <PostLoginRedirect isAuthenticated={isAuthenticated} role={role} /> : <PsychologistSignup />}
       />
       <Route path="verification-sent" element={<PsychologistVerification />} />
+      <Route path="oauth/callback" element={<OAuthCallback role="PSYCHOLOGIST" />} />
       <Route path="verify-email" element={<PsychologistVerification />} />
       <Route path="verify-success" element={<PsychologistVerification />} />
       <Route path="verify-error" element={<PsychologistVerification />} />

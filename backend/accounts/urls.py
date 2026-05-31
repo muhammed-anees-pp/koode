@@ -3,7 +3,7 @@ from .views import (AdminLoginView, RefreshTokenView, AdminLogoutView, AdminForg
                     PatientSignupView, PatientVerifyEmailView, PatientLoginView, PatientLogoutView, PatientForgotPasswordView, 
                     PatientResetPasswordView, PatientGoogleAuthView, PsychologistSignupView, PsychologistVerifyEmailView,
                     PsychologistLoginView, PsychologistLogoutView, PsycologistForgotPasswordView, PsychologistResetPasswordView, 
-                    PsychologistGoogleAuthView)
+                    PsychologistGoogleAuthView, GoogleOAuthStartView, GoogleOAuthCallbackView)
 from psychologists.views import SpecializationListView
 
 
@@ -14,6 +14,9 @@ urlpatterns = [
     path("admin/auth/logout/", AdminLogoutView.as_view()),
     path("admin/auth/forgot-password/", AdminForgotPasswordView.as_view()),
     path("admin/auth/reset-password/", AdminResetPasswordView.as_view()),
+    path("auth/google/start/", GoogleOAuthStartView.as_view()),
+    path("auth/google/callback/", GoogleOAuthCallbackView.as_view(), name="google-oauth-callback"),
+
     # PATIENT
     path("patient/signup/", PatientSignupView.as_view()),
     path("patient/verify-email/", PatientVerifyEmailView.as_view()),
