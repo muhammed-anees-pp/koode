@@ -15,7 +15,8 @@ import os
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-load_dotenv(BASE_DIR / ".env")
+if os.getenv("SKIP_DOTENV", "False") != "True":
+    load_dotenv(BASE_DIR / ".env")
 
 # -------------------------------------------------
 # CORE
@@ -113,6 +114,12 @@ ASGI_APPLICATION = "config.asgi.application"
 # --------------------
 # DATABASE CONFIG
 # --------------------
+DATABASE_OPTIONS = {}
+if os.getenv("DB_SSLMODE"):
+    DATABASE_OPTIONS["sslmode"] = os.getenv("DB_SSLMODE")
+if os.getenv("DB_SSLROOTCERT"):
+    DATABASE_OPTIONS["sslrootcert"] = os.getenv("DB_SSLROOTCERT")
+
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
@@ -120,7 +127,9 @@ DATABASES = {
         "USER": os.getenv("DB_USER"),
         "PASSWORD": os.getenv("DB_PASSWORD"),
         "HOST": os.getenv("DB_HOST"),
-        "PORT": os.getenv("DB_PORT"),
+        "PORT": os.getenv("DB_PORT", "5432"),
+        "CONN_MAX_AGE": int(os.getenv("DB_CONN_MAX_AGE", "60")),
+        "OPTIONS": DATABASE_OPTIONS,
     }
 }
 
@@ -166,6 +175,7 @@ USE_TZ = True
 # STATIC FILES
 # -------------------------------------------------
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # -------------------------------------------------
 # CUSTOM USER MODEL
@@ -196,6 +206,24 @@ REST_FRAMEWORK = {
 # -------------------------------------------------
 LOG_DIR = BASE_DIR / "logs"
 LOG_DIR.mkdir(exist_ok=True)
+LOG_TO_FILE = os.getenv("LOG_TO_FILE", "True") == "True"
+
+LOG_HANDLERS = ["console", "file"] if LOG_TO_FILE else ["console"]
+LOGGING_HANDLERS = {
+    "console": {
+        "class": "logging.StreamHandler",
+        "formatter": "simple",
+    },
+}
+
+if LOG_TO_FILE:
+    LOGGING_HANDLERS["file"] = {
+        "class": "logging.handlers.RotatingFileHandler",
+        "filename": LOG_DIR / "backend.log",
+        "maxBytes": 1024 * 1024 * 5,
+        "backupCount": 5,
+        "formatter": "verbose",
+    }
 
 LOGGING = {
     "version": 1,
@@ -210,66 +238,54 @@ LOGGING = {
             "style": "{",
         },
     },
-    "handlers": {
-        "console": {
-            "class": "logging.StreamHandler",
-            "formatter": "simple",
-        },
-        "file": {
-            "class": "logging.handlers.RotatingFileHandler",
-            "filename": LOG_DIR / "backend.log",
-            "maxBytes": 1024 * 1024 * 5,
-            "backupCount": 5,
-            "formatter": "verbose",
-        },
-    },
+    "handlers": LOGGING_HANDLERS,
     "root": {
-        "handlers": ["console", "file"],
+        "handlers": LOG_HANDLERS,
         "level": os.getenv("LOG_LEVEL", "INFO"),
     },
     "loggers": {
         "django": {
-            "handlers": ["console", "file"],
+            "handlers": LOG_HANDLERS,
             "level": os.getenv("DJANGO_LOG_LEVEL", "INFO"),
             "propagate": False,
         },
         "appointments": {
-            "handlers": ["console", "file"],
+            "handlers": LOG_HANDLERS,
             "level": os.getenv("APP_LOG_LEVEL", "INFO"),
             "propagate": False,
         },
         "consultations": {
-            "handlers": ["console", "file"],
+            "handlers": LOG_HANDLERS,
             "level": os.getenv("APP_LOG_LEVEL", "INFO"),
             "propagate": False,
         },
         "notifications": {
-            "handlers": ["console", "file"],
+            "handlers": LOG_HANDLERS,
             "level": os.getenv("APP_LOG_LEVEL", "INFO"),
             "propagate": False,
         },
         "chat": {
-            "handlers": ["console", "file"],
+            "handlers": LOG_HANDLERS,
             "level": os.getenv("APP_LOG_LEVEL", "INFO"),
             "propagate": False,
         },
         "patients": {
-            "handlers": ["console", "file"],
+            "handlers": LOG_HANDLERS,
             "level": os.getenv("APP_LOG_LEVEL", "INFO"),
             "propagate": False,
         },
         "psychologists": {
-            "handlers": ["console", "file"],
+            "handlers": LOG_HANDLERS,
             "level": os.getenv("APP_LOG_LEVEL", "INFO"),
             "propagate": False,
         },
         "applications": {
-            "handlers": ["console", "file"],
+            "handlers": LOG_HANDLERS,
             "level": os.getenv("APP_LOG_LEVEL", "INFO"),
             "propagate": False,
         },
         "config.exceptions": {
-            "handlers": ["console", "file"],
+            "handlers": LOG_HANDLERS,
             "level": os.getenv("APP_LOG_LEVEL", "INFO"),
             "propagate": False,
         },
@@ -329,30 +345,37 @@ COOKIE_SAMESITE = os.getenv("COOKIE_SAMESITE")
 
 
 # -------------------------------------------------
-# AWS S3 STORAGE
+# MEDIA / STORAGE
 # -------------------------------------------------
-AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
-AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
-AWS_STORAGE_BUCKET_NAME = os.getenv("AWS_STORAGE_BUCKET_NAME")
-AWS_S3_REGION_NAME = os.getenv("AWS_S3_REGION_NAME")
-AWS_S3_SIGNATURE_VERSION = os.getenv("AWS_S3_SIGNATURE_VERSION")
-AWS_DEFAULT_ACL = None
-AWS_S3_FILE_OVERWRITE = False
-AWS_QUERYSTRING_AUTH = False
-AWS_S3_CUSTOM_DOMAIN = f"{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com"
+USE_S3 = os.getenv("USE_S3", "True") == "True"
+MEDIA_ROOT = BASE_DIR / "media"
 
-
-# MEDIA FILES (S3)
 STORAGES = {
-    "default": {
-        "BACKEND": "config.storage_backends.MediaStorage",
-    },
     "staticfiles": {
         "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
     },
 }
-MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/media/"
-AWS_LOCATION = "media"
+
+if USE_S3:
+    AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
+    AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
+    AWS_STORAGE_BUCKET_NAME = os.getenv("AWS_STORAGE_BUCKET_NAME")
+    AWS_S3_REGION_NAME = os.getenv("AWS_S3_REGION_NAME")
+    AWS_S3_SIGNATURE_VERSION = os.getenv("AWS_S3_SIGNATURE_VERSION")
+    AWS_DEFAULT_ACL = None
+    AWS_S3_FILE_OVERWRITE = False
+    AWS_QUERYSTRING_AUTH = False
+    AWS_S3_CUSTOM_DOMAIN = f"{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com"
+    AWS_LOCATION = "media"
+    MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/media/"
+    STORAGES["default"] = {
+        "BACKEND": "config.storage_backends.MediaStorage",
+    }
+else:
+    MEDIA_URL = "/media/"
+    STORAGES["default"] = {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    }
 
 
 # -------------------------------------------------

@@ -196,6 +196,50 @@ cd backend
 celery -A config worker -l info
 ```
 
+## Docker Backend Setup
+
+The backend can also run through Docker Compose with Redis, Daphne, and a Celery worker. PostgreSQL is expected to be an external AWS RDS instance, not a Docker container.
+
+Create `backend/.env.docker` from the example and put your real RDS credentials there:
+
+```text
+DB_NAME=your_rds_database
+DB_USER=your_rds_user
+DB_PASSWORD=your_rds_password
+DB_HOST=your-rds-endpoint.region.rds.amazonaws.com
+DB_PORT=5432
+DB_SSLMODE=require
+```
+
+```bash
+# Build backend images
+docker compose -f docker-compose.backend.yml build
+
+# Start Redis, Django/Daphne, and Celery
+docker compose -f docker-compose.backend.yml up -d
+
+# Check service status and logs
+docker compose -f docker-compose.backend.yml ps
+docker compose -f docker-compose.backend.yml logs -f backend-web
+```
+
+The compose file loads `backend/.env.docker.example` and optionally overlays `backend/.env.docker` when present. Copy the example to `backend/.env.docker` for local secrets or service keys.
+
+Local Docker ports:
+
+```text
+Backend:    http://localhost:8000
+Redis:      127.0.0.1:6380
+```
+
+Run one-off Django commands through the web service:
+
+```bash
+docker compose -f docker-compose.backend.yml run --rm backend-web python manage.py check
+docker compose -f docker-compose.backend.yml run --rm backend-web python manage.py migrate
+docker compose -f docker-compose.backend.yml run --rm backend-web python manage.py createsuperuser
+```
+
 ## 2. Frontend Setup
 
 ```bash
@@ -235,8 +279,11 @@ ALLOWED_HOSTS=localhost,127.0.0.1
 DB_NAME=your_database_name
 DB_USER=your_database_user
 DB_PASSWORD=your_database_password
-DB_HOST=localhost
+DB_HOST=your-rds-endpoint.region.rds.amazonaws.com
 DB_PORT=5432
+DB_SSLMODE=require
+DB_SSLROOTCERT=
+DB_CONN_MAX_AGE=60
 
 # Redis, Channels, Celery
 REDIS_URL=redis://127.0.0.1:6379/0
@@ -341,4 +388,3 @@ Koode is feature-complete for the main patient, psychologist, and admin workflow
 **Koode Project**
 
 Mental Health & Online Consultation Platform
-
