@@ -11,6 +11,11 @@ export default defineConfig({
         target: process.env.VITE_API_TARGET || "http://localhost:8000",
         changeOrigin: true,
         secure: false
+      },
+      "/media": {
+        target: process.env.VITE_API_TARGET || "http://localhost:8000",
+        changeOrigin: true,
+        secure: false
       }
     }
   }

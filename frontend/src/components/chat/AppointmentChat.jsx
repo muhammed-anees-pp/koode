@@ -431,11 +431,18 @@ const AppointmentChat = ({ booking, roleVariant = "patient", onClose, embedded =
     },
     onError: (error) => {
       const apiError = error?.response?.data;
+      const fieldError = Array.isArray(apiError?.file) ? apiError.file[0] : apiError?.file;
+      const fallbackError =
+        !error?.response && error?.request
+          ? "Unable to reach the server. Check your connection and try again."
+          : "Unable to send this file.";
       setUploadError(
-        apiError?.file?.[0] ||
-          apiError?.file ||
+        fieldError ||
           apiError?.detail ||
-          "Unable to send this file."
+          apiError?.message ||
+          apiError?.error ||
+          error?.message ||
+          fallbackError
       );
       if (fileInputRef.current) {
         fileInputRef.current.value = "";

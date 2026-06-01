@@ -159,16 +159,28 @@ class AppointmentChatFileUploadView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        message = Message.objects.create(
-            room=room,
-            sender=request.user,
-            message_type=Message.MESSAGE_TYPE_FILE,
-            content=request.data.get("caption", "").strip(),
-            attachment=uploaded_file,
-            attachment_name=uploaded_file.name,
-            attachment_size=uploaded_file.size,
-            attachment_content_type=getattr(uploaded_file, "content_type", "") or "",
-        )
+        try:
+            message = Message.objects.create(
+                room=room,
+                sender=request.user,
+                message_type=Message.MESSAGE_TYPE_FILE,
+                content=request.data.get("caption", "").strip(),
+                attachment=uploaded_file,
+                attachment_name=uploaded_file.name,
+                attachment_size=uploaded_file.size,
+                attachment_content_type=getattr(uploaded_file, "content_type", "") or "",
+            )
+        except Exception:
+            logger.exception("Failed to save chat attachment for appointment %s", appointment_id)
+            return Response(
+                {
+                    "detail": (
+                        "Unable to save this file. Check media storage configuration "
+                        "and permissions."
+                    )
+                },
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
         recipient = (
             room.psychologist.user
             if request.user.id == room.patient.user_id

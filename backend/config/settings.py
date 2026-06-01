@@ -347,7 +347,7 @@ COOKIE_SAMESITE = os.getenv("COOKIE_SAMESITE")
 # -------------------------------------------------
 # MEDIA / STORAGE
 # -------------------------------------------------
-USE_S3 = os.getenv("USE_S3", "True") == "True"
+USE_S3 = os.getenv("USE_S3", "False") == "True"
 MEDIA_ROOT = BASE_DIR / "media"
 
 STORAGES = {

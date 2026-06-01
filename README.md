@@ -311,6 +311,7 @@ EMAIL_HOST_PASSWORD=your_email_password
 DEFAULT_FROM_EMAIL=your_email@example.com
 
 # AWS S3
+USE_S3=False
 AWS_ACCESS_KEY_ID=your_aws_access_key
 AWS_SECRET_ACCESS_KEY=your_aws_secret_key
 AWS_STORAGE_BUCKET_NAME=your_bucket_name
