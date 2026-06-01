@@ -10,7 +10,7 @@ from chat.views import (
 
 urlpatterns = [
     path("rooms/", ChatRoomListView.as_view()),
-    path("appointments/<uuid:appointment_id>/", AppointmentChatRoomView.as_view()),
-    path("appointments/<uuid:appointment_id>/messages/", AppointmentChatMessageListView.as_view()),
-    path("appointments/<uuid:appointment_id>/messages/files/", AppointmentChatFileUploadView.as_view()),
+    path("appointments/<str:appointment_id>/", AppointmentChatRoomView.as_view()),
+    path("appointments/<str:appointment_id>/messages/", AppointmentChatMessageListView.as_view()),
+    path("appointments/<str:appointment_id>/messages/files/", AppointmentChatFileUploadView.as_view()),
 ]

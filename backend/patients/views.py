@@ -160,7 +160,7 @@ class PatientProfileView(APIView):
             return Response({"detail": "Not authorized"}, status=status.HTTP_403_FORBIDDEN)
 
         profile = get_object_or_404(PatientProfile, user=request.user)
-        serializer = PatientProfileSerializer(profile)
+        serializer = PatientProfileSerializer(profile, context={"request": request})
         logger.info("Patient profile returned for user %s", request.user.id)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -190,7 +190,7 @@ class PatientProfileView(APIView):
             else:
                 processed_data[key] = value
 
-        serializer = PatientProfileSerializer(profile, data=processed_data, partial=True)
+        serializer = PatientProfileSerializer(profile, data=processed_data, partial=True, context={"request": request})
         serializer.is_valid(raise_exception=True)
         serializer.save()
 

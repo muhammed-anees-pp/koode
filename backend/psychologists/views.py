@@ -57,7 +57,7 @@ class PsychologistProfileView(APIView):
     @log_unexpected_errors("retrieving psychologist profile")
     def get(self, request):
         profile = get_object_or_404(PsychologistProfile, user=request.user)
-        serializer = PsychologistProfileSerializer(profile)
+        serializer = PsychologistProfileSerializer(profile, context={"request": request})
         logger.info("Psychologist profile returned for user %s", request.user.id)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -95,7 +95,7 @@ class PsychologistProfileView(APIView):
                 logger.warning("Invalid specialization_ids submitted by user %s: %s", request.user.id, spec_ids_raw)
                 processed_data["specialization_ids"] = []
 
-        serializer = PsychologistProfileSerializer(profile, data=processed_data, partial=True)
+        serializer = PsychologistProfileSerializer(profile, data=processed_data, partial=True, context={"request": request})
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
