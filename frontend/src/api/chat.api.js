@@ -22,10 +22,7 @@ export const uploadAppointmentChatFile = async ({ appointmentId, file }) => {
 
   const response = await axiosInstance.post(
     `chat/appointments/${appointmentId}/messages/files/`,
-    formData,
-    {
-      headers: { "Content-Type": "multipart/form-data" },
-    }
+    formData
   );
   return response.data;
 };

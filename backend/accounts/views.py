@@ -28,12 +28,17 @@ def get_refresh_cookie_name(role):
     return REFRESH_COOKIE_BY_ROLE.get(role)
 
 
-def build_user_data(user, profile_picture_url=None):
+def build_user_data(user, profile_picture_url=None, request=None):
+    if profile_picture_url is None and user.profile_picture:
+        profile_picture_url = user.profile_picture.url
+    if request and profile_picture_url and not profile_picture_url.startswith(("http://", "https://")):
+        profile_picture_url = request.build_absolute_uri(profile_picture_url)
+
     return {
         "id": str(user.id),
         "email": user.email,
         "full_name": user.full_name,
-        "profile_picture": profile_picture_url if profile_picture_url is not None else (user.profile_picture.url if user.profile_picture else None),
+        "profile_picture": profile_picture_url,
         "role": user.role,
     }
 
@@ -103,7 +108,7 @@ class AdminLoginView(APIView):
         access = data["access"]
         refresh = data["refresh"]
 
-        user_data = build_user_data(user)
+        user_data = build_user_data(user, request=request)
 
         response = Response(
             {"access": access, "user": user_data},
@@ -156,7 +161,7 @@ class RefreshTokenView(APIView):
 
             response_data = {"access": str(access)}
             if user:
-                response_data["user"] = build_user_data(user)
+                response_data["user"] = build_user_data(user, request=request)
                 response_data["role"] = user.role
 
             response = Response(response_data)
@@ -374,7 +379,7 @@ class PatientLoginView(APIView):
         data = serializer.validated_data
         user = serializer.context.get("user")
 
-        user_data = build_user_data(user)
+        user_data = build_user_data(user, request=request)
 
         response = Response(
             {"access": data["access"], "user": user_data},
@@ -472,7 +477,7 @@ class PatientGoogleAuthView(APIView):
         response = Response(
             {
                 "access": result["access"],
-                "user": build_user_data(user)
+                "user": build_user_data(user, request=request)
             },
             status=status.HTTP_200_OK
         )
@@ -551,7 +556,7 @@ class PsychologistLoginView(APIView):
             except Exception:
                 pass
 
-        user_data = build_user_data(user, profile_pic_url)
+        user_data = build_user_data(user, profile_pic_url, request=request)
 
         response = Response(
             {"access": data["access"], "user": user_data},
@@ -650,7 +655,7 @@ class PsychologistGoogleAuthView(APIView):
         response = Response(
             {
                 "access": result["access"],
-                "user": build_user_data(user)
+                "user": build_user_data(user, request=request)
             },
             status=status.HTTP_200_OK
         )
