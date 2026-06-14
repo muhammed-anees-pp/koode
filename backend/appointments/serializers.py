@@ -678,9 +678,7 @@ class CancelBookingSerializer(serializers.Serializer):
         note = self.validated_data["note"]
 
         with transaction.atomic():
-            locked_booking = Booking.objects.select_for_update().select_related("slot").get(
-                id=booking.id
-            )
+            locked_booking = Booking.objects.select_for_update().get(id=booking.id)
 
             if locked_booking.status == "CANCELLED":
                 raise serializers.ValidationError("Booking already cancelled")
@@ -689,8 +687,11 @@ class CancelBookingSerializer(serializers.Serializer):
                 raise serializers.ValidationError("Completed booking cannot be cancelled")
 
             if locked_booking.slot_id:
-                locked_booking.slot.is_booked = False
-                locked_booking.slot.save(update_fields=["is_booked"])
+                locked_slot = AvailableSlot.objects.select_for_update().get(
+                    id=locked_booking.slot_id
+                )
+                locked_slot.is_booked = False
+                locked_slot.save(update_fields=["is_booked"])
 
             locked_booking.slot = None
             locked_booking.status = "CANCELLED"
@@ -806,10 +807,7 @@ class RescheduleBookingSerializer(serializers.Serializer):
         note = self.validated_data["note"]
 
         with transaction.atomic():
-            locked_booking = Booking.objects.select_for_update().select_related("slot").get(
-                id=booking.id
-            )
-            old_slot = AvailableSlot.objects.select_for_update().get(id=locked_booking.slot_id)
+            locked_booking = Booking.objects.select_for_update().get(id=booking.id)
             locked_new_slot = AvailableSlot.objects.select_for_update().select_related(
                 "availability"
             ).get(id=new_slot.id)
@@ -819,6 +817,9 @@ class RescheduleBookingSerializer(serializers.Serializer):
 
             if locked_booking.status == "COMPLETED":
                 raise serializers.ValidationError("Completed booking cannot be rescheduled")
+
+            if not locked_booking.slot_id:
+                raise serializers.ValidationError("Booking does not have an active slot")
 
             if locked_new_slot.is_booked:
                 raise serializers.ValidationError("Selected slot is already booked")
@@ -834,6 +835,9 @@ class RescheduleBookingSerializer(serializers.Serializer):
                     "Patient already has an appointment in this time slot"
                 )
 
+            old_slot = AvailableSlot.objects.select_for_update().get(
+                id=locked_booking.slot_id
+            )
             old_slot.is_booked = False
             old_slot.save(update_fields=["is_booked"])
 
