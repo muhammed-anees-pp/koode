@@ -44,6 +44,8 @@ function InfoRow({ label, value }) {
     );
 }
 
+
+
 function getAgeFromDateOfBirth(dateOfBirth) {
     if (!dateOfBirth) return null;
 

@@ -7,7 +7,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from dashboard.permissions import IsAdminUserRole
-from appointments.models import Booking
+from appointments.models import AvailableSlot, Booking
 from appointments.serializers import BookingSerializer, notify_booking_confirmed
 from patients.permissions import IsPatient
 from .models import RazorpayOrder
@@ -208,16 +208,21 @@ class CancelRazorpayOrderView(APIView):
             status="CREATED",
         )
         with transaction.atomic():
-            locked_order = RazorpayOrder.objects.select_for_update().select_related("booking__slot").get(id=order.id)
+            locked_order = RazorpayOrder.objects.select_for_update().select_related(
+                "booking"
+            ).get(id=order.id)
             locked_order.status = "CANCELLED"
             locked_order.save(update_fields=["status"])
 
             booking = locked_order.booking
             if booking and booking.status == "PENDING":
-                locked_booking = Booking.objects.select_for_update().select_related("slot").get(id=booking.id)
+                locked_booking = Booking.objects.select_for_update().get(id=booking.id)
                 if locked_booking.slot_id:
-                    locked_booking.slot.is_booked = False
-                    locked_booking.slot.save(update_fields=["is_booked"])
+                    locked_slot = AvailableSlot.objects.select_for_update().get(
+                        id=locked_booking.slot_id
+                    )
+                    locked_slot.is_booked = False
+                    locked_slot.save(update_fields=["is_booked"])
                 locked_booking.slot = None
                 locked_booking.status = "CANCELLED"
                 locked_booking.notes = "Payment cancelled."

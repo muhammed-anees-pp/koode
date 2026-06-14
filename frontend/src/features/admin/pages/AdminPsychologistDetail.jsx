@@ -191,6 +191,7 @@ export default function AdminPsychologistDetail() {
         staleTime: 5 * 60 * 1000,
     });
 
+
     const suspendMutation = useMutation({
         mutationFn: () => togglePsychologistSuspension(id),
         onSuccess: () => {

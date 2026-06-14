@@ -227,7 +227,7 @@ export default function AdminComplaintDetail() {
               Loading complaint details...
             </div>
           )}
-
+          
           {isError && (
             <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-10 text-center text-sm text-red-300">
               Unable to load this complaint.
