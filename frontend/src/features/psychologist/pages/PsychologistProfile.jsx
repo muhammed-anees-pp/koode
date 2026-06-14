@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Navigate } from "react-router-dom";
 import { z } from "zod";
@@ -12,7 +12,7 @@ const profileSchema = z.object({
     full_name: z.string()
         .min(2,   "Full name must be at least 2 characters")
         .max(100, "Full name must be under 100 characters")
-        .regex(/^[a-zA-Z\s.'\-]+$/, "Full name must contain only letters, spaces, dots, apostrophes, or hyphens"),
+        .regex(/^[a-zA-Z\s.'-]+$/, "Full name must contain only letters, spaces, dots, apostrophes, or hyphens"),
     phone_number: z.string()
         .min(10, "Phone number must be at least 10 digits")
         .max(15, "Phone number must be under 15 digits")
@@ -26,11 +26,11 @@ const profileSchema = z.object({
     city: z.string()
         .min(2,   "City must be at least 2 characters")
         .max(100, "City too long")
-        .regex(/^[a-zA-Z\s'\-]+$/, "City must contain only letters"),
+        .regex(/^[a-zA-Z\s'-]+$/, "City must contain only letters"),
     state: z.string()
         .min(2,   "State must be at least 2 characters")
         .max(100, "State too long")
-        .regex(/^[a-zA-Z\s'\-]+$/, "State must contain only letters"),
+        .regex(/^[a-zA-Z\s'-]+$/, "State must contain only letters"),
     pincode: z.string()
         .min(4,  "Pincode must be at least 4 digits")
         .max(10, "Pincode too long")
@@ -39,7 +39,7 @@ const profileSchema = z.object({
     job_title: z.string()
         .min(3,   "Job title must be at least 3 characters")
         .max(255, "Job title too long")
-        .regex(/^[a-zA-Z\s.,'\(\)\-]+$/, "Job title must not contain special characters"),
+        .regex(/^[a-zA-Z\s.,'()-]+$/, "Job title must not contain special characters"),
     highest_education: z.string()
         .min(3,   "Qualification must be at least 3 characters")
         .max(255, "Qualification too long"),
@@ -90,7 +90,8 @@ function PhotoCropModal({ file, onCrop, onCancel }) {
     const dragState = useRef(null);
     const imgRef    = useRef(null);
     const [imgReady, setImgReady] = useState(false);
-    const previewUrl = useRef(URL.createObjectURL(file)).current;
+    const [naturalSize, setNaturalSize] = useState({ width: 1, height: 1 });
+    const previewUrl = useMemo(() => URL.createObjectURL(file), [file]);
     useEffect(() => () => URL.revokeObjectURL(previewUrl), [previewUrl]);
     const startDrag = (cx, cy) => { dragState.current = { startX: cx, startY: cy, offsetX: offset.x, offsetY: offset.y }; };
     const moveDrag  = useCallback((cx, cy) => {
@@ -111,7 +112,7 @@ function PhotoCropModal({ file, onCrop, onCancel }) {
         ctx.drawImage(img, (CROP_SIZE - dw) / 2 + offset.x * scale, (CROP_SIZE - dh) / 2 + offset.y * scale, dw, dh);
         canvas.toBlob((blob) => onCrop(blob), "image/jpeg", 0.92);
     }, [zoom, offset, onCrop, imgReady]);
-    const nw = imgRef.current?.naturalWidth || 1; const nh = imgRef.current?.naturalHeight || 1;
+    const nw = naturalSize.width; const nh = naturalSize.height;
     const cs = imgReady ? Math.max(PREVIEW_SIZE / nw, PREVIEW_SIZE / nh) * zoom : zoom;
     const iw = imgReady ? nw * cs : PREVIEW_SIZE * zoom; const ih = imgReady ? nh * cs : PREVIEW_SIZE * zoom;
     return (
@@ -131,7 +132,7 @@ function PhotoCropModal({ file, onCrop, onCancel }) {
                         onTouchStart={(e) => { const t = e.touches[0]; startDrag(t.clientX, t.clientY); }}
                         onTouchMove={(e) => { e.preventDefault(); const t = e.touches[0]; moveDrag(t.clientX, t.clientY); }}
                         onTouchEnd={endDrag}>
-                        <img ref={imgRef} src={previewUrl} alt="Crop" draggable={false} onLoad={() => setImgReady(true)}
+                        <img ref={imgRef} src={previewUrl} alt="Crop" draggable={false} onLoad={(e) => { setNaturalSize({ width: e.currentTarget.naturalWidth || 1, height: e.currentTarget.naturalHeight || 1 }); setImgReady(true); }}
                             style={{ width: iw, height: ih, position: "absolute", top: "50%", left: "50%", transform: `translate(calc(-50% + ${offset.x}px), calc(-50% + ${offset.y}px))`, pointerEvents: "none" }} />
                     </div>
                     <p className="text-xs text-gray-400 text-center">Drag to reposition · Scroll slider to zoom</p>
@@ -205,6 +206,17 @@ function Field({ label, name, type = "text", value, onChange, onBlur, placeholde
     );
 }
 
+function ProfileShell({ children }) {
+    return (
+        <div className="flex flex-col min-h-screen bg-gray-50 font-sans antialiased">
+            <PsychologistNavbar />
+            <main className="flex-1 flex flex-col pt-[66px]">
+                <div className="max-w-[880px] mx-auto w-full px-6 py-10">{children}</div>
+            </main>
+        </div>
+    );
+}
+
 export default function PsychologistProfile() {
     const { isAuthenticated, role, updateUser, user: authUser } = useAuthStore();
     const queryClient = useQueryClient();
@@ -233,15 +245,17 @@ export default function PsychologistProfile() {
     const [newAudioFile,   setNewAudioFile]   = useState(null);
     const [toast,          setToast]          = useState(null);
     const [editSpecIds,    setEditSpecIds]    = useState([]);
-    const [errors,         setErrors]         = useState();
-    const [touched,        setTouched]        = useState();
-    const [fileErrors,     setFileErrors]     = useState();
+    const [errors,         setErrors]         = useState({});
+    const [touched,        setTouched]        = useState({});
+    const [fileErrors,     setFileErrors]     = useState({});
 
     const EMPTY_FORM = { full_name: "", phone_number: "", about: "", street_address: "", city: "", state: "", pincode: "", country: "", job_title: "", highest_education: "", years_of_experience: "" };
     const [form, setForm] = useState(EMPTY_FORM);
 
     useEffect(() => {
         if (profile) {
+            // Sync the editable form once fresh profile data arrives.
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setForm({
                 full_name:           profile.user?.full_name           || "",
                 phone_number:        profile.phone_number              || "",
@@ -258,8 +272,6 @@ export default function PsychologistProfile() {
             setEditSpecIds((profile.specializations || []).map((s) => s.id));
         }
     }, [profile]);
-
-    if (!isAuthenticated || role !== "PSYCHOLOGIST") return <Navigate to="/psychologist/login" replace />;
 
     const showToast = (msg, type = "success") => { setToast({ msg, type }); setTimeout(() => setToast(null), 3500); };
     const clearPendingPhoto = () => {
@@ -282,36 +294,13 @@ export default function PsychologistProfile() {
         }
     }, [form]);
 
-    const validateAll = () => {
-        const result = profileSchema.safeParse(form);
-        if (result.success) { setErrors(); return true; }
-        const mapped = {};
-        Object.entries(result.error.flatten().fieldErrors).forEach(([k, v]) => { if (v?.[0]) mapped[k] = v[0]; });
-        setErrors(mapped);
-        return false;
-    };
-
-    const validateFiles = () => {
-        const errs = {};
-        const hasPhoto = pendingBlob || (!pendingRemove && (profile?.user?.profile_picture || authUser?.profile_picture));
-        if (!hasPhoto) errs.profile_picture = "Profile photo is required";
-
-        const hasAudio = newAudioFile || profile?.audio_intro;
-        if (!hasAudio) errs.audio_intro = "Audio introduction is required";
-
-        if (editSpecIds.length === 0) errs.specializations = "Please select at least one specialization";
-
-        setFileErrors(errs);
-        return Object.keys(errs).length === 0;
-    };
-
     const saveMutation = useMutation({
         mutationFn: updatePsychologistProfile,
         onSuccess: (data) => {
             queryClient.setQueryData(["psychologist-profile"], data);
             updateUser({ full_name: data.user?.full_name, profile_picture: data.user?.profile_picture ?? null });
             clearPendingPhoto(); setIsEditing(false); setNewAudioFile(null);
-            setErrors(); setTouched(); setFileErrors();
+            setErrors({}); setTouched({}); setFileErrors({});
             showToast("Profile updated successfully!");
         },
         onError: (err) => {
@@ -361,7 +350,7 @@ export default function PsychologistProfile() {
             setEditSpecIds((profile.specializations || []).map((s) => s.id));
         }
         clearPendingPhoto(); setIsEditing(false); setNewAudioFile(null);
-        setErrors(); setTouched(); setFileErrors();
+        setErrors({}); setTouched({}); setFileErrors({});
     };
 
     const toggleEditSpec = (id) => {
@@ -454,17 +443,9 @@ export default function PsychologistProfile() {
     const isSaving    = saveMutation.isPending;
     const specializations = profile?.specializations || [];
 
-    const Shell = ({ children }) => (
-        <div className="flex flex-col min-h-screen bg-gray-50 font-sans antialiased">
-            <PsychologistNavbar />
-            <main className="flex-1 flex flex-col pt-[66px]">
-                <div className="max-w-[880px] mx-auto w-full px-6 py-10">{children}</div>
-            </main>
-        </div>
-    );
-
-    if (isLoading) return <Shell><div className="text-center py-20 text-gray-500 text-sm">Loading profile…</div></Shell>;
-    if (isError)   return <Shell><div className="text-center py-20 text-red-500 text-sm">Failed to load profile. Please refresh.</div></Shell>;
+    if (!isAuthenticated || role !== "PSYCHOLOGIST") return <Navigate to="/psychologist/login" replace />;
+    if (isLoading) return <ProfileShell><div className="text-center py-20 text-gray-500 text-sm">Loading profile…</div></ProfileShell>;
+    if (isError)   return <ProfileShell><div className="text-center py-20 text-red-500 text-sm">Failed to load profile. Please refresh.</div></ProfileShell>;
 
     return (
         <div className="flex flex-col min-h-screen bg-gray-50 font-sans antialiased">
